@@ -1920,12 +1920,14 @@ if (LAYOUT === "log") {
         const el = (n, a, parent) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); (parent ?? svg).appendChild(e); return e; };
         [190, 150, 100, 50].forEach((r, i) => el("circle", { cx: 200, cy: 200, r, class: "jd-chart__ring" + (i === 1 ? " is-major" : "") }));
         [[200, 10, 200, 22], [390, 200, 378, 200], [200, 390, 200, 378], [10, 200, 22, 200]].forEach(([x1, y1, x2, y2]) => el("line", { x1, y1, x2, y2, class: "jd-chart__tick" }));
+        const field = el("g", { class: "jd-chart__field" });   // the backdrop turns; the constellations hold still
         const g = el("g", { class: "jd-chart__sky" });
+        const key = [];
         const rnd = seeded(7);
         const fieldN = Math.min(60, Number(reviewWaiting) || 0);
         for (let i = 0; i < fieldN; i++) {
             const a = rnd() * Math.PI * 2, d = 40 + rnd() * 145;
-            el("circle", { cx: (200 + Math.cos(a) * d).toFixed(1), cy: (200 + Math.sin(a) * d).toFixed(1), r: (0.7 + rnd() * 0.6).toFixed(2), class: "jd-chart__star is-field" }, g);
+            el("circle", { cx: (200 + Math.cos(a) * d).toFixed(1), cy: (200 + Math.sin(a) * d).toFixed(1), r: (0.7 + rnd() * 0.6).toFixed(2), class: "jd-chart__star is-field" }, field);
         }
         mainsAll.forEach((main, i) => {
             const papers = count(main, "Paper"), exps = count(main, "Experiment");
@@ -1936,12 +1938,22 @@ if (LAYOUT === "log") {
             for (let k = 0; k < n; k++) pts.push([cx + (r2() - 0.5) * 80, cy + (r2() - 0.5) * 70]);
             el("polyline", { points: pts.map((p) => p.map((v) => v.toFixed(1)).join(",")).join(" "), class: "jd-chart__con" }, g);
             pts.forEach((p, k) => el("circle", { cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: (1.8 + Math.min(2.4, papers / 40)).toFixed(2), class: "jd-chart__star", style: `animation-delay:${(k * 0.8 + i * 0.3).toFixed(1)}s` }, g));
-            el("text", { x: cx.toFixed(1), y: (cy - 46).toFixed(1), "text-anchor": "middle", class: "jd-chart__lbl" }, g).textContent = titleFor(main);
-            el("text", { x: cx.toFixed(1), y: (cy + 52).toFixed(1), "text-anchor": "middle", class: "jd-chart__lbl is-sub" }, g).textContent = `${papers} papers · ${exps} experiments`;
+            const code = main.split("-")[1] ?? main;   // PRJ-VNRSIG-2025 → VNRSIG: short enough not to collide
+            el("text", { x: cx.toFixed(1), y: (cy - 44).toFixed(1), "text-anchor": "middle", class: "jd-chart__lbl" }, g).textContent = code;
+            key.push({ code, title: titleFor(main), papers, exps });
         });
         el("text", { x: 200, y: 392, "text-anchor": "middle", class: "jd-chart__lbl is-sub" }).textContent = `field stars: ${fieldN} reviews not yet begun`;
+        const ul = document.createElement("ul"); ul.className = "jd-chart__key";
+        for (const k of key) {
+            const li = document.createElement("li");
+            const b = document.createElement("b"); b.textContent = k.code; li.appendChild(b);
+            const span = document.createElement("span"); span.textContent = k.title;
+            const small = document.createElement("small"); small.textContent = `${k.papers} papers · ${k.exps} experiments`; span.appendChild(small);
+            li.appendChild(span); ul.appendChild(li);
+        }
+        box.appendChild(ul);
         const legend = document.createElement("div"); legend.className = "jd-chart__legend";
-        legend.textContent = "constellations — projects; a star per experiment, sized by papers; field stars — reviews not yet begun. The chart turns once a night.";
+        legend.textContent = "a star per experiment, sized by papers; field stars are reviews not yet begun. The sky turns behind the constellations, once an hour.";
         box.appendChild(legend);
         colLeft.insertBefore(box, colLeft.firstChild);
     } catch (e) { /* the chart is decoration; never break the page */ }

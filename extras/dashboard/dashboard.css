@@ -2756,9 +2756,9 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 		grid-template-areas: "strip strip strip" "main left right";
 		column-gap: 32px;
 	}
-	.jinome-dash .jd--broadsheet .jd-strip { grid-area: strip; grid-column: auto; }
+	.jinome-dash .jd--broadsheet .jd-strip { grid-area: strip; }
 	.jinome-dash .jd--broadsheet .jd-col--main { grid-area: main; }
-	.jinome-dash .jd--broadsheet .jd-col--left { grid-area: left; grid-column: auto; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
+	.jinome-dash .jd--broadsheet .jd-col--left { grid-area: left; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
 	.jinome-dash .jd--broadsheet .jd-col--right { grid-area: right; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
 	.jinome-dash .jd--broadsheet .jd-col--left .jd-nav { grid-template-columns: minmax(0, 1fr); }
 }
@@ -2780,8 +2780,8 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 		grid-template-areas: "strip strip" "left main" "left right";
 		column-gap: 36px;
 	}
-	.jinome-dash .jd--log .jd-strip { grid-area: strip; grid-column: auto; }
-	.jinome-dash .jd--log .jd-col--left { grid-area: left; grid-column: auto; }
+	.jinome-dash .jd--log .jd-strip { grid-area: strip; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+	.jinome-dash .jd--log .jd-col--left { grid-area: left; }
 	.jinome-dash .jd--log .jd-col--main { grid-area: main; }
 	.jinome-dash .jd--log .jd-col--right { grid-area: right; }
 	.jinome-dash .jd--log .jd-col--left .jd-nav { grid-template-columns: minmax(0, 1fr); }
@@ -2796,10 +2796,17 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 .jinome-dash .jd-chart__star.is-field { animation: none; opacity: .8; }
 .jinome-dash .jd-chart__lbl { font-family: var(--jd-serif); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; fill: var(--text-muted); }
 .jinome-dash .jd-chart__lbl.is-sub { text-transform: none; letter-spacing: .02em; font-style: italic; fill: var(--text-faint); font-size: 11px; }
-.jinome-dash .jd-chart__sky { transform-origin: 50% 50%; transform-box: view-box; animation: jd-rot 720s linear infinite; }
+.jinome-dash .jd-chart__field { transform-origin: 50% 50%; transform-box: view-box; animation: jd-rot 1800s linear infinite; }
+.jinome-dash .jd-chart__key { list-style: none; margin: 8px 0 0; padding: 0; font-size: 14px; line-height: 1.5; }
+.jinome-dash .jd-chart__key li { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--jd-hairline); align-items: baseline; }
+.jinome-dash .jd-chart__key b { font-family: var(--jd-serif); font-weight: 400; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-accent); }
+.jinome-dash .jd-chart__key small { color: var(--text-faint); font-size: 12.5px; margin-left: 6px; }
 .jinome-dash .jd-chart__legend { font-size: 13.5px; font-style: italic; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
 @keyframes jd-rot { to { transform: rotate(360deg); } }
 @keyframes jd-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) {
-	.jinome-dash .jd-plate__img, .jinome-dash .jd-chart__sky, .jinome-dash .jd-chart__star { animation: none; }
+	.jinome-dash .jd-plate__img, .jinome-dash .jd-chart__field, .jinome-dash .jd-chart__star { animation: none; }
 }
+
+/* the frontmatter block is noise on a dashboard — both layouts hide it */
+.jinome-dash .metadata-container { display: none; }
