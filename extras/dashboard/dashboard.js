@@ -1989,6 +1989,47 @@ const excerptOf = async (path) => {
         return t.length > 240 ? t.slice(0, 240).replace(/\s+\S*$/, "") + " …" : t;
     } catch (e) { return ""; }
 };
+/** A run of stories: title, date (and project), opening lines. */
+const stories = (host, list) => {
+    const run = host.createDiv({ cls: "jd-stories" });
+    for (const r of list) {
+        const a = run.createEl("article", { cls: "jd-story" });
+        const h = a.createEl("a", { cls: "jd-story__hl", text: titleOf(r), attr: { role: "button", tabindex: "0" } });
+        const fire = (ev) => { ev.preventDefault(); goto(r.path); };
+        h.addEventListener("click", fire);
+        h.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") fire(ev); });
+        a.createDiv({ cls: "jd-story__meta", text: fmtDay(r.zk) + (r.pids?.length ? " · " + r.pids.join(", ") : "") });
+        const ex = a.createEl("p", { cls: "jd-story__ex" });
+        excerptOf(r.path).then((t) => { if (t) ex.textContent = t; else ex.remove(); });
+    }
+};
+/** A card whose title opens a note — the index the card is a window onto. */
+const linkLabel = (c, path) => {
+    const el = c.section.querySelector(".jd-card__label");
+    if (!el) return;
+    el.addClass("jd-card__label--link");
+    el.setAttribute("role", "link"); el.setAttribute("tabindex", "0"); el.setAttribute("title", "Open " + path.split("/").pop());
+    const fire = (ev) => { ev.preventDefault(); goto(path); };
+    el.addEventListener("click", fire);
+    el.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") fire(ev); });
+};
+if (LAYOUT === "broadsheet") {
+    const stamped = rows.filter((r) => r.stamp).sort((a, b) => b.stamp.localeCompare(a.stamp));
+    const favs = stamped.filter((r) => r.p?.favourite === true || String(r.p?.favourite) === "true").slice(0, 3);
+    const cps = stamped.filter((r) => tagStrings(r.p).includes("Commonplace")).slice(0, 3);
+    const favCard = card(colMain, "favourites", "Favourites");
+    linkLabel(favCard, "Jinome/Introns/Indeces/Favourites");
+    const cpCard = card(colMain, "commonplace", "Commonplace");
+    linkLabel(cpCard, "Jinome/Introns/Indeces/Commonplace");
+    panel("favourites", () => {
+        if (!favs.length) { empty(favCard, "Nothing carries favourite: true yet."); return; }
+        stories(favCard.body, favs);
+    });
+    panel("commonplace", () => {
+        if (!cps.length) { empty(cpCard, "No note is tagged Commonplace yet."); return; }
+        stories(cpCard.body, cps);
+    });
+}
 panel("recent", () => {
     /*
      * Created, never modified. Modification time is unknowable in this vault —
@@ -2002,17 +2043,7 @@ panel("recent", () => {
     }
 
     if (LAYOUT === "broadsheet") {
-        const host = recentCard.body.createDiv({ cls: "jd-stories" });
-        for (const r of recent.slice(0, 6)) {
-            const a = host.createEl("article", { cls: "jd-story" });
-            const h = a.createEl("a", { cls: "jd-story__hl", text: titleOf(r), attr: { role: "button", tabindex: "0" } });
-            const fire = (ev) => { ev.preventDefault(); goto(r.path); };
-            h.addEventListener("click", fire);
-            h.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") fire(ev); });
-            a.createDiv({ cls: "jd-story__meta", text: fmtDay(r.zk) + (r.pids?.length ? " · " + r.pids.join(", ") : "") });
-            const ex = a.createEl("p", { cls: "jd-story__ex" });
-            excerptOf(r.path).then((t) => { if (t) ex.textContent = t; else ex.remove(); });
-        }
+        stories(recentCard.body, recent.slice(0, 3));
         return;
     }
     table(recentCard.body, ["Note", "Created"],
