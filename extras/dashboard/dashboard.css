@@ -2851,3 +2851,14 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 /* --- projects in the layouts: the title is the name; the code shows only when there is no note to name it */
 .jinome-dash .jd--log .jd-proj__item:not(.is-unresolved) .jd-proj__code,
 .jinome-dash .jd--broadsheet .jd-proj__item:not(.is-unresolved) .jd-proj__code { display: none; }
+
+/* --- round 10: the nav's three groups (this week · indices · new) differ in kind, so a rule sits
+       between them — the same fading bronze rule the theme draws under an H1. The row above a
+       rule drops its own hairline so the two lines never stack. */
+.jinome-dash .jd--log .jd-nav__rule, .jinome-dash .jd--broadsheet .jd-nav__rule {
+	height: 1px; margin: 10px 0 6px;
+	background: linear-gradient(90deg, var(--interactive-accent) 0, var(--interactive-accent) 45%, transparent 100%);
+}
+.jinome-dash .jd--log .jd-nav__item:has(+ .jd-nav__rule),
+.jinome-dash .jd--log .jd-nav__item:has(+ .jd-nav__item + .jd-nav__rule),
+.jinome-dash .jd--broadsheet .jd-nav__item:has(+ .jd-nav__rule) { border-bottom: 0; }
