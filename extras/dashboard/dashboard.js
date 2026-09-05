@@ -516,11 +516,9 @@ const root = dv.container.createDiv({ cls: "jd" });
 // element; every card, query and control below is shared.
 const LAYOUT = (() => { try { return String(input?.layout ?? "cards"); } catch (e) { return "cards"; } })();
 root.addClass("jd--" + LAYOUT);
-const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 const dateLine = () => {
     const d = new Date();
-    return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
-        + " · " + d.toLocaleDateString("ko-KR", { weekday: "long" });
+    return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 };
 
 /*
@@ -540,7 +538,7 @@ const dateLine = () => {
  * To change the cover, put a file in Jinome/Introns/Media and edit COVER. Set
  * it to "" for no cover — the page is designed to look right without one.
  */
-const COVER = "Home.webp";
+const COVER = "AVG_20250715 Canton S vF Venerose Dh44-PI 3.png";   // was Home.webp; any file in Media works
 const MEDIA = "Jinome/Introns/Media/";
 
 /*
@@ -671,9 +669,8 @@ if (!root.querySelector(".jd-cover") && TITLE && LAYOUT === "cards") {
 if (LAYOUT === "broadsheet") {
     const m = root.createDiv({ cls: "jd-mast" });
     const ears = m.createDiv({ cls: "jd-mast__ears" });
-    ears.createSpan({ text: `Vol. ${ROMAN[Math.max(0, new Date().getFullYear() - 2025)] ?? "—"} · No. ${rows.length.toLocaleString("en-US")}` });
     ears.createSpan({ text: dateLine() });
-    ears.createSpan({ text: "Jinome · Zettelkasten" });
+    ears.createSpan({ text: `${rows.length.toLocaleString("en-US")} notes` });
     m.createEl("h1", { cls: "jd-mast__name", text: "JINOME" });
     m.createDiv({ cls: "jd-mast__sub", text: "Drosophila · Neurobiology · Genetics" });
     mountEpigraph(m);
@@ -1461,6 +1458,11 @@ panel("projects", () => {
         });
         a.createEl("span", { cls: "jd-proj__dot" });
         a.createEl("span", { cls: "jd-proj__code", text: codeOf(id) });
+        if (r) {
+            a.createEl("span", { cls: "jd-proj__title", text: titleOf(r) });
+            const st = asArray(r.p?.status).map(String).join(" ");
+            if (st) a.createEl("span", { cls: "jd-proj__status", text: st });
+        }
         if (!r) a.addClass("is-unresolved");
         const fire = (ev) => { ev.preventDefault(); if (r) goto(r.path); };
         a.addEventListener("click", fire);
@@ -1958,8 +1960,35 @@ if (LAYOUT === "log") {
         colLeft.insertBefore(box, colLeft.firstChild);
     } catch (e) { /* the chart is decoration; never break the page */ }
 }
-const recentCard = card(colRight, "recent", "Recent");
-
+const recentCard = card(LAYOUT === "broadsheet" ? colMain : colRight, "recent", LAYOUT === "broadsheet" ? "Latest" : "Recent");
+/** The opening prose of a note, ~240 characters: frontmatter cut by the metadata cache's own
+ *  offset, then only lines that read as sentences — no tables, rules, headings, embeds, empty
+ *  list stubs or callout headers. */
+const excerptOf = async (path) => {
+    try {
+        const f = app.vault.getAbstractFileByPath(path);
+        if (!f) return "";
+        let s = await app.vault.cachedRead(f);
+        const fm = app.metadataCache.getFileCache(f)?.frontmatterPosition;
+        if (fm?.end?.offset) s = s.slice(fm.end.offset);
+        else s = s.replace(/^﻿?---\r?\n[\s\S]*?\r?\n---\s*/, "");
+        s = s.replace(/```[\s\S]*?```/g, " ").replace(/<%[\s\S]*?%>/g, " ").replace(/%%[\s\S]*?%%/g, " ");
+        const out = [];
+        for (let line of s.split(/\r?\n/)) {
+            line = line.trim();
+            if (!line) continue;
+            if (/^(\||#|---|\*\*\*|>|!\[\[|<|\d+\.\s*$|[-*+]\s*$|[-*+]\s+\[[ xX]\]\s*$)/.test(line)) continue;
+            line = line.replace(/^([-*+]|\d+\.)\s+/, "").replace(/^\[[ xX]\]\s*/, "");
+            line = line.replace(/!\[\[[^\]]*\]\]/g, " ").replace(/\[\[([^\]|]*)(?:\|([^\]]*))?\]\]/g, (m, a, b) => b ?? a);
+            line = line.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[*_`=~]+/g, "").replace(/\s+/g, " ").trim();
+            if (line.length < 8) continue;
+            out.push(line);
+            if (out.join(" ").length >= 240) break;
+        }
+        const t = out.join(" ");
+        return t.length > 240 ? t.slice(0, 240).replace(/\s+\S*$/, "") + " …" : t;
+    } catch (e) { return ""; }
+};
 panel("recent", () => {
     /*
      * Created, never modified. Modification time is unknowable in this vault —
@@ -1972,6 +2001,20 @@ panel("recent", () => {
         return;
     }
 
+    if (LAYOUT === "broadsheet") {
+        const host = recentCard.body.createDiv({ cls: "jd-stories" });
+        for (const r of recent.slice(0, 6)) {
+            const a = host.createEl("article", { cls: "jd-story" });
+            const h = a.createEl("a", { cls: "jd-story__hl", text: titleOf(r), attr: { role: "button", tabindex: "0" } });
+            const fire = (ev) => { ev.preventDefault(); goto(r.path); };
+            h.addEventListener("click", fire);
+            h.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") fire(ev); });
+            a.createDiv({ cls: "jd-story__meta", text: fmtDay(r.zk) + (r.pids?.length ? " · " + r.pids.join(", ") : "") });
+            const ex = a.createEl("p", { cls: "jd-story__ex" });
+            excerptOf(r.path).then((t) => { if (t) ex.textContent = t; else ex.remove(); });
+        }
+        return;
+    }
     table(recentCard.body, ["Note", "Created"],
         recent.map((r) => [link(r), fmtDay(r.zk)]));
 });

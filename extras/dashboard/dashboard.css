@@ -2752,13 +2752,13 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 .jinome-dash .jd--broadsheet .jd-card__label { border-bottom: 1px dotted var(--jd-hairline); padding-bottom: 6px; }
 @container jd (min-width: 900px) {
 	.jinome-dash .jd--broadsheet .jd-grid {
-		grid-template-columns: 1.25fr 1fr .8fr;
-		grid-template-areas: "strip strip strip" "main left right";
+		grid-template-columns: 1fr 1.3fr .8fr;
+		grid-template-areas: "strip strip strip" "left main right";
 		column-gap: 32px;
 	}
 	.jinome-dash .jd--broadsheet .jd-strip { grid-area: strip; }
-	.jinome-dash .jd--broadsheet .jd-col--main { grid-area: main; }
-	.jinome-dash .jd--broadsheet .jd-col--left { grid-area: left; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
+	.jinome-dash .jd--broadsheet .jd-col--main { grid-area: main; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
+	.jinome-dash .jd--broadsheet .jd-col--left { grid-area: left; }
 	.jinome-dash .jd--broadsheet .jd-col--right { grid-area: right; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
 	.jinome-dash .jd--broadsheet .jd-col--left .jd-nav { grid-template-columns: minmax(0, 1fr); }
 }
@@ -2777,14 +2777,16 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 @container jd (min-width: 900px) {
 	.jinome-dash .jd--log .jd-grid {
 		grid-template-columns: minmax(340px, 440px) minmax(0, 1fr);
-		grid-template-areas: "strip strip" "left main" "left right";
+		grid-template-areas: "strip strip" "left main" "left right" "left .";
+		grid-template-rows: auto auto auto 1fr;   /* the left column's extra height lands in the empty last row */
 		column-gap: 36px;
 	}
 	.jinome-dash .jd--log .jd-strip { grid-area: strip; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 	.jinome-dash .jd--log .jd-col--left { grid-area: left; }
 	.jinome-dash .jd--log .jd-col--main { grid-area: main; }
-	.jinome-dash .jd--log .jd-col--right { grid-area: right; }
-	.jinome-dash .jd--log .jd-col--left .jd-nav { grid-template-columns: minmax(0, 1fr); }
+	.jinome-dash .jd--log .jd-col--right { grid-area: right; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--jd-gap); align-items: start; }
+	.jinome-dash .jd--log .jd-col--right > [data-panel="recent"] { grid-column: 1 / -1; }
+	.jinome-dash .jd--log .jd-col--left .jd-nav { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 24px; }
 }
 .jinome-dash .jd-chart { margin: 0 0 var(--jd-gap); }
 .jinome-dash .jd-chart svg { display: block; width: 100%; aspect-ratio: 1; border: 1px solid var(--jd-hairline); background: radial-gradient(circle at 50% 50%, var(--background-primary-alt), var(--background-primary) 72%); }
@@ -2810,3 +2812,26 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 
 /* the frontmatter block is noise on a dashboard — both layouts hide it */
 .jinome-dash .metadata-container { display: none; }
+
+/* --- nav and projects sized to the space the layouts give them ------------ */
+.jinome-dash .jd--log .jd-nav, .jinome-dash .jd--broadsheet .jd-nav { gap: 0; }
+.jinome-dash .jd--log .jd-nav__rule, .jinome-dash .jd--broadsheet .jd-nav__rule { grid-column: 1 / -1; }
+.jinome-dash .jd--log .jd-nav__item, .jinome-dash .jd--broadsheet .jd-nav__item { padding: 9px 2px; border-radius: 0; border-bottom: 1px solid var(--jd-hairline); }
+.jinome-dash .jd--log .jd-nav__label, .jinome-dash .jd--broadsheet .jd-nav__label { font-size: 16px; }
+.jinome-dash .jd-proj__title, .jinome-dash .jd-proj__status { display: none; }
+.jinome-dash .jd--log .jd-proj__item, .jinome-dash .jd--broadsheet .jd-proj__item { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 9px 2px; border-radius: 0; border-bottom: 1px solid var(--jd-hairline); }
+.jinome-dash .jd--log .jd-proj__item--sub, .jinome-dash .jd--broadsheet .jd-proj__item--sub { padding-left: 22px; }
+.jinome-dash .jd--log .jd-proj__title, .jinome-dash .jd--broadsheet .jd-proj__title { display: inline; font-size: 16px; color: var(--text-normal); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jinome-dash .jd--log .jd-proj__status, .jinome-dash .jd--broadsheet .jd-proj__status { display: inline; margin-left: auto; font-size: 13px; color: var(--text-faint); white-space: nowrap; }
+
+/* --- the broadsheet's stories: the latest notes with their opening lines ---- */
+.jinome-dash .jd-stories { display: grid; gap: 14px; }
+.jinome-dash .jd-story { padding: 0 0 12px; border-bottom: 1px solid var(--jd-hairline); }
+.jinome-dash .jd-story:last-child { border-bottom: 0; }
+.jinome-dash .jd-story__hl { display: block; font-family: var(--jd-serif); font-size: 21px; line-height: 1.2; color: var(--text-normal); text-decoration: none; cursor: pointer; text-wrap: balance; }
+.jinome-dash .jd-story__hl:hover { color: var(--text-accent); }
+.jinome-dash .jd-story__meta { font-size: 13px; color: var(--text-faint); font-style: italic; margin: 2px 0 6px; }
+.jinome-dash .jd-story__ex { margin: 0; font-size: 15.5px; line-height: 1.6; color: var(--text-muted); }
+
+/* the count badge on the work table sits above the table box and got clipped by overflow-x */
+.jinome-dash .jd--log .jd-work .jd-table, .jinome-dash .jd--broadsheet .jd-work .jd-table { padding-top: 4px; }
