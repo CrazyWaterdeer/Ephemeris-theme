@@ -1,0 +1,2805 @@
+/* ===========================================================================
+   Jinome Dashboard — "Petri"
+   Install to: .obsidian/snippets/dashboard.css   (snippets load only there)
+   Pairs with: Vector/dashboard.js + Vector/Dashboard.md
+               (note frontmatter: cssclasses: [jinome-dash])
+
+   WHY THE FILE LOOKS LIKE THIS
+   ---------------------------------------------------------------------------
+   The whole dashboard body is ONE dataviewjs block that builds its own DOM.
+   So every layout rule here hangs off .jd (the root div dashboard.js creates),
+   never off top-level markdown blocks: a grid on the note wrapper only works
+   in Reading view, because Live Preview turns each source line into its own
+   .cm-line. A grid INSIDE the single rendered block works in both modes.
+
+   Breakpoints are CSS *container* queries on .jd, not media queries — the
+   dashboard has to reflow when Jin splits the pane, not when he resizes the
+   window.
+
+   PALETTE — six values, zero colour literals:
+     ground   var(--background-primary)
+     card     var(--background-primary-alt, var(--background-secondary))
+     hairline var(--background-modifier-border) -> ...-border-hover
+     tint     rgba(var(--mono-rgb-100), .04)   flips light/dark for free,
+              because core swaps --mono-rgb-100 between 0,0,0 and 255,255,255
+     accent   fill --interactive-accent · text --text-accent · wash
+              hsla(var(--interactive-accent-hsl), .12)
+     semantic red = overdue, green = done. No other hue anywhere.
+
+   Two accent notes, both deliberate:
+   1. Jin's accentColor is #4a0e4e ~ hsl(296 70% 18%): a near-black plum that
+      Obsidian sets as an INLINE style on <body>, so it beats Velocity's own
+      accent. As a FILL under --text-on-accent it is fine; as a foreground
+      NOTHING core derives from it is usable, --text-accent included. Verified
+      against the installed bundles, not assumed:
+        · Velocity does not define --text-accent at all — core does, and core's
+          dark rule is `--text-accent: var(--color-accent-1)`.
+        · Velocity DOES redefine --color-accent-1, as an ALPHA step, not a
+          lightness one: color-mix(in oklch, var(--color-accent) 100%,
+          transparent 10%). So in dark --text-accent is the same near-black
+          plum at 90% opacity, i.e. it blends further INTO the ground.
+      Measured on Velocity's dark card: --text-accent 1.03 : 1. That is not
+      "low contrast", it is the background. So the accent ink is rebuilt from
+      --accent-h/--accent-s with a forced lightness (--jd-accent-l, flipped for
+      light mode) in the token block below. Never reach for --text-accent,
+      --color-accent, --color-accent-1 or --interactive-accent as a foreground.
+   2. Colour fallbacks chain to another VARIABLE only. var(--x, #1e1e1e) would
+      be a hardcoded dark value that survives into light mode. Size, radius and
+      duration fallbacks may be literals — those are theme-independent.
+
+   Velocity specifics this file has to out-specify:
+     · `body .markdown-rendered table tr td` (0,1,3) draws a border-left on
+       every cell; `body .markdown-rendered table thead tr > th` (0,1,4) adds a
+       2px header rule. Table rules below carry >= 2 classes to win cleanly.
+     · Dataview's styles.css sets th { font-size: larger; font-weight: 700;
+       border-bottom: solid } and wraps .dataview.small-text in literal
+       parentheses via ::before/::after — both overridden on purpose.
+     · Velocity's radius scale is 8 steps and -sm/-ml/-xxl are Velocity-only,
+       so they get core-safe px fallbacks.
+     · Velocity's base font-weight is 450; weights use its --font-* tokens.
+
+   CLASS CONTRACT (shared with dashboard.js — keep the three files in step)
+     div.jd                                     root, the query container
+     div.jd-grid > div.jd-col.jd-col--left|--main|--right
+     div.jd-strip > div.jd-stat > span.jd-stat__n + span.jd-stat__l
+     section.jd-card[data-panel] > div.jd-card__label + div.jd-card__body
+     div.jd-tabs > button.jd-tab[data-tab][aria-selected]
+     table.jd-cal · td.jd-cal__wk · td.jd-cal__day[data-today]
+                  · span.jd-cal__dot · span.jd-cal__more
+     a.jd-nav__item > span.jd-nav__icon + span.jd-nav__label
+     div.jd-wx > .jd-wx__now + .jd-wx__days
+     div.jd-table        (dv.el target)
+     div.jd-table.jd-action > table.jd-action__table   (actionTable: real DOM,
+                     so the controls in it can carry listeners)
+       th/td.jd-action__check > input.jd-check[type=checkbox]  writes `finished`
+       td.jd-action__title                              the markdown link cell
+       td.jd-action__date  > input.jd-date[type=date][data-empty]
+                                              writes `due` (#Prep) / `scheduled`
+     p.jd-empty          (one line of next action, never "no results")
+     [data-empty="true"] on a card collapses it
+
+   ALSO STYLED — verified against the shipped Vector/dashboard.js, which is
+   the authority wherever it and the contract above disagree:
+     panels          data-panel = work | nav | projects | calendar |
+                     weather | recent  (the <780px order rules key off
+                     calendar and weather by name, with :has() fallbacks)
+     .jd-work        the work card's swappable tab body -- Today / This week /
+                     All / Unscheduled all render into it. It carries
+                     data-empty itself so an empty tab never collapses the
+                     tab strip
+     .jd-cal__date   the date number (NOT __num), block, above the dots
+     .jd-cal__dots   flex wrapper; .jd-cal__more lives inside it
+     .jd-cal__dot--due|--sch|--fin|--new             KIND_ORDER, see §9
+     .jd-cal__day--due / [data-deadline] / [data-due]  all three mark a
+                     deadline; the red edge bar fires on any of them
+     .jd-cal__day[data-out] / [data-today]
+     .jd-cal__head/__title/__nav/__host              month stepper + host
+     .jd-stat[role="button"][data-zero][data-tone]   muted zeros, tinted tones
+     .jd-row--overdue + tr[data-overdue="true"]      slipped row
+     .jd-sub                                         "↳" subproject marker
+     .jd-wx__now/__icon/__temp/__meta/__desc/__hum/__days/__day/__dow/__range
+     .jd-wx[data-empty="true"]                       weather failure state
+     quote bar       .callout[data-callout="quote"][data-callout-metadata=
+                     "jd-quote"] — how Dashboard.md writes it — and .jd-quote
+   Unused by today's dashboard.js but supported, so the JS can reach for them
+   without a CSS change: .jd-cover/__title/__sub (a bare ![[x.png|banner]]
+   embed is styled either way), .jd-nav__item--primary, .jd-nav__hint,
+   .jd-card__count, .jd-card__aside, .jd-card__body--scroll, .jd-quote__cite,
+   .jd-pill(--overdue|--done|--accent), .jd-dday, .jd-num, .jd-rule,
+   .jd-cal__day[data-weekend], .jd-tab__n.
+   =========================================================================== */
+
+
+/* ---------------------------------------------------------------------------
+   1. PROLOGUE — let the dashboard out of the note column
+   The vault runs with readableLineLength off, so this is belt-and-braces:
+   setting --file-line-width wins by inheritance (no specificity fight with
+   core's .is-readable-line-width rule) and max-width: none covers the rest.
+--------------------------------------------------------------------------- */
+.jinome-dash {
+	--file-line-width: 100%;
+	--jd-edge: var(--size-4-6, 24px);   /* the sizer's inline padding */
+}
+
+.jinome-dash .cm-sizer,
+.jinome-dash .markdown-preview-sizer {
+	max-width: none;
+	width: 100%;
+	padding-inline: var(--jd-edge);
+}
+
+/* Properties block is noise on a dashboard. */
+.jinome-dash .metadata-container {
+	display: none;
+}
+
+/* The dashboard is one dataviewjs block; its Live-Preview wrapper must not
+   draw a box around the entire page. :has(.jd) keeps every OTHER embedded
+   block in the note untouched. */
+.jinome-dash .cm-embed-block:has(.jd),
+/* .cm-embed-block written twice on purpose. Core's hover rule is
+   `.markdown-source-view.mod-cm6 .cm-embed-block:not(.cm-table-widget,
+   .cm-lang-base):hover` = (0,5,0) and sets box-shadow: var(
+   --embed-block-shadow-hover). A single class here is (0,4,0) and loses, so
+   hovering anywhere on the dashboard in Live Preview drew exactly the ring
+   this rule exists to remove. Doubling the class ties at (0,5,0), and snippets
+   load after app.css, so later source order settles it. */
+.jinome-dash .cm-embed-block.cm-embed-block:hover:has(.jd) {
+	padding: 0;
+	border: none;
+	box-shadow: none;
+	background: none;
+}
+.jinome-dash .cm-embed-block:has(.jd) .edit-block-button {
+	z-index: 2;
+}
+/* Reading-view wrapper of the same block. */
+.jinome-dash .block-language-dataviewjs:has(.jd) {
+	overflow: visible;
+}
+/* dv.el / renderCompactMarkdown emit an inline <span> wrapper; without this
+   every markdown table the dashboard renders would sit in an inline box. */
+.jinome-dash .jd > span,
+.jinome-dash .jd-table > span,
+.jinome-dash .jd-card__body > span {
+	display: block;
+}
+
+
+/* ---------------------------------------------------------------------------
+   2. TOKENS
+   On .jinome-dash, not on .jd: the cover banner is a markdown embed that sits
+   OUTSIDE the dataviewjs block, so tokens declared on .jd would not reach it
+   and every var() over there would fall back to the initial value.
+--------------------------------------------------------------------------- */
+.jinome-dash {
+	/* type — remote webfonts are CSP-blocked and "Noto Sans KR" is not
+	   registered on this machine, so every stack is locally resolvable */
+	--jd-serif: Georgia, Constantia, "HCR Batang", Batang, serif;
+	--jd-sans: "Noto Sans", "Malgun Gothic", -apple-system, sans-serif;
+	--jd-mono: "Fira Code", Cascadia Mono, Consolas, "Malgun Gothic", monospace;
+
+	/* surfaces */
+	--jd-ground: var(--background-primary);
+	--jd-card: var(--background-primary-alt, var(--background-secondary));
+	--jd-hairline: var(--background-modifier-border);
+	--jd-hairline-hover: var(--background-modifier-border-hover, var(--background-modifier-border));
+	--jd-tint: rgba(var(--mono-rgb-100), 0.04);
+	--jd-tint-strong: rgba(var(--mono-rgb-100), 0.07);
+
+	/* accent — lightness-corrected, and it has to be.
+	   Jin's accentColor is #4a0e4e and Obsidian writes it to --accent-h/s/l on
+	   <body> UNCLAMPED (setAccentColor, app.js), so every core accent token is a
+	   near-black plum. Measured against Velocity's dark ground #1f1f21:
+	     --text-accent               #520f5a  1.23 : 1
+	     --interactive-accent        #4a0e4e  1.15 : 1
+	     hsla(--interactive-accent-hsl,.12)   1.00 : 1   (literally no tint)
+	   Those three carry the today ring, the selected-tab bar, the scheduled dot,
+	   the accent stat number and every focus outline — all of which disappear.
+	   So keep Jin's hue and saturation and force a legible lightness: 5.13 : 1 on
+	   the dark ground, 4.64 : 1 on a card. Still zero colour literals — h and s
+	   stay core variables, and a lightness stop is a number, like the alpha
+	   already in the wash. --jd-accent-fill is left on the core token because it
+	   is a FILL, whose text uses --text-on-accent (core already inverts that for
+	   a dark accent), and because nothing dashboard.js emits consumes it. */
+	--jd-accent-l: 62%;
+	--jd-accent-fill: var(--interactive-accent);
+	--jd-accent-text: hsl(var(--accent-h, 258), var(--accent-s, 88%), var(--jd-accent-l));
+	--jd-accent-wash: hsla(var(--accent-h, 258), var(--accent-s, 88%), var(--jd-accent-l), 0.14);
+
+}
+
+/* The one place a theme has to be named. Everything else in this file rides on
+   core tokens that core itself swaps between .theme-dark and .theme-light; the
+   accent ink cannot, because it is derived from a fixed hue and needs the
+   opposite end of the lightness range on a near-white ground (62% would be
+   3.10 : 1 there, 42% is 5.57 : 1). */
+.theme-light .jinome-dash {
+	--jd-accent-l: 42%;
+}
+
+.jinome-dash {
+	/* semantic — the only other hues allowed */
+	--jd-overdue: rgb(var(--color-red-rgb));
+	--jd-overdue-wash: rgba(var(--color-red-rgb), 0.12);
+	--jd-done: rgb(var(--color-green-rgb));
+	--jd-done-wash: rgba(var(--color-green-rgb), 0.12);
+
+	/* metrics */
+	--jd-gap: var(--size-4-5, 20px);
+	--jd-pad: var(--size-4-5, 20px);
+	--jd-pad-tight: var(--size-4-3, 12px);
+	--jd-radius: var(--radius-ml, 12px);
+	--jd-radius-sm: var(--radius-s, 6px);
+	--jd-radius-lg: var(--radius-l, 16px);
+	--jd-cover-h: 190px;
+	--jd-label-size: 12px;
+	--jd-track: 0.08em;
+	--jd-dur: var(--anim-duration-fast, 140ms);
+}
+
+.jinome-dash .jd {
+	/* the query container: every breakpoint below reads THIS element's width,
+	   so a split pane reflows the dashboard the same way a narrow window does */
+	container: jd / inline-size;
+
+	font-family: var(--jd-sans);
+	font-weight: var(--font-normal, 400);
+	color: var(--text-normal);
+	line-height: 1.5;
+}
+
+
+/* ---------------------------------------------------------------------------
+   3. GRID
+   Base (narrowest) = one column with the columns flattened via display:
+   contents, so individual CARDS can be reordered: work -> calendar -> nav ->
+   weather. Ordering by column alone cannot do that, because the calendar and
+   the weather widget both live in the right column.
+--------------------------------------------------------------------------- */
+.jinome-dash .jd-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--jd-gap);
+	align-items: start;
+}
+
+.jinome-dash .jd-col {
+	display: flex;
+	flex-direction: column;
+	gap: var(--jd-gap);
+	min-width: 0;
+}
+
+/* Full-width items, whether dashboard.js puts them in .jd-grid or beside it. */
+.jinome-dash .jd-grid > .jd-strip,
+.jinome-dash .jd-grid > .jd-cover,
+.jinome-dash .jd-grid > .jd-quote {
+	grid-column: 1 / -1;
+	/* These three carry their own bottom margin so they still separate correctly
+	   when dashboard.js renders them OUTSIDE the grid (the cover and the quote
+	   bar are markdown blocks in the note). Inside the grid, that margin lands
+	   on top of `gap` and the strip floats 40px above the columns instead of
+	   20px — so in-grid, the gap alone does the spacing. */
+	margin-bottom: 0;
+}
+
+/* Every selector inside the @container blocks below repeats the .jinome-dash
+   prefix ON PURPOSE: a container query adds no specificity of its own, so a
+   bare `.jd-grid` (0,1,0) would lose to the base `.jinome-dash .jd-grid`
+   (0,2,0) and the layout would never change. Equal specificity + later source
+   order is what makes the breakpoints apply. */
+
+/* --- < 780px : single column, explicit card order ------------------------ */
+@container jd (max-width: 779.98px) {
+	.jinome-dash .jd-col {
+		display: contents;   /* cards become direct grid items -> orderable */
+	}
+	/* order on a scale of 10 so extra cards can be slotted between tiers.
+	   The two data-panel rules are (0,3,0) and so beat the column rules —
+	   that is how the calendar and the weather widget escape the right
+	   column's block and land in the work -> calendar -> nav -> weather
+	   reading order. */
+	.jinome-dash .jd-strip,
+	.jinome-dash .jd-cover,
+	.jinome-dash .jd-quote { order: 0; }
+	.jinome-dash .jd-col--main > * { order: 10; }
+	.jinome-dash .jd-card[data-panel="calendar"],
+	.jinome-dash .jd-card:has(.jd-cal) { order: 20; }
+	.jinome-dash .jd-col--left > * { order: 30; }
+	.jinome-dash .jd-col--right > * { order: 35; }
+	.jinome-dash .jd-card[data-panel="weather"],
+	.jinome-dash .jd-card:has(.jd-wx) { order: 40; }
+}
+
+/* --- >= 780px : main + right, nav becomes a full-width icon band --------- */
+@container jd (min-width: 780px) {
+	.jinome-dash .jd-grid {
+		grid-template-columns: minmax(0, 1fr) 300px;
+	}
+	.jinome-dash .jd-col--left {
+		grid-column: 1 / -1;   /* the nav band sits above the two columns */
+	}
+	.jinome-dash .jd-col--left .jd-nav {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+
+/* --- >= 1150px : the full three-column dashboard ------------------------- */
+@container jd (min-width: 1150px) {
+	.jinome-dash .jd-grid {
+		grid-template-columns: 260px minmax(0, 1fr) 300px;
+	}
+	.jinome-dash .jd-col--left {
+		grid-column: auto;
+	}
+	.jinome-dash .jd-col--left .jd-nav {
+		grid-template-columns: minmax(0, 1fr);   /* back to a vertical list */
+	}
+}
+
+
+/* ---------------------------------------------------------------------------
+   4. COVER + TITLE + QUOTE BAR
+   CSS url() cannot reference a vault file: attachments resolve through an
+   app://<per-install-random-host>/ URL. So the cover is a real markdown embed
+   — ![[something.png|banner]] — and is styled through its alt text.
+
+   Not bled past the sizer padding on purpose: in Live Preview the embed lives
+   inside a .cm-line, and a negative inline margin there can push a horizontal
+   scrollbar onto the editor. Full-bleed here means "the full dashboard width".
+--------------------------------------------------------------------------- */
+.jinome-dash .internal-embed:has(> img[alt="banner"]),
+.jinome-dash .image-embed:has(> img[alt="banner"]),
+.jinome-dash .jd-cover {
+	position: relative;
+	display: block;
+	width: 100%;
+	margin-block: 0 var(--jd-gap);
+	border-radius: var(--jd-radius-lg);
+	overflow: hidden;
+	line-height: 0;   /* kill the inline-image descender gap */
+}
+
+.jinome-dash img[alt="banner"] {
+	display: block;
+	width: 100%;
+	height: var(--jd-cover-h);
+	object-fit: cover;
+	border-radius: inherit;
+	/* mild, theme-independent: the scrim below does the contrast work */
+	filter: brightness(0.86) saturate(0.92);
+}
+
+/* Scrim. --background-modifier-cover is dark in BOTH themes (core: rgba(10,10,
+   10,.4) in dark; Velocity light: a color-mix of --color-base-90), which is why
+   it is used here instead of a black literal or rgba(var(--mono-rgb-0)) —
+   mono-rgb-0 inverts between themes and would wash the image out in dark. */
+.jinome-dash .internal-embed:has(> img[alt="banner"])::after,
+.jinome-dash .image-embed:has(> img[alt="banner"])::after,
+.jinome-dash .jd-cover::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background: linear-gradient(to top, var(--background-modifier-cover), transparent 68%);
+}
+
+/* Title laid over the cover (only when dashboard.js builds the .jd-cover
+   wrapper itself; a bare markdown banner just renders as a clean band). */
+.jinome-dash .jd-cover__title {
+	position: absolute;
+	left: var(--size-4-6, 24px);
+	right: var(--size-4-6, 24px);
+	bottom: var(--size-4-5, 20px);
+	z-index: 1;
+	margin: 0;
+	font-family: var(--jd-serif);
+	font-weight: var(--font-semibold, 600);
+	font-size: clamp(26px, 4.2cqi, 44px);
+	line-height: 1.15;
+	letter-spacing: -0.015em;
+	color: var(--text-on-accent);   /* white in both themes, over the scrim */
+	text-wrap: balance;
+}
+.jinome-dash .jd-cover__sub {
+	position: absolute;
+	left: var(--size-4-6, 24px);
+	bottom: calc(var(--size-4-5, 20px) - 2px);
+	z-index: 1;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: var(--jd-track);
+	color: var(--text-on-accent);
+	opacity: 0.72;
+}
+
+/* The note's own inline title, if Jin leaves it visible. */
+/* The bare `---` on the first body line. Every note in Jinome/Introns/Indeces
+   carries it, so Dashboard.md keeps the house tic — but unstyled it lands as
+   Obsidian's default 2px rule right under the inline title. Rendered here as
+   the same hairline .jd-rule uses, so it reads as a title underline instead of
+   a stray divider. dashboard.js never emits <hr>, so this selector is exact. */
+.jinome-dash hr {
+	height: 1px;
+	margin: var(--jd-pad-tight) 0 var(--jd-gap);
+	border: none;
+	background: var(--jd-hairline);
+}
+
+.jinome-dash .inline-title {
+	font-family: var(--jd-serif);
+	font-weight: var(--font-semibold, 600);
+	letter-spacing: -0.015em;
+}
+
+/* Quote bar.
+   Dashboard.md writes it as `> [!quote|jd-quote]`, so what actually renders is
+   an Obsidian callout carrying the metadata token — the div.jd-quote form is
+   kept as well for anything dashboard.js builds itself. The callout's title
+   row ("Quote" + icon) is chrome from a different design language and is
+   hidden; the tint, the serif italic and the padding come from the shared rule
+   below. Written as one selector list so the two forms can never drift. */
+.jinome-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"] > .callout-title {
+	display: none;
+}
+.jinome-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"] > .callout-content > :first-child {
+	margin-top: 0;
+}
+.jinome-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"] > .callout-content > :last-child {
+	margin-bottom: 0;
+}
+
+.jinome-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"],
+.jinome-dash .jd-quote {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--size-4-2, 8px) var(--size-4-4, 16px);
+	margin: 0 0 var(--jd-gap);
+	padding: var(--jd-pad-tight) var(--jd-pad);
+	background: var(--jd-tint);   /* replaces the callout's own colour wash */
+	border: none;
+	border-radius: var(--jd-radius-sm);
+	box-shadow: none;
+	font-family: var(--jd-serif);
+	font-style: italic;
+	font-size: 15px;
+	line-height: 1.65;
+	color: var(--text-muted);
+}
+.jinome-dash .jd-quote__cite {
+	margin-left: auto;
+	font-family: var(--jd-sans);
+	font-style: normal;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: var(--jd-track);
+	color: var(--text-faint);
+	white-space: nowrap;
+}
+
+
+/* ---------------------------------------------------------------------------
+   5. STATS STRIP
+   One hairline-divided band: the 1px grid gap over a hairline background
+   paints the dividers, so no per-cell borders and no double lines at wrap.
+--------------------------------------------------------------------------- */
+.jinome-dash .jd-strip {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+	gap: 1px;
+	/* No bottom margin: the strip is a child of .jd-grid, which already puts
+	   var(--jd-gap) between rows, so a margin here spends the gap twice and
+	   floats the strip 40px above the first card. Kept as a declaration rather
+	   than deleted so the strip still spaces itself if it is ever lifted out of
+	   the grid. */
+	margin: 0;
+	background: var(--jd-hairline);
+	border: 1px solid var(--jd-hairline);
+	border-radius: var(--jd-radius);
+	overflow: hidden;
+}
+
+.jinome-dash .jd-stat {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding: var(--jd-pad-tight) var(--size-4-4, 16px);
+	background: var(--jd-card);
+	color: inherit;
+	text-decoration: none;
+	transition: background-color var(--jd-dur) ease;
+}
+.jinome-dash a.jd-stat,
+.jinome-dash .jd-stat[data-nav] {
+	cursor: pointer;
+}
+/* dashboard.js makes every stat a keyboard-operable role="button" */
+.jinome-dash .jd-stat[role="button"],
+.jinome-dash a.jd-stat {
+	cursor: pointer;
+}
+/* hover drops the cell back to the ground colour, so the strip reads as a row
+   of keys being pressed rather than a row of tinted boxes */
+.jinome-dash .jd-stat[role="button"]:hover,
+.jinome-dash a.jd-stat:hover {
+	background: var(--jd-ground);
+}
+.jinome-dash .jd-stat:focus-visible {
+	outline: 2px solid var(--jd-accent-text);
+	outline-offset: -2px;
+}
+
+/* A zero is the honest state of this vault today (0 scheduled, 0 due), so it
+   is shown and muted rather than hidden — the tooltip dashboard.js attaches
+   says which frontmatter key would make it count. */
+.jinome-dash .jd-stat[data-zero="true"] .jd-stat__n {
+	color: var(--text-faint);
+	font-weight: var(--font-normal, 400);
+}
+.jinome-dash .jd-stat[data-tone="overdue"] .jd-stat__n { color: var(--jd-overdue); }
+.jinome-dash .jd-stat[data-tone="done"] .jd-stat__n { color: var(--jd-done); }
+.jinome-dash .jd-stat[data-tone="accent"] .jd-stat__n { color: var(--jd-accent-text); }
+
+.jinome-dash .jd-stat__n {
+	font-family: var(--jd-mono);
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: "tnum" 1;
+	font-size: 25px;
+	font-weight: var(--font-medium, 500);
+	line-height: 1.1;
+	letter-spacing: -0.02em;
+	color: var(--text-normal);
+}
+.jinome-dash .jd-stat__l {
+	overflow: hidden;
+	font-size: 10.5px;
+	font-weight: var(--font-semibold, 600);
+	text-transform: uppercase;
+	letter-spacing: var(--jd-track);
+	color: var(--text-faint);
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+
+/* ---------------------------------------------------------------------------
+   6. CARDS
+--------------------------------------------------------------------------- */
+.jinome-dash .jd-card {
+	min-width: 0;
+	padding: var(--jd-pad);
+	background: var(--jd-card);
+	border: 1px solid var(--jd-hairline);
+	border-radius: var(--jd-radius);
+	/* restrained hover: the border only. No lift, no shadow bloom. */
+	transition: border-color var(--jd-dur) ease;
+}
+.jinome-dash .jd-card:hover {
+	border-color: var(--jd-hairline-hover);
+}
+
+.jinome-dash .jd-card__label {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	margin: 0 0 var(--jd-pad-tight);
+	font-size: var(--jd-label-size);
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: var(--jd-track);
+	line-height: 1.2;
+	color: var(--text-faint);
+}
+.jinome-dash .jd-card__label .svg-icon {
+	width: 14px;
+	height: 14px;
+}
+/* count chip in the label row */
+.jinome-dash .jd-card__count {
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: var(--jd-tint);
+	font-family: var(--jd-mono);
+	font-variant-numeric: tabular-nums;
+	font-size: 10px;
+	font-weight: var(--font-medium, 500);
+	letter-spacing: 0;
+	color: var(--text-muted);
+}
+/* anything pushed to the right of the label row (tabs, a "more" link) */
+.jinome-dash .jd-card__label > .jd-card__aside,
+.jinome-dash .jd-card__label > .jd-tabs {
+	margin-left: auto;
+}
+/* tabs hosted inside the label row lose the strip's own rule and spacing */
+.jinome-dash .jd-card__label > .jd-tabs {
+	margin-bottom: 0;
+	border-bottom: none;
+}
+.jinome-dash .jd-card__label > .jd-tabs .jd-tab {
+	padding: 2px 8px;
+	font-size: 11px;
+}
+.jinome-dash .jd-card__label > .jd-tabs .jd-tab[aria-selected="true"]::after {
+	bottom: 0;
+}
+
+.jinome-dash .jd-card__body { min-width: 0; }
+.jinome-dash .jd-card__body > :first-child { margin-top: 0; }
+.jinome-dash .jd-card__body > :last-child { margin-bottom: 0; }
+.jinome-dash .jd-card__body--scroll {
+	max-height: 360px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+/* A zero-row card collapses instead of sitting there as an empty box — but
+   ONLY if it has nothing to say. dashboard.js's empty() sets data-empty AND
+   writes a p.jd-empty in the same breath, so an unguarded `display: none`
+   here would swallow every next-action line on the page, which on day one is
+   most of the dashboard (0 scheduled, no open due dates). The
+   :has() guard is the whole difference between a teaching page and a blank
+   one: prose stays, a genuinely mute card collapses. */
+.jinome-dash .jd-card[data-empty="true"]:not(:has(.jd-empty)),
+.jinome-dash .jd-col[data-empty="true"]:not(:has(.jd-empty)) {
+	display: none;
+}
+
+/* Empty state: one line of next action. Quiet, but marked as a message. */
+.jinome-dash .jd-empty {
+	margin: 0;
+	padding: 2px 0 2px var(--jd-pad-tight);
+	border-left: 2px solid var(--jd-hairline);
+	color: var(--text-muted);
+	font-size: var(--font-smaller, 0.875em);
+	line-height: 1.7;
+}
+.jinome-dash .jd-empty strong,
+.jinome-dash .jd-empty b {
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+}
+
+
+/* ---------------------------------------------------------------------------
+   7. TAB STRIP
+   Real <button>s, so core's button chrome (background, shadow, height) and
+   Velocity's `button:not(.clickable-icon):hover { filter: brightness(.97) }`
+   (0,2,1) both have to be undone. Every rule below carries >= 3 classes.
+--------------------------------------------------------------------------- */
+.jinome-dash .jd-tabs {
+	display: flex;
+	align-items: stretch;
+	gap: 2px;
+	margin: 0 0 var(--jd-pad-tight);
+	border-bottom: 1px solid var(--jd-hairline);
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+.jinome-dash .jd-tabs::-webkit-scrollbar { display: none; }
+.jinome-dash .jd-card__label + .jd-tabs { margin-top: -2px; }
+
+.jinome-dash .jd-tabs .jd-tab {
+	position: relative;
+	flex: 0 0 auto;
+	height: auto;
+	margin: 0;
+	padding: 5px 10px 7px;
+	appearance: none;
+	background: none;
+	border: none;
+	border-radius: var(--jd-radius-sm) var(--jd-radius-sm) 0 0;
+	box-shadow: none;
+	filter: none;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: var(--font-ui-small, 13px);
+	font-weight: var(--font-normal, 400);
+	line-height: 1.3;
+	color: var(--text-muted);
+	white-space: nowrap;
+	transition: color var(--jd-dur) ease, background-color var(--jd-dur) ease;
+}
+.jinome-dash .jd-tabs .jd-tab:hover {
+	background: var(--jd-tint);
+	color: var(--text-normal);
+	filter: none;       /* Velocity brightens every button on hover */
+	box-shadow: none;
+}
+.jinome-dash .jd-tabs .jd-tab:active {
+	filter: none;
+}
+.jinome-dash .jd-tabs .jd-tab[aria-selected="true"] {
+	color: var(--text-normal);
+	font-weight: var(--font-medium, 500);
+}
+/* the accent underline sits ON the strip's hairline, hence bottom: -1px.
+   --text-accent, not --interactive-accent: see the accent note at the top. */
+.jinome-dash .jd-tabs .jd-tab[aria-selected="true"]::after {
+	content: "";
+	position: absolute;
+	left: 8px;
+	right: 8px;
+	bottom: -1px;
+	height: 2px;
+	border-radius: 2px 2px 0 0;
+	background: var(--jd-accent-text);
+}
+.jinome-dash .jd-tabs .jd-tab .jd-tab__n {
+	margin-left: 6px;
+	font-family: var(--jd-mono);
+	font-variant-numeric: tabular-nums;
+	font-size: 10px;
+	color: var(--text-faint);
+}
+.jinome-dash .jd-tabs .jd-tab:focus-visible {
+	outline: 2px solid var(--jd-accent-text);
+	outline-offset: -2px;
+}
+
+
+/* ---------------------------------------------------------------------------
+   8. TABLES INSIDE CARDS
+   dashboard.js emits one markdown string per table and renders it once, so
+   what lands here is a normal markdown table (plus Dataview's own classes
+   when the MutationObserver tags it). Two things get undone: Velocity's
+   per-cell border-left + heavy header rule, and Dataview's "font-size: larger,
+   font-weight: 700, border-bottom: solid" header.
+--------------------------------------------------------------------------- */
+.jinome-dash .jd-table {
+	width: 100%;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+}
+
+.jinome-dash .jd-card .jd-table table,
+.jinome-dash .jd-card .jd-table table.table-view-table {
+	width: 100%;
+	margin: 0;
+	border: none;
+	border-collapse: collapse;
+	font-size: var(--font-smaller, 0.875em);
+	line-height: 1.45;
+}
+
+.jinome-dash .jd-card .jd-table table thead th,
+.jinome-dash .jd-card .jd-table table.table-view-table > thead > tr > th {
+	padding: 0 10px 6px;
+	border: none;
+	border-bottom: 1px solid var(--jd-hairline);
+	background: none;
+	font-size: 10.5px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: var(--jd-track);
+	line-height: 1.3;
+	color: var(--text-faint);
+	text-align: left;
+	white-space: nowrap;
+}
+
+.jinome-dash .jd-card .jd-table table tbody td,
+.jinome-dash .jd-card .jd-table table.table-view-table > tbody > tr > td {
+	padding: 6px 10px;
+	border: none;         /* Velocity draws a border-left on every cell */
+	vertical-align: top;
+	font-weight: var(--font-normal, 400);
+	color: var(--text-normal);
+}
+
+/* zebra + row hover (Velocity zeroes --table-row-background-hover) */
+.jinome-dash .jd-card .jd-table table tbody tr:nth-child(even) > td {
+	background: var(--jd-tint);
+}
+.jinome-dash .jd-card .jd-table table tbody tr:hover > td {
+	background: var(--jd-tint-strong);
+}
+
+/* first column carries the identity of the row */
+.jinome-dash .jd-card .jd-table table tbody tr > td:first-child {
+	font-weight: var(--font-medium, 500);
+}
+
+/* numeric / d-day columns line up when they are mono + tabular */
+.jinome-dash .jd-card .jd-table table td .jd-dday,
+.jinome-dash .jd-card .jd-table table td .jd-num {
+	font-family: var(--jd-mono);
+	font-variant-numeric: tabular-nums;
+	font-size: 0.92em;
+	color: var(--text-muted);
+}
+
+/* Links: quiet by default, accent on hover. :not(.is-unresolved) keeps
+   Obsidian's broken-link signal intact — that is worth more than uniformity. */
+.jinome-dash .jd-card a.internal-link:not(.is-unresolved) {
+	color: var(--text-normal);
+	text-decoration: none;
+}
+.jinome-dash .jd-card a.internal-link:not(.is-unresolved):hover {
+	color: var(--jd-accent-text);
+	text-decoration: none;
+}
+
+/* Dataview's small-text counter: drop the literal "(" / ")" it adds via
+   ::before/::after and make it a chip. (DV's rules are (0,2,1); these are
+   (0,4,1) and (0,3,0).) */
+.jinome-dash .jd-card .dataview.small-text::before,
+.jinome-dash .jd-card .dataview.small-text::after {
+	content: none;
+}
+.jinome-dash .jd-card .dataview.small-text {
+	margin-left: 6px;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: var(--jd-tint);
+	font-family: var(--jd-mono);
+	font-variant-numeric: tabular-nums;
+	font-size: 10px;
+	letter-spacing: 0;
+	color: var(--text-muted);
+}
+
+/* Bare lists inside a card body (used where a table would be overkill). */
+.jinome-dash .jd-card__body ul,
+.jinome-dash .jd-card__body ol {
+	margin: 0;
+	padding-left: 1.1em;
+}
+.jinome-dash .jd-card__body li {
+	margin: 2px 0;
+	line-height: 1.5;
+}
+
+/* Status pills — the only semantic colour outside the calendar. */
+.jinome-dash .jd-pill {
+	display: inline-block;
+	padding: 1px 7px;
+	border-radius: 999px;
+	background: var(--jd-tint);
+	font-size: 10.5px;
+	font-weight: var(--font-medium, 500);
+	line-height: 1.6;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+.jinome-dash .jd-pill--overdue {
+	background: var(--jd-overdue-wash);
+	color: var(--jd-overdue);
+}
+.jinome-dash .jd-pill--done {
+	background: var(--jd-done-wash);
+	color: var(--jd-done);
+}
+.jinome-dash .jd-pill--accent {
+	background: var(--jd-accent-wash);
+	color: var(--jd-accent-text);
+}
+/* A row that has slipped. dashboard.js stamps the <tr> after the markdown
+   lands (markdown cannot carry a class), setting both hooks; the wash goes on
+   the cells because a <tr> background is painted under them, and the marker
+   bar on the first cell makes it read as one row rather than one red cell.
+   Declared after the zebra rules on purpose — same specificity, later wins. */
+.jinome-dash .jd-card .jd-table table tbody tr[data-overdue="true"] > td,
+.jinome-dash .jd-card .jd-table table tbody tr.jd-row--overdue > td {
+	background: var(--jd-overdue-wash);
+}
+.jinome-dash .jd-card .jd-table table tbody tr[data-overdue="true"] > td:first-child,
+.jinome-dash .jd-card .jd-table table tbody tr.jd-row--overdue > td:first-child {
+	box-shadow: inset 2px 0 0 var(--jd-overdue);
+}
+
+/* the "↳" that marks a subproject row under its main PRJ id */
+.jinome-dash .jd-sub {
+	margin-right: 4px;
+	color: var(--text-faint);
+	font-family: var(--jd-mono);
+}
+
+/* the work card's tab body: the tab strip swaps this host's contents */
+.jinome-dash .jd-work {
+	min-width: 0;
+}
+
+/* --- long tables: cap and scroll, never run down the page -----------------
+   One table is LONG on this vault today, and it is the one with real data:
+   the work card's All and Unscheduled tabs both run 46 rows. At ~27px a row
+   that is 1,240px of table, and the card that is supposed to be a glance
+   becomes the whole page — the calendar, the weather and Recent end up below
+   the fold on a 1080p screen. The table scrolls inside the card instead; the
+   count chip in the first header cell already says how many rows there are,
+   so nothing is hidden, only deferred.
+   Capped in vh as well as px so a short laptop screen never gives one card
+   half the viewport. */
+.jinome-dash .jd-card[data-panel="work"] .jd-work .jd-table {
+	max-height: min(44vh, 420px);
+	overflow: auto;
+	overscroll-behavior: contain;
+}
+
+/* Sticky header for those scrollers. `border-collapse: collapse` drops the
+   borders of a sticky <th> in Chromium, so the rule is painted as an inset
+   shadow instead, and the th needs its own background or the rows show
+   through it. */
+.jinome-dash .jd-card[data-panel="work"] .jd-work .jd-table thead th {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background: var(--jd-card);
+	border-bottom: none;
+	box-shadow: inset 0 -1px 0 var(--jd-hairline);
+}
+
+
+/* ---------------------------------------------------------------------------
+   9. CALENDAR
+   8 columns: ISO week number + 7 days. border-collapse: separate is required —
+   with `collapse`, border-radius on a <td> is ignored, and the today cell needs
+   both a radius and a ring.
+--------------------------------------------------------------------------- */
+.jinome-dash .jd-cal {
+	width: 100%;
+	margin: 0;
+	table-layout: fixed;
+	border: none;
+	border-collapse: separate;
+	border-spacing: 2px;
+	font-family: var(--jd-sans);
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: "tnum" 1;
+}
+
+.jinome-dash .jd-cal thead th {
+	padding: 0 0 6px;
+	border: none;
+	background: none;
+	font-size: 9.5px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: var(--jd-track);
+	color: var(--text-faint);
+	text-align: center;
+}
+.jinome-dash .jd-cal thead th:first-child,
+.jinome-dash .jd-cal .jd-cal__wk {
+	width: 30px;
+}
+
+.jinome-dash .jd-cal td {
+	padding: 0;
+	border: none;
+	background: none;
+}
+
+/* week-number column — this is what makes the calendar navigation rather than
+   decoration: each cell links to [[GGGG-[W]WW]] (2026-W35.md resolves). */
+.jinome-dash .jd-cal .jd-cal__wk {
+	padding-right: 6px;
+	border-right: 1px solid var(--jd-hairline);
+	font-family: var(--jd-mono);
+	font-size: 9.5px;
+	color: var(--text-faint);
+	text-align: right;
+	vertical-align: middle;
+}
+.jinome-dash .jd-cal .jd-cal__wk a {
+	color: inherit;
+	text-decoration: none;
+}
+.jinome-dash .jd-cal .jd-cal__wk a:hover {
+	color: var(--jd-accent-text);
+	text-decoration: none;
+}
+/* A week whose note does not exist yet. dashboard.js marks it .is-unresolved,
+   but Obsidian's own unresolved styling cannot reach it: the anchor carries no
+   href (deliberately — the delegated handler would open the note twice), and
+   `color: inherit` above out-specifies the theme anyway. Without this rule
+   "W36" looks identical to "W35" and the one piece of state that matters here
+   — which weeks have been planned — is invisible. Dotted, not coloured: the
+   week column is 30px of 9.5px mono and a hue change would be lost in it. */
+.jinome-dash .jd-cal .jd-cal__wk a.is-unresolved {
+	/* NOT --link-unresolved-color. Velocity lightness-corrects that token only
+	   inside .theme-light (theme.css:584 `oklch(from var(--color-accent) 72% 36%
+	   h)`); under .theme-dark — the pinned theme here — it falls through to
+	   core's `--link-unresolved-color: var(--text-accent)`, i.e. --color-accent-1
+	   = #520f5a, which measures 1.12 : 1 against the card. That is the same
+	   near-black plum --jd-accent-l exists to route around, arriving through a
+	   theme token instead of a core one, and it lands on the one column that
+	   makes this calendar navigation: only 2026-W35.md exists, so every OTHER
+	   week number in the grid is drawn with it. --text-faint is 2.75 : 1 in dark
+	   and 2.27 : 1 in light — quiet, which is the intent, but legible either way.
+	   The dotted underline carries the state, as the comment above says it should. */
+	color: var(--text-faint);
+	text-decoration: underline dotted;
+	text-underline-offset: 2px;
+}
+
+/* day cell */
+.jinome-dash .jd-cal .jd-cal__day {
+	position: relative;
+	height: 38px;
+	padding: 4px 3px 5px;
+	border-radius: var(--jd-radius-sm);
+	font-size: 11.5px;
+	line-height: 1.25;
+	color: var(--text-muted);
+	text-align: center;
+	vertical-align: top;
+	transition: background-color var(--jd-dur) ease;
+}
+.jinome-dash .jd-cal .jd-cal__day:hover {
+	background: var(--jd-tint);
+}
+.jinome-dash .jd-cal .jd-cal__date {
+	display: block;
+	line-height: 1.3;
+}
+
+/* out-of-month padding days */
+.jinome-dash .jd-cal .jd-cal__day[data-out],
+.jinome-dash .jd-cal .jd-cal__day.is-out,
+.jinome-dash .jd-cal .jd-cal__day--out {
+	color: var(--text-faint);
+	opacity: 0.45;
+}
+/* optional weekend hook */
+.jinome-dash .jd-cal .jd-cal__day[data-weekend] {
+	background: var(--jd-tint);
+}
+
+/* today — accent wash + ring. The wash is intentionally faint (Jin's accent is
+   a near-black plum, so hsla(...,.12) barely tints a dark ground); the ring and
+   the accent-coloured, bolder number are what actually carry the state. */
+.jinome-dash .jd-cal .jd-cal__day[data-today] {
+	background: var(--jd-accent-wash);
+	box-shadow: inset 0 0 0 1px var(--jd-accent-text);
+	color: var(--jd-accent-text);
+	font-weight: var(--font-semibold, 600);
+}
+.jinome-dash .jd-cal .jd-cal__day[data-today]:hover {
+	background: var(--jd-accent-wash);
+}
+
+/* deadline: a 3px bar on the cell's right edge, inside the radius.
+   dashboard.js marks a deadline three ways (data-deadline, data-due and the
+   --due class) so the bar cannot depend on which hook this file picked. */
+.jinome-dash .jd-cal .jd-cal__day[data-deadline],
+.jinome-dash .jd-cal .jd-cal__day--due {
+	position: relative;
+}
+.jinome-dash .jd-cal .jd-cal__day[data-deadline]::after,
+.jinome-dash .jd-cal .jd-cal__day--due::after,
+.jinome-dash .jd-cal .jd-cal__day:has(.jd-cal__dot--due)::after {
+	content: "";
+	position: absolute;
+	top: 4px;
+	right: 2px;
+	bottom: 4px;
+	width: 3px;
+	border-radius: 3px;
+	background: var(--jd-overdue);
+}
+
+/* dots. Preferred markup wraps them in .jd-cal__dots; the bare form (spans
+   directly in the td, as the class contract lists them) is handled by the
+   ::before line-break below, so both render as number-over-dots. */
+.jinome-dash .jd-cal .jd-cal__dots {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	/* WRAPPING, not a fixed height. A day cell in the 300px right column is
+	   ~32px wide; three dots plus a "+46" is ~44px and would spill over the
+	   neighbouring cell (table-layout is fixed, and nothing here clips). The
+	   truncation counter must never be hidden — see .jd-cal__more — so the row
+	   is allowed to wrap onto a second line and the cell grows instead. A table
+	   cell treats `height` as a minimum, so only the busy rows get taller. */
+	flex-wrap: wrap;
+	gap: 1px 3px;
+	min-height: 8px;
+	margin-top: 2px;
+}
+/* The 1px side margins belong to the UNWRAPPED fallback form (bare spans in
+   the td, where there is no flex gap to space them). Inside .jd-cal__dots the
+   gap does that job, and the margins overflow the cell: a day cell in the
+   300px right column is 30px wide, 24px inside its padding, and three dots at
+   4.5 + 2px of margin plus two 3px gaps is 25.5px — so the third dot wrapped
+   to a second line before "+N" was even involved. Zeroed inside the wrapper:
+   3 x 4.5 + 2 x 3 = 19.5px fits, and only the "+N" wraps, which is what the
+   wrapping was added for. */
+.jinome-dash .jd-cal .jd-cal__dots .jd-cal__dot {
+	margin: 0;
+}
+.jinome-dash .jd-cal .jd-cal__dots .jd-cal__more {
+	margin-left: 0;   /* it is alone on the wrapped line; centre it honestly */
+}
+.jinome-dash .jd-cal .jd-cal__dot {
+	display: inline-block;
+	flex: 0 0 auto;
+	width: 4.5px;
+	height: 4.5px;
+	margin: 0 1px;
+	border-radius: 50%;
+	background: var(--jd-accent-text);
+	vertical-align: middle;
+}
+/* the four event kinds dashboard.js emits, in KIND_ORDER:
+   due = red · sch = accent · fin = green · new = faint.
+   Only the three palette hues, and "new" deliberately recedes: on a vault
+   where 1,141 notes carry a zk stamp, creation dots would otherwise drown
+   every other signal in the grid. */
+.jinome-dash .jd-cal .jd-cal__dot--due { background: var(--jd-overdue); }
+.jinome-dash .jd-cal .jd-cal__dot--sch { background: var(--jd-accent-text); }
+.jinome-dash .jd-cal .jd-cal__dot--fin { background: var(--jd-done); }
+.jinome-dash .jd-cal .jd-cal__dot--new {
+	background: none;
+	box-shadow: inset 0 0 0 1px var(--text-faint);   /* hollow: a quieter mark */
+}
+/* Unwrapped dots only (direct child of the td): force them onto their own
+   line under the date number. Scoped with `>` so a wrapped dot — which is a
+   flex item — never grows a stray text node. */
+.jinome-dash .jd-cal .jd-cal__day > .jd-cal__dot:first-of-type::before {
+	content: "\A";
+	white-space: pre;
+}
+/* "+N" — the truncation is always shown, never silent */
+.jinome-dash .jd-cal .jd-cal__more {
+	display: inline-block;
+	margin-left: 2px;
+	font-family: var(--jd-mono);
+	font-size: 8.5px;
+	line-height: 1;
+	color: var(--text-faint);
+	vertical-align: middle;
+}
+
+/* month header / stepper */
+.jinome-dash .jd-cal__head {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	margin-bottom: var(--size-4-2, 8px);
+}
+/* clickable: it jumps the grid back to the current month */
+.jinome-dash .jd-cal__title {
+	margin-right: auto;
+	font-family: var(--jd-mono);
+	font-variant-numeric: tabular-nums;
+	font-size: 12px;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+.jinome-dash .jd-cal__title:hover {
+	color: var(--text-normal);
+}
+.jinome-dash .jd-cal__host {
+	min-width: 0;
+}
+.jinome-dash .jd-cal__nav {
+	height: auto;
+	margin: 0;
+	padding: 2px 6px;
+	appearance: none;
+	background: none;
+	border: none;
+	border-radius: var(--jd-radius-sm);
+	box-shadow: none;
+	filter: none;
+	color: var(--text-faint);
+	line-height: 1;
+	cursor: pointer;
+}
+.jinome-dash .jd-cal__nav:hover {
+	background: var(--jd-tint);
+	box-shadow: none;
+	filter: none;
+	color: var(--text-normal);
+}
+.jinome-dash .jd-cal__nav .svg-icon { width: 14px; height: 14px; }
+
+
+/* ---------------------------------------------------------------------------
+   10. NAV
+   Anchors with no href, driven by openLinkText / executeCommandById — so they
+   need an explicit cursor and their own colour (Obsidian only styles a[href]
+   and .internal-link).
+--------------------------------------------------------------------------- */
+.jinome-dash .jd-nav {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 2px;
+}
+@container jd (min-width: 520px) and (max-width: 779.98px) {
+	.jinome-dash .jd-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.jinome-dash .jd-nav__item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	padding: 7px 9px;
+	border-radius: var(--jd-radius-sm);
+	font-size: var(--font-ui-small, 13px);
+	line-height: 1.35;
+	color: var(--text-muted);
+	text-decoration: none;
+	cursor: pointer;
+	transition: background-color var(--jd-dur) ease, color var(--jd-dur) ease;
+}
+.jinome-dash .jd-nav__item:hover {
+	background: var(--jd-tint);
+	color: var(--text-normal);
+	text-decoration: none;
+}
+.jinome-dash .jd-nav__item:focus-visible {
+	outline: 2px solid var(--jd-accent-text);
+	outline-offset: -2px;
+}
+/* The weekly-note tile when that note does not exist yet. Same problem as the
+   calendar's week column: no href, so Obsidian's unresolved styling never
+   applies, and "This week · 2026-W36" would read as an existing note. Here
+   label has room, so the theme's unresolved colour is used directly. */
+.jinome-dash .jd-nav__item.is-unresolved,
+.jinome-dash .jd-nav__item.is-unresolved .jd-nav__icon {
+	/* --text-faint, not --link-unresolved-color — see the week column above: in
+	   .theme-dark that token is core's near-black plum (1.12 : 1) and this tile
+	   is unresolved every week until Jin makes the note, so it would be the
+	   dashboard's most reliably invisible element. */
+	color: var(--text-faint);
+}
+.jinome-dash .jd-nav__item.is-unresolved .jd-nav__label {
+	text-decoration: underline dotted;
+	text-underline-offset: 2px;
+}
+.jinome-dash .jd-nav__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 16px;
+	height: 16px;
+	color: var(--text-faint);
+}
+.jinome-dash .jd-nav__icon .svg-icon,
+.jinome-dash .jd-nav__icon svg {
+	width: 16px;
+	height: 16px;
+}
+.jinome-dash .jd-nav__item:hover .jd-nav__icon {
+	color: var(--jd-accent-text);
+}
+
+/* The one filled affordance on the page — the primary action (new experiment
+   note, open this week). --interactive-accent is Jin's near-black plum, which
+   is why it is only ever used as a FILL, always under --text-on-accent.
+   Placed AFTER the generic hover rules on purpose: these tie with them at
+   (0,3,0)/(0,4,0), so source order is what keeps the tile's own colours. */
+.jinome-dash .jd-nav__item--primary,
+.jinome-dash .jd-nav__item--primary:hover {
+	color: var(--text-on-accent);
+}
+.jinome-dash .jd-nav__item--primary {
+	background: var(--jd-accent-fill);
+}
+.jinome-dash .jd-nav__item--primary:hover {
+	background: var(--interactive-accent-hover, var(--interactive-accent));
+}
+.jinome-dash .jd-nav__item--primary .jd-nav__icon,
+.jinome-dash .jd-nav__item--primary:hover .jd-nav__icon,
+.jinome-dash .jd-nav__item--primary .jd-nav__hint {
+	color: var(--text-on-accent);
+	opacity: 0.85;
+}
+.jinome-dash .jd-nav__label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.jinome-dash .jd-nav__hint {
+	margin-left: auto;
+	font-family: var(--jd-mono);
+	font-size: 9.5px;
+	color: var(--text-faint);
+	white-space: nowrap;
+}
+
+/* In the 780-1149px band the nav is a 4-across icon band: stack icon over
+   label so four tiles fit without truncating the labels. */
+@container jd (min-width: 780px) and (max-width: 1149.98px) {
+	.jinome-dash .jd-nav__item {
+		flex-direction: column;
+		gap: 6px;
+		padding: var(--jd-pad-tight) var(--size-4-2, 8px);
+		text-align: center;
+	}
+	.jinome-dash .jd-nav__hint { margin-left: 0; }
+	.jinome-dash .jd-nav__label { white-space: normal; }
+}
+
+
+/* ---------------------------------------------------------------------------
+   11. WEATHER
+   Filled asynchronously after the dashboard renders; the failure state is a
+   muted line, never an empty box and never an exception.
+--------------------------------------------------------------------------- */
+.jinome-dash .jd-wx { min-width: 0; }
+
+.jinome-dash .jd-wx__now {
+	display: flex;
+	align-items: center;
+	gap: var(--jd-pad-tight);
+}
+.jinome-dash .jd-wx__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 32px;
+	height: 32px;
+	color: var(--text-muted);
+}
+.jinome-dash .jd-wx__icon .svg-icon,
+.jinome-dash .jd-wx__icon svg {
+	width: 30px;
+	height: 30px;
+}
+.jinome-dash .jd-wx__temp {
+	font-family: var(--jd-mono);
+	font-variant-numeric: tabular-nums;
+	font-size: 28px;
+	font-weight: var(--font-medium, 500);
+	line-height: 1;
+	letter-spacing: -0.02em;
+	color: var(--text-normal);
+}
+.jinome-dash .jd-wx__meta {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+.jinome-dash .jd-wx__desc {
+	font-size: var(--font-smaller, 0.875em);
+	color: var(--text-muted);
+	word-break: keep-all;
+}
+.jinome-dash .jd-wx__hum {
+	font-size: 10.5px;
+	letter-spacing: var(--jd-track);
+	color: var(--text-faint);
+}
+
+.jinome-dash .jd-wx__days {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--size-4-2, 8px);
+	margin-top: var(--jd-pad-tight);
+	padding-top: var(--jd-pad-tight);
+	border-top: 1px solid var(--jd-hairline);
+}
+.jinome-dash .jd-wx__day {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 3px;
+	min-width: 0;
+	text-align: center;
+}
+.jinome-dash .jd-wx__dow {
+	font-size: 9.5px;
+	font-weight: var(--font-semibold, 600);
+	letter-spacing: var(--jd-track);
+	color: var(--text-faint);
+}
+/* 22, not 16 — and this one is not mobile-only. Rasterised at 16 device px,
+   `rainy`, `weather_mix`, `weather_snowy` and `thunderstorm` collapse into
+   four near-identical cloud-plus-smudge shapes and foggy's three bars merge
+   into one, which defeats the only job a forecast icon has. 22 still clears
+   the parent .jd-wx__icon's explicit 32x32 centred flex box, so no tile moves
+   and no row reflows, on either platform. */
+.jinome-dash .jd-wx__day .svg-icon,
+.jinome-dash .jd-wx__day svg {
+	width: 22px;
+	height: 22px;
+	color: var(--text-muted);
+}
+.jinome-dash .jd-wx__range {
+	font-family: var(--jd-mono);
+	font-variant-numeric: tabular-nums;
+	font-size: 10.5px;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+/* Silent local failure. wxFail() empties both rows, marks .jd-wx data-empty
+   and drops its "No weather data." line INSIDE .jd-wx__now — so this must
+   hide __now (that is where the message lives); it only collapses the empty
+   forecast row and unwraps the message from the now-row's flex layout. */
+.jinome-dash .jd-wx[data-empty="true"] .jd-wx__days {
+	display: none;
+}
+.jinome-dash .jd-wx[data-empty="true"] .jd-wx__now {
+	display: block;
+}
+.jinome-dash .jd-wx .jd-empty {
+	border-left: none;
+	padding-left: 0;
+}
+
+
+/* ---------------------------------------------------------------------------
+   12. SCROLLBARS + MISC
+--------------------------------------------------------------------------- */
+.jinome-dash .jd ::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+.jinome-dash .jd ::-webkit-scrollbar-thumb {
+	background: var(--jd-tint-strong);
+	border-radius: 999px;
+}
+.jinome-dash .jd ::-webkit-scrollbar-thumb:hover {
+	background: var(--jd-hairline-hover);
+}
+.jinome-dash .jd ::-webkit-scrollbar-track {
+	background: none;
+}
+
+/* Section rule between stacked groups inside one card. */
+.jinome-dash .jd-rule {
+	height: 1px;
+	margin: var(--jd-pad-tight) 0;
+	border: none;
+	background: var(--jd-hairline);
+}
+
+/* Never let a card push a horizontal scrollbar onto the note. */
+.jinome-dash .jd,
+.jinome-dash .jd-grid,
+.jinome-dash .jd-card {
+	max-width: 100%;
+}
+
+
+/* ---------------------------------------------------------------------------
+   13. REDUCED MOTION — scoped to the dashboard, not the app
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+	.jinome-dash .jd,
+	.jinome-dash .jd *,
+	.jinome-dash .jd *::before,
+	.jinome-dash .jd *::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* ---------------------------------------------------------------------------
+   9. REVISIONS — cover as a real element, projects as a list, nav rule
+   Appended after the first round of use. Everything here overrides section 4/6
+   deliberately; the rules above are left intact so the diff stays legible.
+--------------------------------------------------------------------------- */
+
+/* The cover is now a div that dashboard.js fills with a background-image
+   resolved through getResourcePath, not a markdown embed styled by its alt
+   text. Obsidian does not reliably put the pipe text into the <img> alt, so
+   the old selector missed and the banner rendered as an ordinary inline image.
+   An empty div needs its own height and sizing — the <img> used to supply
+   both. */
+.jinome-dash .jd-cover {
+	height: var(--jd-cover-h);
+	background-size: cover;
+	background-position: center 42%;   /* faces and horizons sit above centre */
+	background-repeat: no-repeat;
+	filter: brightness(0.86) saturate(0.92);
+	line-height: normal;
+}
+
+/* A rule between "this week" and the four indices: one is the day's work, the
+   others are reference. Quiet — it is a grouping cue, not a divider. */
+.jinome-dash .jd-nav__rule {
+	/* .jd-nav is a GRID and this <hr> is one of its direct children, so without
+	   a span it occupies a single CELL. That is invisible at one column and
+	   wrong at two — and two is exactly what the 520-780px band above gives it.
+	   An 820px tablet measures ~706px inside the sizer, lands in that band, and
+	   the rule then sits BESIDE "This week" while every item after it shifts one
+	   cell: "the nav bar is broken on the tablet". A phone (one column) and a
+	   desktop (its own layout) never showed it.
+	   1 / -1 spans whatever column count is in force, so it is a no-op at one
+	   column and the fix at two, with no container query of its own. */
+	grid-column: 1 / -1;
+	border: 0;
+	border-top: 1px solid var(--jd-hairline);
+	margin: var(--size-4-2, 8px) 0;
+	opacity: 0.7;
+}
+
+/* ── projects: a list, not a table ──────────────────────────────────────── */
+.jinome-dash .jd-proj {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+.jinome-dash .jd-proj__item {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	padding: 4px 6px;
+	border-radius: var(--jd-radius-sm);
+	color: var(--text-normal);
+	text-decoration: none;
+	cursor: pointer;
+	transition: background-color var(--jd-dur, 140ms) ease;
+}
+.jinome-dash .jd-proj__item:hover { background: var(--background-modifier-hover); }
+.jinome-dash .jd-proj__item:focus-visible {
+	outline: 2px solid var(--jd-accent-text, var(--interactive-accent));
+	outline-offset: -2px;
+}
+.jinome-dash .jd-proj__item--sub { padding-left: var(--size-4-5, 20px); }
+.jinome-dash .jd-proj__item--sub .jd-proj__code { color: var(--text-muted); }
+.jinome-dash .jd-proj__item.is-unresolved .jd-proj__code {
+	color: var(--text-faint);
+	text-decoration: underline dotted;
+}
+
+.jinome-dash .jd-proj__code {
+	font-family: var(--jd-mono);
+	font-size: 0.82rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Priority, as one hue in three steps. High solid, Medium half, Low a ring,
+   none invisible but still occupying its 8px so the codes stay aligned. */
+.jinome-dash .jd-proj__dot {
+	flex: none;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--jd-accent-text, var(--interactive-accent));
+}
+.jinome-dash .jd-proj__item[data-prio="medium"] .jd-proj__dot { opacity: 0.5; }
+.jinome-dash .jd-proj__item[data-prio="low"] .jd-proj__dot {
+	background: transparent;
+	box-shadow: inset 0 0 0 1.5px var(--jd-accent-text, var(--interactive-accent));
+	opacity: 0.55;
+}
+.jinome-dash .jd-proj__item[data-prio="none"] .jd-proj__dot { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+	.jinome-dash .jd-proj__item { transition: none; }
+}
+
+
+/* ---------------------------------------------------------------------------
+   10. ROW CONTROLS — the finish checkbox and the date picker
+   Appended with the interactive work card. dashboard.js builds those three
+   tabs as REAL DOM (actionTable) rather than as a markdown string, because a
+   control inside a markdown string is inert: renderCompactMarkdown re-parses
+   whatever it is handed and the listeners do not survive. The wrapper still
+   wears .jd-table, so section 8 dresses the table itself and the work card's
+   scroll cap and sticky header apply unchanged — only the two controls are new.
+
+   BOTH MUST STAY USABLE WITH NO STYLESHEET AT ALL. The weekly note loads none
+   of this (it is a plain note, not .jinome-dash) and runs the same two
+   controls out of Jinome/Introns/Scripts/weekly.js. Nothing below changes what
+   a control DOES or where it sits; it only stops it looking like a raw browser
+   widget. A native checkbox and a native date field are the fallback, and they
+   work.
+--------------------------------------------------------------------------- */
+
+/* The check column is as narrow as the box and never the column that wraps.
+   width: 1% is the table-layout idiom for "shrink to content" — the title
+   column takes everything that is left. */
+.jinome-dash .jd-card .jd-table table thead th.jd-action__check,
+.jinome-dash .jd-card .jd-table table tbody td.jd-action__check {
+	width: 1%;
+	padding-right: 4px;
+	text-align: center;
+	white-space: nowrap;
+}
+
+/* The title cell carries the identity of the row. Section 8 puts that weight
+   on td:first-child, which is now the checkbox — so it is restated here on the
+   cell that actually holds the name. */
+.jinome-dash .jd-card .jd-table table tbody td.jd-action__title {
+	font-weight: var(--font-medium, 500);
+}
+
+.jinome-dash .jd-card .jd-table table thead th.jd-action__date,
+.jinome-dash .jd-card .jd-table table tbody td.jd-action__date {
+	width: 1%;
+	white-space: nowrap;
+}
+
+/* --- the finish checkbox ------------------------------------------------ */
+/* appearance: none turns off the platform widget so the box can be sized to
+   the row (14px against a 6px/10px cell) and take the accent. position:
+   relative is what the tick hangs off. */
+.jinome-dash .jd-check {
+	appearance: none;
+	-webkit-appearance: none;
+	position: relative;
+	display: block;
+	box-sizing: border-box;
+	width: 14px;
+	height: 14px;
+	margin: 1px auto 0;
+	border: 1.5px solid var(--jd-hairline-hover);
+	border-radius: 4px;
+	background: transparent;
+	cursor: pointer;
+	transition: background-color var(--jd-dur, 140ms) ease,
+	            border-color var(--jd-dur, 140ms) ease;
+}
+
+.jinome-dash .jd-check:hover {
+	border-color: var(--jd-accent-text, var(--interactive-accent));
+}
+
+/* Checked: the accent as a FILL, which is the one role Jin's near-black plum
+   is safe in (see the accent note at the top of this file) — so the tick is
+   drawn in --text-on-accent, which core already inverts for a dark accent. */
+/* `border`, not `border-color`: the Velocity theme sets `border: none` on
+   input[type=checkbox]:checked, and that selector — (0,2,1) — outranks the
+   plain `.jinome-dash .jd-check` block above, which is (0,2,0). Restating the
+   whole shorthand here, at (0,3,0), keeps the 1.5px box the ::after offsets
+   below are measured against, checked or not. */
+.jinome-dash .jd-check:checked {
+	background: var(--jd-accent-fill);
+	border: 1.5px solid var(--jd-accent-fill);
+}
+
+/* The tick, as two borders on a rotated box. No SVG and no colour literal: a
+   background-image cannot take currentColor, and a data: URI would have to
+   hardcode a hue that then survives into the other theme.
+   The two resets are load-bearing. Obsidian core draws its OWN checkmark on
+   this very pseudo-element — input[type=checkbox]:checked:after, (0,2,2) —
+   as a background-color clipped by a -webkit-mask-image. This rule is (0,3,1)
+   so it wins every property it declares, but a property it does NOT declare
+   still applies, and a mask applies to the whole element, borders included:
+   left alone, core's mask (65% of a 3x7px box) clips the tick below down to a
+   smudge. Switching the mask and that background off is what makes the tick
+   visible at all. */
+.jinome-dash .jd-check:checked::after {
+	content: "";
+	position: absolute;
+	left: 3.5px;
+	top: 0.5px;
+	width: 3px;
+	height: 7px;
+	background-color: transparent;
+	-webkit-mask-image: none;
+	mask-image: none;
+	border: solid var(--text-on-accent);
+	border-width: 0 1.75px 1.75px 0;
+	transform: rotate(43deg);
+}
+
+.jinome-dash .jd-check:focus-visible {
+	outline: 2px solid var(--jd-accent-text, var(--interactive-accent));
+	outline-offset: 2px;
+}
+
+/* Locked between the click and the re-render that replaces the row. It is a
+   wait, not a refusal, so it reads as one. */
+.jinome-dash .jd-check:disabled,
+.jinome-dash .jd-date:disabled {
+	opacity: 0.45;
+	cursor: progress;
+}
+
+/* --- the date picker ---------------------------------------------------- */
+/* Quiet until it is wanted: no border, no fill, the same size and colour as
+   the text it replaced, so a column of dates still reads as a column of dates
+   rather than a column of form fields. The frame appears on hover and focus.
+   The calendar itself is Electron's own, opened by one click on the field —
+   that is the whole feature. */
+.jinome-dash .jd-date {
+	appearance: none;
+	-webkit-appearance: none;
+	box-sizing: border-box;
+	max-width: 100%;
+	padding: 1px 4px;
+	border: 1px solid transparent;
+	border-radius: var(--jd-radius-sm);
+	background: transparent;
+	font-family: var(--jd-mono);
+	font-size: 0.92em;
+	font-variant-numeric: tabular-nums;
+	line-height: 1.4;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: border-color var(--jd-dur, 140ms) ease,
+	            background-color var(--jd-dur, 140ms) ease,
+	            color var(--jd-dur, 140ms) ease,
+	            opacity var(--jd-dur, 140ms) ease;
+}
+
+.jinome-dash .jd-date:hover,
+.jinome-dash .jd-date:focus {
+	border-color: var(--jd-hairline-hover);
+	background: var(--jd-tint);
+	color: var(--text-normal);
+}
+
+.jinome-dash .jd-date:focus-visible {
+	outline: 2px solid var(--jd-accent-text, var(--interactive-accent));
+	outline-offset: -1px;
+}
+
+/* An empty picker prints Chromium's own "yyyy-mm-dd", and the Unscheduled tab
+   is 46 rows of it — every one of them dateless by definition. Faded until the
+   row is hovered or the field focused: still there, no longer shouting.
+   data-empty is set by dashboard.js/weekly.js, because CSS has no selector for
+   "this date input has no value" (:invalid needs `required`, which would make
+   an empty row an error, which it is not). */
+.jinome-dash .jd-date[data-empty="true"] {
+	color: var(--text-faint);
+	opacity: 0.5;
+}
+.jinome-dash .jd-table tbody tr:hover .jd-date[data-empty="true"],
+.jinome-dash .jd-date[data-empty="true"]:hover,
+.jinome-dash .jd-date[data-empty="true"]:focus {
+	color: var(--text-muted);
+	opacity: 1;
+}
+
+/* Chromium's calendar glyph. Its own colour follows `color-scheme`, which
+   Obsidian sets for the active theme, so it is left alone — only sized down
+   and given the same quiet-until-hovered treatment as the field around it. */
+.jinome-dash .jd-date::-webkit-calendar-picker-indicator {
+	margin-left: 2px;
+	padding: 0;
+	opacity: 0.4;
+	cursor: pointer;
+}
+.jinome-dash .jd-date:hover::-webkit-calendar-picker-indicator,
+.jinome-dash .jd-date:focus::-webkit-calendar-picker-indicator {
+	opacity: 0.9;
+}
+
+/* The late mark sits beside the picker in the same cell, not in a column of
+   its own — .jd-dday already carries the mono/tabular treatment from
+   section 8. */
+.jinome-dash .jd-card .jd-table table td.jd-action__date .jd-dday {
+	margin-left: 6px;
+	color: var(--jd-overdue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.jinome-dash .jd-check,
+	.jinome-dash .jd-date { transition: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   10. TOP OF PAGE — the cover really is the first thing
+   A note renders inline-title -> properties -> body, so the cover (drawn by
+   the one dataviewjs block) was arriving third. The properties block was
+   already hidden; the title was not. Both go, and the cover carries the name
+   instead — which is also what every dashboard in the InlitX gallery does.
+--------------------------------------------------------------------------- */
+.jinome-dash .inline-title,
+.jinome-dash .mod-header {
+	display: none;
+}
+
+/* Flush to the top — or as flush as this file can get on its own. The band of
+   background above the cover is NOT the sizer's block padding: nothing in
+   app.css, Velocity or this file gives .markdown-preview-sizer or .cm-sizer
+   any, so `padding-block-start: 0` below is a no-op kept only as a guard. The
+   band is padding-top on the box OUTSIDE the sizer — .markdown-preview-view in
+   Reading view, .cm-scroller in Live Preview — which is --file-margins-y (72px
+   here, from Velocity's body:not(.is-mobile):not(.show-view-header) rule that
+   Jin's showViewHeader: false turns on) on the desktop and something else
+   again on a phone. Section 11 cuts the phone's share; the desktop keeps its
+   72px on purpose, because there the header really is hidden and the note
+   needs a top margin like any other.
+   Inline padding stays here too, but not for the reason this comment used to
+   give: bleeding to the pane edge does NOT need negative margins — section 11
+   does it by zeroing the ancestors' padding instead, so nothing ever sticks
+   out of its container and CodeMirror never sees a horizontal overflow. On the
+   desktop it stays because a 1440px-wide cover is not a design anyone asked
+   for. */
+.jinome-dash .markdown-preview-sizer,
+.jinome-dash .cm-sizer {
+	padding-block-start: 0;
+}
+.jinome-dash .jd > .jd-cover:first-child {
+	margin-block-start: 0;
+}
+
+/* Title and epigraph sit on the image, so they need the scrim under them —
+   .jd-cover::after already paints it, and z-index puts the text above it. */
+.jinome-dash .jd-cover {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+	padding: var(--size-4-5, 20px) var(--size-4-6, 24px);
+}
+.jinome-dash .jd-cover__title,
+.jinome-dash .jd-cover__sub {
+	position: static;   /* section 4 positioned these absolutely; flex now places them */
+	left: auto;
+	right: auto;
+	bottom: auto;
+	z-index: 1;
+}
+.jinome-dash .jd-cover__sub {
+	margin: 2px 0 0;
+	font-family: var(--jd-serif);
+	font-style: italic;
+	font-size: .95rem;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--text-on-accent);
+	opacity: .82;
+}
+
+/* No cover file — a plain band so the page still opens with its name. Uses the
+   card surface rather than an image, and drops the scrim it has nothing to
+   darken. */
+.jinome-dash .jd-cover--bare {
+	height: auto;
+	min-height: 0;
+	background: var(--jd-card);
+	border: 1px solid var(--jd-hairline);
+	filter: none;
+	padding-block: var(--size-4-4, 16px);
+}
+.jinome-dash .jd-cover--bare::after { content: none; }
+.jinome-dash .jd-cover--bare .jd-cover__title { color: var(--text-normal); }
+.jinome-dash .jd-cover--bare .jd-cover__sub { color: var(--text-muted); opacity: 1; }
+
+
+/* ---------------------------------------------------------------------------
+   11. MOBILE — the phone as a first-class layout, not a squeezed desktop
+   Appended last, and every selector below starts at `body.is-mobile`, so no
+   byte of the desktop rendering can move. Obsidian puts .is-mobile on <body>
+   for phone AND tablet and adds .is-phone / .is-tablet to tell them apart —
+   used here only where the two genuinely differ.
+
+   WHAT ALREADY WORKS, AND IS THEREFORE NOT TOUCHED
+   .jd carries `container: jd / inline-size`, so the breakpoints read the
+   DASHBOARD's width, not the window's — and they already land correctly on
+   touch. A 390px phone measures 310px inside the sizer (390 less 2x24px of
+   --file-margins-x and 2x16px of --jd-edge) -> the <780px block: one column,
+   cards ordered work -> calendar -> nav -> weather. A TABLET WITH A PANE OF
+   AT LEAST 817px no longer stops there — 780, plus the 5px Android scrollbar
+   gutter, plus 2x16px of --jd-edge — because the last block in this section
+   takes Velocity's --file-margins-x: 5% off. A Galaxy Tab S8+ portrait pane is
+   850.5px, so its container reaches 813.5px, and landscape reaches 1337.5px,
+   the >=1150px band. A 10.9-11in tablet is still only ~796-810px and stays
+   single-column, correctly. That one number, 817, is what makes this auditable
+   on a device nobody here can measure. That block still adds no BREAKPOINT and no grid-template
+   rule: every layout rule in this file remains a pure function of the
+   container's width, and the tablet reaches the existing bands by getting
+   wider rather than by being special-cased. Velocity's
+   radii barely move on mobile (--radius-ml 14px and --radius-s 8px are
+   unconditional; --radius-l goes 18 -> 19px under body.is-mobile, which is
+   what --jd-radius-lg resolves to on a phone), so the hairline-and-radius
+   character carries over for free.
+
+   WHAT ACTUALLY BREAKS — measured against the installed app.css, not assumed:
+
+   1. NOTHING SHRINKS. Core's .is-mobile block redefines ~90 variables and
+      --size-4-* is not among them: --size-4-5 is 20px and --size-4-6 is 24px
+      on a phone exactly as on a 1440px desktop. So --jd-edge (24) + --jd-pad
+      (20) spend 88px of a 390px screen on padding, and core's own
+      --file-margins-x spends 24px more on each side on top of that: 136px, or
+      34.9% of the width, against 232px / 16.1% of a 1440px desktop pane (where
+      --file-margins-x is Velocity's 5%). That is the whole "squeezed" feeling:
+      the dashboard is not too small, it is too padded — and two thirds of the
+      padding is not even this file's.
+   2. THE TYPE SCALE INVERTS. Core sets --font-ui-small: 13px on desktop but
+      calc(var(--font-text-size) * .937) = 15px on mobile, so every UI string
+      grows ~15% — while .jd-cover__title, clamp(26px, 4.2cqi, 44px) against a
+      310px container, falls to its 26px floor (4.2cqi = 13.0px). The display
+      face goes from 3.4x the UI text to 1.7x it and the hierarchy flattens.
+      The literal micro sizes
+      (8.5 / 9.5 / 10.5px) move the other way: they are fixed, so beside 15px
+      text they read at 0.57-0.70x where they were 0.65-0.81x.
+   3. THE ICONS ARE NOT THERE — AND IT WAS NEVER A MOBILE BUG. dashboard.js
+      takes setIcon from require("obsidian"), and that call fails on DESKTOP
+      too: dv.view() compiles the file with new Function(), whose body sees
+      only the global scope, so the plugin-private require that resolves
+      "obsidian" is out of reach. OBS is null on both platforms and icon() has
+      been a no-op since the file was written. .jd-nav__icon is still an EMPTY
+      box holding its 16px and its gap; the month steppers escape via text
+      arrows. .jd-wx__icon no longer does — the weather icons became inlined
+      Material Symbols path data on 2026-08-29 and draw everywhere.
+   4. HOVER IS THE AFFORDANCE ON THE ONE CONTROL THAT MATTERS. .jd-date is
+      `border: 1px solid transparent` until :hover, and an empty one is
+      opacity .5 until `tr:hover`. The Unscheduled tab is 46 empty pickers and
+      it is the planning surface — with no pointer it is 46 half-faded,
+      frameless fields that do not read as controls at all.
+   5. EVERY TAP TARGET BUT ONE IS UNDER 44px. Computed from this file:
+      .jd-check 14x14 · .jd-date ~22px tall · .jd-cal__nav ~20x24 (text arrows)
+      · .jd-tab 31.5px · .jd-nav__item 34.3px · .jd-proj__item 27.7px · table
+      row 26px · .jd-cal__day 36x38. Only .jd-stat (70px) passes. Core
+      publishes --touch-size-m: 44px / -s: 40px / -xs: 30px, so the fix defers
+      to Obsidian's touch scale the way the rest of this file defers to its
+      spacing scale.
+   6. THE STRIP IS TWO UP ALREADY, AND WILL NOT STAY THAT WAY. repeat(auto-fit,
+      minmax(110px, 1fr)) with a 1px gap needs 332px for three columns; the
+      strip has 308px inside its border on a 390px phone, so it is already 2 + 2
+      + 1 at 153.5px a cell, not the 3 + 2 an earlier reading of this file
+      claimed. The ragged part is real though — the fifth counter sits alone in
+      column 1 with column 2 empty. Note that this flips once the outer margins
+      come off at the end of this section: the strip grows to 356px, three
+      columns fit, and 118px cells would leave 86px of text room against ~117px
+      for "REVIEWS WAITING" at 11.5px. So the 2-column rule below is not a
+      no-op after the fix; it is what keeps the labels unellipsised.
+   7. A NESTED SCROLLER IS A SCROLL TRAP. The work table is capped at
+      min(44vh, 420px) with overscroll-behavior: contain. Given a wheel and a
+      visible scrollbar that is a feature; under a thumb it swallows the
+      gesture and the page looks frozen.
+
+   NOT FIXABLE HERE, so it is named rather than papered over: the calendar day
+   cells and the stat counters carry their entire detail layer in a `title`
+   attribute, and a title tooltip never fires on touch. That needs dashboard.js.
+--------------------------------------------------------------------------- */
+
+/* --- metrics: it is the padding, not the pixels ---------------------------
+   16px instead of 24/20 takes card content from 252px to 276px on a 390px
+   screen — the 9.5% the calendar grid, the tab strip and the work table all
+   need. (252 = 294 less the two 1px card borders and 2x20px of --jd-pad; the
+   earlier "300 -> 324" figures were measured without --file-margins-x and
+   without the borders.) --jd-gap stays at 20px on purpose: vertical rhythm
+   between cards is the one piece of spacing a phone still has room for, and
+   shrinking it would turn a stack of cards into a list of rows.
+   Neither number comes down again in the full-bleed pass at the end of this
+   section, and the reason is worth writing down: that pass buys back 48px of
+   card width, so the case for squeezing the card's own padding gets WEAKER,
+   not stronger. --jd-pad at 12px would add 8px to a 324px text column — 2.5%,
+   invisible — and spend the air that makes a card read as a card. */
+body.is-mobile .jinome-dash {
+	--jd-edge: var(--size-4-4, 16px);
+	--jd-pad: var(--size-4-4, 16px);
+}
+
+/* Core pads .workspace > .mod-root for safe-area-inset-top and -LEFT only, so
+   a phone rotated the other way puts the sensor housing over the RIGHT edge of
+   the pane. Only the END edge needs max() — applying it to both would double
+   up with core's own left padding (44 + 44 = 88px against 16px on the right)
+   in the rotation core DOES handle. max() leaves portrait, where the inset is
+   0, on the 16px above. */
+body.is-mobile .jinome-dash .cm-sizer,
+body.is-mobile .jinome-dash .markdown-preview-sizer {
+	padding-inline-start: var(--jd-edge);
+	padding-inline-end: max(var(--jd-edge), var(--safe-area-inset-right, 0px));
+}
+
+/* --- icons that were never drawn -----------------------------------------
+   :empty is exact and self-repairing: the moment anything appends an <svg> the
+   rule stops matching and the icon returns with no edit here. That has already
+   happened for .jd-wx__icon — dashboard.js inlines Material Symbols path data
+   now, so the weather half of this rule is dead and the 32px hole beside the
+   temperature is a real icon again. .jd-nav__icon still collapses, which gives
+   every nav label back 26px of width (16px box + 10px gap) it was indenting
+   for nothing; it returns the same way, by giving those call sites the same
+   treatment. */
+body.is-mobile .jinome-dash .jd-nav__icon:empty,
+body.is-mobile .jinome-dash .jd-wx__icon:empty {
+	display: none;
+}
+
+/* --- stats: five numbers that read as numbers -----------------------------
+   Before the full-bleed pass below, auto-fit already gave two columns and this
+   rule only restated them; what earned its place was the :nth-child span, which
+   stops the odd fifth counter sitting alone in column 1. After it, the rule is
+   load-bearing: the strip reaches 356px on a 390px phone, auto-fit would take
+   three 118px columns, and 86px of text room ellipsises "REVIEWS WAITING"
+   (~117px at 11.5px, uppercase, .08em). Two up gives 177.5px cells and 145.5px
+   of text room instead. The tablet keeps auto-fit and fits all five across in
+   one band at both its widths — but only the second one fits the LABELS: at
+   726.5px the cells are 144.8px and "Reviews waiting" ellipsises at 117 > 113,
+   and at 813.5px, after the tablet block below, they are 161.8px and it does
+   not. */
+body.is-mobile.is-phone .jinome-dash .jd-strip {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+/* :nth-child(odd) guards the rule: today dashboard.js makes exactly 5 counters,
+   so the 5th correctly spans. A 6th would otherwise leave the last one spanning
+   both columns with its pair alone above it — broken rather than degraded. */
+body.is-mobile.is-phone .jinome-dash .jd-strip > .jd-stat:nth-child(odd):last-child {
+	grid-column: 1 / -1;
+}
+
+/* --- tabs: three real buttons, never a hidden horizontal scroller ---------
+   .jd-tabs is a flex row with `overflow-x: auto; scrollbar-width: none`, so on
+   a 360px phone "Today / This week / Unscheduled" (~269px of text and padding)
+   overflows a ~250px body with nothing on screen to say so. Wrapping is the
+   honest answer — one row when it fits, two when it does not, never clipped —
+   and flex-grow keeps the tabs an even width either way. */
+body.is-mobile .jinome-dash .jd-tabs {
+	flex-wrap: wrap;
+	gap: var(--size-4-1, 4px);
+}
+body.is-mobile .jinome-dash .jd-tabs .jd-tab {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1 1 auto;
+	min-height: var(--touch-size-m, 44px);
+}
+
+/* --- nav and project rows on Obsidian's own touch scale -------------------
+   40px, not 44px, for a project row: the list can run to 16 entries and the
+   card is a glance, not a page. A nav tile is one of five and gets the full m. */
+body.is-mobile .jinome-dash .jd-nav__item {
+	min-height: var(--touch-size-m, 44px);
+	padding-inline: var(--size-4-2, 8px);
+}
+body.is-mobile .jinome-dash .jd-proj__item {
+	min-height: var(--touch-size-s, 40px);
+}
+
+/* --- table rows you can actually hit --------------------------------------
+   12px of block padding around a 14px/1.45 line puts a read-only row (Recent)
+   at 44.3px; the work rows land near 54px because the date control below sets
+   30px of its own. Padding rather than `height`, so a wrapping title cell
+   still grows the row instead of stranding its text against a fixed box. */
+body.is-mobile .jinome-dash .jd-card .jd-table table tbody td {
+	padding-block: var(--size-4-3, 12px);
+}
+
+/* The finish box goes 14px -> 20px, and the tick geometry is restated because
+   the offsets in section 10 are measured against a 14px box, not proportional.
+   ::before is the hit area, not a mark: -12px of inset inside a 44.3px row
+   reaches the row boundary EXACTLY and no further, so an expanded target can
+   never steal the tap from the row above or below it. */
+body.is-mobile .jinome-dash .jd-check {
+	width: 20px;
+	height: 20px;
+	margin: 0 auto;
+	border-radius: 5px;
+}
+body.is-mobile .jinome-dash .jd-check::before {
+	content: "";
+	position: absolute;
+	inset: -12px -10px;
+}
+body.is-mobile .jinome-dash .jd-check:checked::after {
+	left: 5.5px;
+	top: 1.5px;
+	width: 4.3px;
+	height: 10px;
+	border-width: 0 2.5px 2.5px 0;
+}
+
+/* The picker stops hiding. Quiet-until-hovered is right where there is a
+   pointer to do the revealing; here it just means the one control that turns a
+   backlog row into a planned one is invisible until it is pressed. Frame
+   always on, empty state at full opacity, and the field on the touch scale.
+   --touch-size-xs (30px), not -m: a 44px field would push every work row past
+   68px, and the field already sits in 12px of cell padding on each side. */
+body.is-mobile .jinome-dash .jd-date {
+	min-height: var(--touch-size-xs, 30px);
+	padding: var(--size-4-1, 4px) var(--size-4-2, 8px);
+	border-color: var(--jd-hairline);
+	background: var(--jd-tint);
+	color: var(--text-muted);
+}
+body.is-mobile .jinome-dash .jd-date[data-empty="true"] {
+	opacity: 1;
+	color: var(--text-faint);
+}
+body.is-mobile .jinome-dash .jd-date::-webkit-calendar-picker-indicator {
+	opacity: 0.75;
+}
+/* The base :hover/:focus rule is only (0,3,0) and now loses to the rule above,
+   so restate focus here or the field looks identical focused and unfocused.
+   (:focus-visible does not match on touch input in Chromium, so :focus it is.) */
+body.is-mobile .jinome-dash .jd-date:focus {
+	border-color: var(--jd-hairline-hover);
+	background: var(--jd-tint-strong);
+	color: var(--text-normal);
+}
+
+/* --- unstick the scroll trap, keep the sticky header ----------------------
+   The work table's min(44vh, 420px) cap is paired with `overscroll-behavior:
+   contain`. The CAP is not the problem — `contain` is: it stops scroll
+   chaining, so once the inner region hits its end the page does not take over
+   and the dashboard looks frozen under a thumb. Restoring `auto` fixes exactly
+   that and nothing else.
+   Dropping the cap instead would cost more than it buys: the wrapper keeps
+   `overflow: auto` either way, so it stays a scrollport, and `position: sticky`
+   on the thead th would anchor to a box that never scrolls — the Title/Date
+   headers would scroll off the top of a 46-row, ~2,500px table. Keeping the cap
+   keeps the header, keeps horizontal scrolling for the Project column, and the
+   gesture now leaves the region cleanly. */
+body.is-mobile .jinome-dash .jd-card[data-panel="work"] .jd-work .jd-table {
+	overscroll-behavior: auto;
+}
+
+/* --- calendar --------------------------------------------------------------
+   276px of card body — 324px once the outer margins come off at the end of
+   this section — less 9 x 2px of border-spacing and the 30px week column, is
+   32.6px per day now and 39.4px after, up from 29.1px at the desktop padding.
+   (The 324/39/36 that stood here were the metrics comment's own
+   pre-correction figures, carried over: all three omitted --file-margins-x
+   and so were one step too generous.) The 9.5px labels come up with it: against
+   15px UI text they were 0.63x, which is not small, it is unread. */
+body.is-mobile .jinome-dash .jd-cal .jd-cal__day {
+	height: var(--touch-size-s, 40px);
+	font-size: 13px;
+}
+body.is-mobile .jinome-dash .jd-cal thead th,
+body.is-mobile .jinome-dash .jd-cal .jd-cal__wk {
+	font-size: 11px;
+}
+body.is-mobile .jinome-dash .jd-cal .jd-cal__more {
+	font-size: 10px;
+}
+/* The week number is the calendar's only link, in a 30px column. Filling its
+   cell turns a 9.5px string into a 30 x 40px target without widening anything. */
+body.is-mobile .jinome-dash .jd-cal .jd-cal__wk a {
+	display: block;
+	padding-block: var(--size-4-2, 8px);
+}
+/* The steppers are the only way to change month, and on mobile they are
+   dashboard.js's text-arrow fallback — a bare "‹" in a 20 x 24px box, because
+   setIcon needs the obsidian module. A box and the touch scale make them read
+   as controls again. */
+body.is-mobile .jinome-dash .jd-cal__nav {
+	min-width: var(--touch-size-m, 44px);
+	min-height: var(--touch-size-m, 44px);
+	font-size: 20px;
+}
+body.is-mobile .jinome-dash .jd-cal__title {
+	display: flex;
+	align-items: center;
+	min-height: var(--touch-size-m, 44px);
+	font-size: 14px;
+}
+
+/* --- micro-type floor -----------------------------------------------------
+   Every size this file states in literal px stayed put while core's UI text
+   went 13px -> 15px, so the whole label layer lost a fifth of its relative
+   size on the smaller screen. These are the places where it reads as damage. */
+body.is-mobile .jinome-dash {
+	--jd-label-size: 13px;
+}
+body.is-mobile .jinome-dash .jd-stat__l,
+body.is-mobile .jinome-dash .jd-card .jd-table table thead th,
+body.is-mobile .jinome-dash .jd-card .jd-table table.table-view-table > thead > tr > th {
+	font-size: 11.5px;
+}
+
+/* --- cover: a band, not a screen -----------------------------------------
+   190px is 30% of a phone's ~640px of usable height, spent before the strip
+   has said anything — and the title inside it is stuck at clamp()'s 26px floor
+   because 4.2cqi of a 310px container is 13px. So the band comes down and the
+   title goes up, and the display face is a display face again. The tablet is
+   left alone: 190px of an 1180px screen is the same sixth a desktop gives it.
+   CAVEAT on 30vw: it reads the WINDOW, not the pane and not the container,
+   which is the only measurement in this section that does. On a phone the two
+   are the same and it is correct; a tablet in a split gets a cover sized for
+   the whole screen. Left as it is because cqi would need a container the cover
+   is not inside. */
+body.is-mobile.is-phone .jinome-dash {
+	--jd-cover-h: clamp(112px, 30vw, 160px);
+}
+/* .jd-cover hardcodes --size-4-5/-4-6 rather than reading --jd-pad/--jd-edge,
+   so it is the one element still on the desktop padding scale — the cover title
+   would sit 64px from the screen edge while every card's content sits at 57px
+   (24px --file-margins-x + 16px --jd-edge + 1px card border + 16px --jd-pad).
+   A 7px misalignment on the page's strongest vertical edge, first thing on
+   screen. Bringing it onto the same scale leaves 56 against 57 — the residue is
+   the card's 1px border, so this brings the two onto the same scale rather than
+   aligning them exactly — and buys back ~16px of the band. The full-bleed rule
+   at the end of this section overrides padding-inline here again, for the same
+   reason and with the same 1px residue. */
+body.is-mobile.is-phone .jinome-dash .jd-cover {
+	padding: var(--jd-pad-tight) var(--jd-pad);
+}
+body.is-mobile.is-phone .jinome-dash .jd-cover__title {
+	font-size: clamp(30px, 9cqi, 40px);
+}
+
+
+/* --- the outer margins: one number instead of three -----------------------
+   Everything above still leaves the dashboard inset 40px on each side of a
+   400px phone — 10% of the screen per edge, which is what Jin measured off a
+   screenshot. It is spent in two places and only one of them is this file's:
+
+     24px  --file-margins-x, on .markdown-preview-view (app.css:4470) in
+           Reading view and on .cm-scroller (app.css:3939) in Live Preview.
+           Core's .is-mobile says 24px; on a phone Velocity's body.is-phone
+           says 24px too, at (0,1,1), so the number is the same and the OWNER
+           is the theme.
+     16px  --jd-edge, on the sizer, which this section already cut from 24.
+
+   --file-margins CANNOT be moved by redefining --file-margins-x here. Core
+   declares `--file-margins: var(--file-margins-y) var(--file-margins-x)` on
+   <body> (app.css:2242), so both var()s are substituted THERE and what
+   inherits down is the finished token stream "8px 24px"; overriding a part
+   further down the tree arrives after the substitution has happened. Core
+   knows this and never does it either — wherever app.css wants a different
+   file margin on a DESCENDANT it writes the composite (6933, 9410), and both
+   -x/-y overrides sit on <body> beside it. Confirmed in a headless replay of
+   the real cascade: `--file-margins-x: 0` on .jinome-dash left the padding at
+   8px 24px, `--file-margins: 8px 0` took it to 0.
+
+   So write the composite. No compound selector is needed: in Reading view the
+   cssclass lands ON .markdown-preview-view, the element that consumes it; in
+   Live Preview it lands on .markdown-source-view, an ancestor of the
+   .cm-scroller that consumes it. A custom property inherits either way.
+
+   y is restated at exactly what it already computes to (--size-4-2, 8px)
+   because `padding` is a shorthand and there is no way to set only x. Nothing
+   vertical changes: the TOP is separately overridden at (0,6,0) by
+   app.css:20425 and the bottom stays 8px. --view-bottom-spacing was the
+   tempting value for that bottom and is a trap — it is calc(safe-area-inset-
+   bottom - keyboard-height + navbar-height), which goes NEGATIVE while the
+   keyboard is open, and one invalid length drops the whole shorthand to zero
+   on all four sides.
+
+   --jd-edge goes to 0 rather than being deleted, because the sizer rule above
+   reads it and keeps working untouched: max(--jd-edge, --safe-area-inset-right)
+   is 0 in portrait and still the real inset in the rotation core does not pad.
+   All of the horizontal inset now comes from ONE number, --jd-gutter, applied
+   one level lower. Measured at 400px: .jd 320 -> 400px, card content
+   286 -> 334px (+17%), and the cover title comes off its clamp floor for free
+   (9cqi of 400 = 36px, was pinned at 30).
+
+   PHONE ONLY — still, but no longer because the tablet was left out. When
+   this was written the tablet was a real layout change on a device that could
+   not be checked from here; it has since been measured off a native
+   screenshot and gets its own, DIFFERENT treatment in the last block of this
+   section. What stays phone-only is everything below this declaration: the
+   full-bleed cover, the gutter, and the top-band reclaim. The tablet zeroes
+   the same percentage and stops there.
+
+   ONE TRAP FOR LATER. --file-margins-x itself is deliberately NOT zeroed (the
+   composite is written instead), and core computes its Bases-embed
+   compensation from it at <body>: --bases-embed-width is
+   calc(100% + var(--file-margins-x) * 2) and --bases-embed-transform is the
+   matching translateX (app.css:18981-18984). Those stay sized for a 24px inset
+   that no longer exists here, so a .base embedded INSIDE the dashboard would
+   overflow by 48px rather than merely lose its padding. Nothing embeds one
+   today; override both tokens alongside if anything ever does. */
+body.is-mobile.is-phone .jinome-dash {
+	--file-margins: var(--size-4-2) 0px;
+	--jd-edge: 0px;
+	--jd-gutter: var(--size-4-4, 16px);
+}
+
+/* --- the cover goes full-bleed, the cards keep an inset -------------------
+   Jin singled out the cover, and on a phone a cover is the one element that
+   earns the whole width: it is a photograph, not a text column. With the outer
+   margins gone .jd already spans the pane, so .jd-cover — width: 100% since
+   :357 — reaches both edges with NO negative margin anywhere. That is the
+   trick, and it is why the hazard section 10 warned about does not apply here:
+   nothing sticks out of its container, so CodeMirror has nothing to measure a
+   horizontal scrollbar from. Replayed in both views at 400px: cm-sizer reports
+   scrollWidth == clientWidth in both states — 352 before, 400 after — so
+   nothing ever exceeds its container.
+
+   The two alternatives, for the record. A uniform small inset (everything at
+   16px) is the safe answer and leaves the photograph framed like a card, which
+   is exactly what reads as wasted margin at the top of a phone screen. Cutting
+   only the band above leaves the 10%-a-side inset Jin measured completely
+   untouched. Full-bleed is the one that answers the actual complaint, and it
+   gives the image 25% more width at the same height.
+
+   The cover spends the same distance as PADDING instead of margin, so its
+   title lands on the card text column: 16 + 16 = 32px against 33px for card
+   content (gutter + 1px card border + --jd-pad). The 1px is the border and
+   cannot go without lying about one of the two.
+
+   Squared at the top because the cover now touches the header, and a radius
+   curving away from a flat opaque edge reads as a mistake; left rounded at the
+   bottom so it still belongs to the same family as the cards under it.
+
+   One thing falls out for free: on a phone the pane IS the viewport, so a
+   full-bleed cover finally makes --jd-cover-h's 30vw mean "30% as tall as it
+   is wide" — a fixed 10:3 band — instead of 37.5% of a .jd narrower than the
+   window. */
+body.is-mobile.is-phone .jinome-dash .jd > .jd-cover:not(.jd-cover--bare) {
+	padding-inline: calc(var(--jd-gutter) + var(--jd-pad));
+	border-radius: 0 0 var(--jd-radius-lg) var(--jd-radius-lg);
+}
+body.is-mobile.is-phone .jinome-dash .jd > .jd-grid {
+	margin-inline: var(--jd-gutter);
+}
+/* The no-image fallback (.jd-cover--bare) is a bordered band, not a
+   photograph, so bleeding it would put a 1px border on the pane edges. It
+   keeps the inset — and needs `width: auto` with it, because .jd-cover is
+   width: 100% and a margin alone pushes it 16px past its container. That is
+   precisely the horizontal overflow section 10 predicted; it showed up in the
+   replay as scrollWidth 416 against clientWidth 400, and it is why the image
+   cover above is inset with padding rather than a margin its own width would
+   fight. With the margin it inherits the phone .jd-cover padding rule's 16px
+   inline padding, which puts its title at 16 + 1 + 16 = 33px — the card text
+   column exactly. (Selectors, not line numbers: every :NNNN reference into
+   this file rots the next time a section above it grows.) */
+body.is-mobile.is-phone .jinome-dash .jd > .jd-cover--bare {
+	margin-inline: var(--jd-gutter);
+	width: auto;
+}
+
+/* --- the band above the cover: account for it, cut only our share ---------
+   The empty strip above the cover is ONE box: padding-top on
+   .markdown-preview-view / .cm-scroller from app.css:20425-20427, at
+   specificity (0,6,0) — which is also why the 8px of --file-margins-y never
+   shows on a phone. Every pixel of it:
+
+     --view-top-spacing-markdown = safe-area-inset-top + view-header-height + 16px
+                                   [app.css:21366, .is-phone.is-floating-nav]
+     --safe-area-inset-top       = env(safe-area-inset-top) + 40px
+                                   [Velocity body.is-phone, --safe-area-adjust]
+     --view-header-height        = --touch-size-m = 44px  [app.css:18906, 2842]
+     ---------------------------------------------------------------------
+                                 = env(safe-area-inset-top) + 100px
+
+   Three other rules declare the same token. Two lose here — Velocity's
+   body.is-phone at +24px (0,1,1) and core's plain .is-phone fallback of
+   --size-4-2 (app.css:18906, (0,1,0)). The third is the in-document-search
+   rule at (0,3,0), which does NOT lose to the rule below and gets its own
+   companion rule after it.
+
+   Of that, the FIXED .view-header occupies env(sat) + 84px: padding-top of
+   max(--safe-area-inset-top, 12px) = env(sat) + 40 (app.css:19427), plus a
+   44px title container (app.css:19391). It does not PAINT that space — in the
+   floating-nav state core sets background-color: transparent on the header
+   (app.css:21433) — so the reserve exists to keep the cover clear of the
+   header's title text and buttons, not of a bar.
+
+   16px is bare --background-primary, and we take 4 of it, not all 16. The 4 we
+   leave are not politeness: core masks .view-content with --view-top-fade-mask
+   (app.css:21453-21458), a gradient that only reaches full opacity at
+   safe-area-inset-top + view-header-height + 12px. Reclaiming all 16 would put
+   the top edge of the photograph inside that ramp at ~91% opacity, and a
+   full-bleed cover with a washed-out top edge reads as a rendering bug — a
+   worse trade than 4px. Stopping at +12px lands the cover exactly on the end
+   of the ramp.
+
+   The remaining env(sat) + 84px is chrome, not waste: the status bar and
+   Obsidian's own header. Jin's `showViewHeader: false` does not reach it —
+   app.css:4314 is body:not(.show-view-header):not(.is-phone), which excludes
+   phones — and Velocity then hides .view-header-left, so it is a tall strip
+   holding only a filename. It could be removed with :has() from
+   .workspace-leaf-content, but that takes the file menu away from the one note
+   with no other chrome, so it is named here rather than done.
+
+   Written as core's own formula with a smaller trailing gap, not as a number,
+   so it still tracks a change to the header height or to Velocity's
+   --safe-area-adjust.
+
+   NOT VERIFIED ON THE DEVICE. env(safe-area-inset-top) cannot be read from a
+   desktop, and every .is-mobile / .is-phone rule cited above comes from the
+   DESKTOP bundle's copy of the mobile stylesheet — the Capacitor build is not
+   on this machine. The SUBTRACTION is exact either way, because the env() term
+   cancels; the absolute height of the band is a range, roughly 100-148px
+   before and 96-144px after. */
+body.is-mobile.is-phone .jinome-dash {
+	--view-top-spacing-markdown: calc(var(--safe-area-inset-top) + var(--view-header-height) + 12px);
+}
+
+/* Core shrinks the same reserve to 12px while the in-document search bar is
+   open (app.css:19142-19145): the bar already clears the header, so the note
+   under it must not reserve a second one. That rule is (0,3,0) and the one
+   above is (0,3,1), which would out-rank it and push the dashboard ~72px down
+   with the search open. Reading view only — which is worse than it sounds,
+   because in Live Preview core sets the token on .cm-editor, a DESCENDANT of
+   the cssclass, so it wins there on its own and the two views would DISAGREE.
+   Restating core's value at (0,4,1) keeps them identical in both states. */
+body.is-mobile.is-phone .document-search-container + .jinome-dash {
+	--view-top-spacing-markdown: var(--size-4-3);
+}
+
+
+/* ---------------------------------------------------------------------------
+   12. TABLET — the same complaint, and a different answer
+   Jin: on the tablet the dashboard is one column inside wide side margins.
+   Both halves of that are one defect, and it is the one section 11
+   deliberately deferred.
+
+   MEASURED, not modelled — and measured a second time after the first attempt
+   MISSED THE BAND BY 9.6px, which is why the method below is the one to trust.
+
+   THE FIRST READING ASSUMED dpr 2. The device is a Galaxy Tab S8+, 2800x1752
+   physical, and the screenshots are 1752x2736 (native, status bar cropped), so
+   "image px / 2 = CSS px" looked safe. It is wrong: the effective scale is
+   2.106 px per CSS px — Obsidian's own zoom, or Samsung's screen-size setting,
+   or both. Every CSS figure came out ~5% too large, a pane of 807 was read as
+   850, and .jd was predicted at 813.5 when it rendered at 770.4. The residual
+   the first pass could not attribute ("~1px per side, probably pixel snapping")
+   was this scale, uniform and visible in three places at once.
+
+   THE SCALE-FREE METHOD, which is what the numbers below now come from. Every
+   term between the pane and .jd is an ABSOLUTE px length known from the
+   stylesheet — the 5px Android scrollbar and 2 x --jd-edge — so the measured
+   RATIO .jd/pane is one equation in one unknown and the image scale cancels
+   out entirely. Run on the two screenshots independently:
+
+     before the margin change   ratio 1453/1701 = 0.8542  ->  pane 807.9 CSS
+     after  the margin change   ratio 1623/1701 = 0.9541  ->  pane 806.9 CSS
+
+   Two shots taken days apart, of two different stylesheets, agreeing on the
+   pane to within 1.0 CSS px. That is the check the dpr premise never had.
+
+     leaf card, inner     26 -> 1727 image  =  807.4 CSS   the pane
+     .jd, before          145 -> 1598       =  690.1 CSS
+     .jd, margins zeroed   60 -> 1683       =  770.4 CSS   still 9.6 SHORT
+     .jd, --jd-edge 0 too                   =  802.4 CSS   +22.4 into the band
+     scrollbar gutter   1717 -> 1727        =    5   CSS   inline-END only
+
+     59.5 + 726.5 + 59.5 + 5 = 850.5. The accounting closes exactly, and the
+     insets coming out IDENTICAL is what proves the gutter is one-sided.
+
+   The 59.5 is 42.5 + 16 + about 1 unattributed. The 42.5 is 5% of the pane:
+   Velocity's body.is-tablet --file-margins-x: 5%, which beats core's
+   .is-mobile 24px at (0,1,1) against (0,1,0) — and that is also the empirical
+   proof that this device really does carry .is-tablet, because a mobile device
+   with neither sub-class would have measured a flat 24. The 16 is section 11's
+   own --jd-edge. The leftover ~1px per side is named rather than absorbed: it
+   is NOT a token (--size-4-4 is 16px in both bundles) and NOT a scale artefact
+   (a 1px border renders as exactly 2 image px), most likely device-pixel
+   snapping off a fractional 5% origin. It cannot threaten the band either way,
+   because the percentage term is gone entirely after this change. The 5px gutter is
+   real and is not going anywhere: .is-android sets --scrollbar-width: 5px
+   (app.css:9644) and body.styled-scrollbars gives ::-webkit-scrollbar an
+   explicit width (9654), which is a classic, space-taking scrollbar rather
+   than an overlay; scrollbar-gutter is `stable`, not `stable both-edges`, on
+   both .markdown-preview-view (4477) and .cm-scroller (3576).
+
+   So the container is 726.5px against a first real breakpoint of 780px. That
+   not a rounding problem. The pane is spending 14% of its width per side on
+   margin where a 1400px desktop pane spends 6.7%, because a PERCENTAGE margin
+   is a prose margin and it does not shrink when the pane does. Section 1 of
+   this file already declares that this note is not prose.
+
+   WHAT IS DONE, AND WHAT IS NOT: --file-margins-x goes to 0. Nothing else
+   moves. The container reaches 813.5px (850.5 less the 5px gutter, less
+   2x16px of --jd-edge) and the EXISTING >=780px band decides the layout.
+   No tablet breakpoint, no duplicated grid-template, no rule that makes an
+   813px .jd render one way here and another way in a desktop split pane.
+   That invariant is the entire point of `container: jd / inline-size`
+   (section 3), and it is why the alternative was rejected: keeping the
+   margins and adding a lower, tablet-scoped two-column band would have cost
+   ~10 duplicated declarations — the <780px block's `display: contents` and
+   its whole order: cascade have to be UNDONE, not just a grid-template added
+   — it would have left the margin half of Jin's complaint untouched, and it
+   would have run `minmax(0,1fr) 300px` at 726px, giving the main column 406px,
+   below the width the 780px threshold exists to guarantee in the first place.
+
+   HEADROOM is 33.5px, 4.1%. Once the percentage is gone every remaining term
+   is fixed px on this device, so nothing drifts with content or theme. What
+   would spend it is a split pane — which SHOULD fall back to one column, and
+   now does so at the same width a desktop does — or a large enough app font
+   size, which reaches the labels but not these insets.
+
+   LANDSCAPE needs nothing, and is the one number here that is predicted
+   rather than measured (there is no landscape screenshot). Assuming the
+   workspace chrome stays the 25.5px measured in portrait — it is px, not %,
+   so it should not scale — a 1400px viewport gives a 1374.5px pane, and .jd
+   goes from ~1197 today to 1337.5. Both are inside the >=1150px three-column
+   band, so landscape does not CHANGE band; what changes is that its headroom
+   goes from ~47px to ~187px. Landscape was already reflowing before this
+   block existed, which is the tell that Jin's report was a portrait report.
+
+   y IS RESTATED as var(--file-margins-y), not the phone block's
+   var(--size-4-2). The phone can afford 8px because app.css:20425 overrides
+   its top at (0,6,0) anyway — but that rule is .is-phone-scoped and does NOT
+   apply here, so on a tablet 8px would silently lift the dashboard 20px and
+   crop 20px off the bottom. --file-margins-y is declared on <body> by core
+   (app.css:2244) and by Velocity (body.is-tablet, 28px), so writing it here
+   re-substitutes at the value it already had and keeps tracking the theme.
+
+   The Bases trap section 11 warns about does NOT exist here:
+   --bases-embed-width / --bases-embed-transform are declared under .is-phone
+   (app.css:18980-18986) and never under .is-mobile or .is-tablet, so a tablet
+   has no compensation to fall out of sync with.
+
+   KEYED ON body.is-mobile:not(.is-phone), not .is-tablet. .is-tablet is very
+   likely present: app.js toggles .is-tablet and .is-phone as strict
+   complements of a single matchMedia("(min-width: 600px) and (min-height:
+   600px)"), and 876x1400 clears it on both axes. But that was read out of the
+   DESKTOP 1.13.7 bundle and there is no Obsidian MOBILE bundle on this
+   machine to confirm the shipped Android build matches, so it is "very
+   likely", not verified. :not(.is-phone) is correct either way, and the only
+   thing it assumes is that .is-phone is never present on a tablet — which the
+   complement toggle guarantees by construction. It also keeps the desktop
+   untouched by the same token section 11 relies on: no .is-mobile, no match.
+--------------------------------------------------------------------------- */
+body.is-mobile:not(.is-phone) .jinome-dash {
+	--file-margins: var(--file-margins-y) 0px;
+	--jd-edge: 0px;
+	--jd-gutter: var(--size-4-4, 16px);
+}
+
+/* Zeroing --jd-edge is what actually clears the band, and it is not free air:
+   it hands the same 16px back one level lower, on .jd's two children, exactly
+   as section 11 does for the phone. The cards and the cover do not move; only
+   the QUERY CONTAINER gets wider, which is the whole point — .jd is what
+   @container measures, and the sizer padding was being counted against it.
+   .jd-cover needs `width: auto` with its margin because it is width: 100%
+   (section 4); a margin alone would push it past its container, which is the
+   overflow section 11 documents on .jd-cover--bare. */
+body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-cover {
+	margin-inline: var(--jd-gutter);
+	width: auto;
+}
+body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
+	margin-inline: var(--jd-gutter);
+}
+
+/* --- what this section deliberately leaves at section 11's value ----------
+   --jd-pad STAYS AT 16, and the case for 20 is written down because it is
+   close. Section 11 took --jd-edge and --jd-pad from 24/20 to 16/16 on a 390px
+   argument, and at 813px that argument does invert: 8px of card padding is
+   1.6% of a 493px main column, and 20 would also line card content up with
+   .jd-cover__title, which is hardcoded to --size-4-6 and lands 40px from the
+   pane (37 against 33 — a 3px misalignment instead of 7).
+
+   It is not taken, because the main column is the thing this change already
+   spends. Two columns cost the work card 692.5px of content -> 451.5px, a 35%
+   cut, and that is the single largest visual consequence of this whole
+   section. Replayed at 876 portrait, --jd-pad 20 additionally takes the
+   Unscheduled table's hidden overflow from 56px to 64px and its Item column
+   from 186px to 179px. The alignment is worth 4px on one edge; the table is
+   worth more. (That table already scrolls horizontally on the phone by design
+   — .jd-table carries overflow-x: auto — so this is the same state, not a new
+   one. It is written here because it should be SEEN on the device rather than
+   discovered there.)
+
+   --jd-edge also stays at 16, and not for the phone's reason. The desktop's
+   24px would put the container at 797.5px — still past 780, but on 17.5px of
+   headroom instead of 33.5, and at this pane width headroom is worth more than
+   8px of outer air. It also has to stay non-zero for section 11's sizer rule
+   to keep meaning anything: in landscape that rule spends
+   max(--jd-edge, --safe-area-inset-right) on the end edge, and the phone's
+   --jd-edge: 0 would degrade it to max(0, inset-right) — nothing at all on a
+   device with no notch.
+
+   --jd-gap is not restated because it never moved: section 11 leaves it at the
+   base 20px on purpose, so the tablet is already on the desktop's vertical
+   rhythm. */
+
+/* --- four things this section deliberately does NOT do --------------------
+
+   THE COVER IS FRAMED, NOT FULL-BLEED, and that needs no rule: .jd-cover is
+   width: 100% of .jd, so with --jd-edge intact it simply keeps a symmetric
+   16px inset and all four corners rounded. Copying the phone was tempting and
+   is wrong three times over. (1) The width it buys is 32px on 813 — 3.9%,
+   against 13.6% on a 400px phone — and the cover is already a 4.3:1 letterbox
+   at 190px tall, so the gain is "slightly thinner band". (2) The phone squares
+   the cover's top corners because a full-bleed cover TOUCHES the header there;
+   that is only true under the floating, transparent .is-phone header, and a
+   tablet has an ordinary opaque static one with --file-margins-y: 28px of
+   background under it — a squared top would read as exactly the mistake it is
+   meant to prevent. (3) The tablet pane is a rounded leaf card (that is the
+   26/1727 edge in the scan above); a square-cornered bleed to its inner edge
+   fights the card it sits in. --jd-cover-h also stays at the base 190px: that
+   is 13.6% of this device's 1400px portrait height, LESS than the ~21% a
+   desktop window gives it, so the phone's clamp would be solving a problem
+   the tablet does not have.
+
+   THE NAV WAS GOING TO STAY 4-ACROSS, and the last block in this section
+   overrides it to 2 — read that block for why. The reasoning below is left
+   because its measurements are still the ones that made the case, and because
+   it is the record of a decision that was reversed by looking at the device.
+
+   In the >=780px band .jd-col--left spans 1/-1 and
+   the nav goes to repeat(4, minmax(0,1fr)); at 813.5px that is 771.5px of card
+   content and 191.4px per tile, 175.4px of label room after the tile's own
+   padding. The longest label is "This week · 2026-W36" at ~150px, and
+   .jd-nav__label is white-space: normal in that band, so the failure mode if
+   an app font size ever eats the margin is a second line, not a truncation.
+   Two columns would be TIDIER — dashboard.js emits 7 items and 2 rules, so at
+   four columns the first row holds one tile beside three empty cells and the
+   last holds two beside two, where at two columns only one cell is left over
+   — but it would also mean overriding that band's flex-direction: column
+   restack (a 389px centred, stacked tile is absurd), and then an 813px .jd
+   would render differently here than in a desktop split pane. That is the
+   same invariant the lower-band alternative was rejected for, and it is not
+   worth two ragged rows. Worth knowing about the band rather than fixing
+   here: its stated premise, "stack icon over label", is currently false
+   everywhere — dashboard.js's icon() is a no-op on every platform (OBS is
+   null, section 11 note 3), and .jd-nav__icon:empty is display: none on
+   mobile, so the tablet's band is four centred labels and the DESKTOP's is
+   four labels each under a 16px void. The tile still lands on the touch scale
+   for free: section 11's min-height: 44px wins at (0,3,1) over the band's
+   (0,2,0), and the band's own --jd-pad-tight block padding puts a one-line
+   tile at exactly 44px. The cleanest fix for the ragged rows is
+   grid-column: 1 / -1 on the first tile, in the band itself — but the band is
+   shared with the desktop, so it is named here rather than done.
+
+   .jd-nav__rule NEEDS NOTHING. Its grid-column: 1 / -1 resolves against the
+   EXPLICIT grid, and all three templates .jd-nav ever takes are explicit
+   (1 col base, repeat(2,...) in 520-780, repeat(4,...) in the >=780 band), so
+   the hr spans 1->2, 1->3 and 1->5: a no-op at one column, the fix at two, and
+   correct at four. .jd-nav keeps grid-auto-flow: row, so overflow wraps to new
+   ROWS and can never make implicit columns that -1 would miss. If a future
+   band ever gives .jd-nav grid-auto-flow: column, that silently stops spanning.
+
+   THE >=1150px BAND NEEDS NOTHING IN LANDSCAPE. .jd-col--left goes back to
+   grid-column: auto and the nav to a vertical list in the 260px column; the
+   main column gets 737.5px. Everything section 11 adds is component-level
+   (touch sizes, type floors) and band-agnostic, and the two rules that are NOT
+   are already .is-phone-scoped: the 2-up .jd-strip and its odd-child span. The
+   tablet keeps auto-fit and puts all five counters in one row at both widths.
+
+   THE TOP-BAND RECLAIM IS PHONE-ONLY BECAUSE IT HAS TO BE. It would be dead
+   CSS here: --view-top-spacing-markdown is DECLARED under .is-phone
+   (app.css:18904) and .is-phone.is-floating-nav / .auto-full-screen (21366),
+   and the only rule that spends it as padding-top on the note body is
+   .is-phone .mod-root ... (20425-20427). Nothing under .is-mobile or
+   .is-tablet reads it — the .is-mobile occurrence at 19137 pads the
+   in-document search BAR, not the note. A tablet's top spacing is
+   --file-margins-y, which is why the declaration above preserves it rather
+   than restating the phone's 8px.
+--------------------------------------------------------------------------- */
+
+
+/* --- the pair, and the full width for everything else ----------------------
+   The >=780px band is a DESKTOP shape: the wide card takes the main column and
+   the narrow ones get a full-width band above it. At 802px that is backwards.
+   .jd-col--left holds Navigation and Projects — seven short links and a list
+   of project codes, the two cards on this page that need the LEAST width — and
+   the band was spending the whole 802px on each of them in turn, while the work
+   table, the only card that genuinely wants width, sat in 450px beside a 300px
+   rail and scrolled horizontally to show its Unscheduled tab.
+
+   So on a tablet the pairing is inverted: .jd-col--left becomes the two-up row,
+   and .jd-grid goes back to one column for everything else. .jd-col--main and
+   .jd-col--right dissolve to `display: contents` so their cards become direct
+   grid items, exactly as the <780px block does, and the reading order falls out
+   of the DOM: strip, Navigation | Projects, Work, Calendar, Weather, Recent.
+   Their own `gap: var(--jd-gap)` is lost with the wrapper and replaced by the
+   grid's, which is the same token, so nothing moves vertically.
+
+   Work goes from 450px of column to 770px of grid — the 35% cut this section
+   used to cost it, given back — and its Unscheduled tab (517px of table) stops
+   needing a horizontal scroller at all.
+
+   THE NAV DROPS TO 2-ACROSS, which the band's own 4-across is now wrong for:
+   half of 802 less the gutter and the card's own padding is ~355px of content,
+   where four tiles would be ~85px each and "This week · 2026-W36" (~150px)
+   would wrap to three lines. Two gives ~175px, and the seven items plus two
+   rules then leave exactly one empty cell instead of four. The band's
+   flex-direction: column restack goes with it — it exists to stack an icon over
+   a label in a wide tile, and at 175px a left-aligned row is both narrower and
+   what every other width in this file already shows. (The icons are not drawn
+   anyway — section 11 note 3.)
+
+   LANDSCAPE IS UNTOUCHED. All of this sits inside the 780-1149.98px query, and
+   a Galaxy Tab S8+ in landscape measures ~1360px, which the >=1150px block
+   claims first: three columns, .jd-col--left back to grid-column: auto, nav
+   back to a vertical list. Jin confirmed landscape was already correct.
+
+   SCOPED TO THE TABLET, not to the width. This is the one place in this file
+   where the layout is NOT a pure function of container width — a desktop pane
+   dragged to 802px still gets the desktop shape. That is deliberate: the
+   desktop has a pointer, a wider reading distance and a sidebar to put things
+   in, and the trade that is right for a tablet held in two hands is not
+   automatically right there. It is called out here because it is the exception. */
+@container jd (min-width: 780px) and (max-width: 1149.98px) {
+	body.is-mobile:not(.is-phone) .jinome-dash .jd-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	body.is-mobile:not(.is-phone) .jinome-dash .jd-col--main,
+	body.is-mobile:not(.is-phone) .jinome-dash .jd-col--right {
+		display: contents;
+	}
+	body.is-mobile:not(.is-phone) .jinome-dash .jd-col--left {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--jd-gap);
+		align-items: start;
+	}
+	body.is-mobile:not(.is-phone) .jinome-dash .jd-col--left .jd-nav {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	body.is-mobile:not(.is-phone) .jinome-dash .jd-nav__item {
+		flex-direction: row;
+		gap: 10px;
+		padding: 7px 9px;
+		text-align: start;
+	}
+}
+
+/* ---------------------------------------------------------------------------
+   4. GRIMOIRE — the theme skin and two layouts, 2026-09-05
+   Activated per note: dv.view("Vector/dashboard", { layout: "broadsheet" | "log" }).
+   Everything here rides on Grimoire's tokens (--text-accent is bronze, --h3-color
+   the blue-black seal), so the dashboard recolours with the theme.
+--------------------------------------------------------------------------- */
+.jinome-dash {
+	--jd-sans: var(--font-text);
+	--jd-serif: var(--h1-font, var(--font-text));
+	--jd-mono: var(--font-monospace);
+	--jd-radius: 0; --jd-radius-sm: 0; --jd-radius-lg: 0;
+	--jd-accent-text: var(--text-accent);
+	--jd-accent-fill: var(--interactive-accent);
+	--jd-accent-wash: color-mix(in oklab, var(--text-accent) 14%, transparent);
+	--jd-label-size: 12.5px;
+	--jd-track: .16em;
+}
+.jinome-dash .jd { font-size: 16px; line-height: 1.6; }
+.jinome-dash .jd-card { border: 1px solid var(--jd-hairline); box-shadow: none; background: var(--background-primary-alt); }
+.jinome-dash .jd-card__label { font-family: var(--jd-serif); font-weight: 400; text-transform: uppercase; letter-spacing: var(--jd-track); font-size: var(--jd-label-size); color: var(--text-muted); }
+.jinome-dash .jd-stat__n { font-family: var(--jd-serif); font-weight: 400; }
+.jinome-dash .jd-mast .jd-epigraph, .jinome-dash .jd-head .jd-epigraph { font-style: italic; color: var(--text-muted); }
+
+/* --- broadsheet: masthead, ticker, three ruled columns ------------------- */
+.jinome-dash .jd-mast { text-align: center; border-bottom: 3px double var(--text-normal); padding: 0 0 12px; margin: 0 0 6px; }
+.jinome-dash .jd-mast__ears { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13.5px; color: var(--text-faint); font-style: italic; margin-bottom: 2px; }
+.jinome-dash .jd-mast__name { font-family: var(--jd-serif); font-weight: 400; font-size: 60px; letter-spacing: .1em; line-height: 1; margin: 0; }
+.jinome-dash .jd-mast__sub { font-family: var(--jd-serif); font-size: 12.5px; letter-spacing: .3em; text-transform: uppercase; color: var(--text-muted); margin-top: 8px; }
+.jinome-dash .jd--broadsheet .jd-strip {
+	display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 26px;
+	padding: 8px 0; margin-bottom: 10px; background: none; border: 0; border-radius: 0;
+	border-bottom: 1px solid var(--text-normal);
+}
+.jinome-dash .jd--broadsheet .jd-stat {
+	display: inline-flex; flex-direction: row-reverse; align-items: baseline; gap: 8px;
+	background: none; border: 0; padding: 0; box-shadow: none;
+	font-family: var(--jd-serif); font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted);
+}
+.jinome-dash .jd--broadsheet .jd-stat__n { font-size: 15px; color: var(--text-normal); }
+.jinome-dash .jd--broadsheet .jd-stat__l { font-size: inherit; letter-spacing: inherit; }
+.jinome-dash .jd--broadsheet .jd-stat[data-tone] .jd-stat__n { color: var(--h3-color); }
+.jinome-dash .jd--broadsheet .jd-card { border: 0; border-top: 3px double var(--text-normal); background: none; padding-left: 0; padding-right: 0; }
+.jinome-dash .jd--broadsheet .jd-card__label { border-bottom: 1px dotted var(--jd-hairline); padding-bottom: 6px; }
+@container jd (min-width: 900px) {
+	.jinome-dash .jd--broadsheet .jd-grid {
+		grid-template-columns: 1.25fr 1fr .8fr;
+		grid-template-areas: "strip strip strip" "main left right";
+		column-gap: 32px;
+	}
+	.jinome-dash .jd--broadsheet .jd-strip { grid-area: strip; grid-column: auto; }
+	.jinome-dash .jd--broadsheet .jd-col--main { grid-area: main; }
+	.jinome-dash .jd--broadsheet .jd-col--left { grid-area: left; grid-column: auto; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
+	.jinome-dash .jd--broadsheet .jd-col--right { grid-area: right; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
+	.jinome-dash .jd--broadsheet .jd-col--left .jd-nav { grid-template-columns: minmax(0, 1fr); }
+}
+/* the plate: the cover image as a newspaper photograph that moves */
+.jinome-dash .jd-plate { margin: 0 0 var(--jd-gap); }
+.jinome-dash .jd-plate__img { aspect-ratio: 4 / 3; border: 1px solid var(--jd-hairline); background-position: 50% 50%; background-size: 110%; background-repeat: no-repeat; animation: jd-drift 26s ease-in-out infinite alternate; }
+@keyframes jd-drift { from { background-position: 44% 44%; background-size: 108%; } to { background-position: 56% 56%; background-size: 118%; } }
+.jinome-dash .jd-plate__cap { font-family: var(--jd-mono); font-size: 11.5px; color: var(--text-faint); margin-top: 6px; }
+
+/* --- observation log: head rule, round chart on the left, ledger cards ---- */
+.jinome-dash .jd-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 3px double var(--text-normal); padding-bottom: 8px; margin-bottom: 20px; }
+.jinome-dash .jd-head__name { font-family: var(--jd-serif); font-weight: 400; font-size: 34px; letter-spacing: .08em; line-height: 1.1; margin: 0; }
+.jinome-dash .jd-head__sub { font-family: var(--jd-serif); font-size: 12.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); }
+.jinome-dash .jd--log .jd-card { border: 0; border-top: 3px double var(--text-normal); background: none; padding-left: 0; padding-right: 0; }
+.jinome-dash .jd--log .jd-strip { border: 1px solid var(--jd-hairline); background: var(--background-primary-alt); border-radius: 0; }
+@container jd (min-width: 900px) {
+	.jinome-dash .jd--log .jd-grid {
+		grid-template-columns: minmax(340px, 440px) minmax(0, 1fr);
+		grid-template-areas: "strip strip" "left main" "left right";
+		column-gap: 36px;
+	}
+	.jinome-dash .jd--log .jd-strip { grid-area: strip; grid-column: auto; }
+	.jinome-dash .jd--log .jd-col--left { grid-area: left; grid-column: auto; }
+	.jinome-dash .jd--log .jd-col--main { grid-area: main; }
+	.jinome-dash .jd--log .jd-col--right { grid-area: right; }
+	.jinome-dash .jd--log .jd-col--left .jd-nav { grid-template-columns: minmax(0, 1fr); }
+}
+.jinome-dash .jd-chart { margin: 0 0 var(--jd-gap); }
+.jinome-dash .jd-chart svg { display: block; width: 100%; aspect-ratio: 1; border: 1px solid var(--jd-hairline); background: radial-gradient(circle at 50% 50%, var(--background-primary-alt), var(--background-primary) 72%); }
+.jinome-dash .jd-chart__ring { fill: none; stroke: var(--jd-hairline); stroke-width: 1; }
+.jinome-dash .jd-chart__ring.is-major { stroke: var(--text-faint); opacity: .5; }
+.jinome-dash .jd-chart__tick { stroke: var(--text-faint); stroke-width: 1; opacity: .6; }
+.jinome-dash .jd-chart__con { fill: none; stroke: var(--text-accent); stroke-width: .9; opacity: .6; }
+.jinome-dash .jd-chart__star { fill: var(--text-normal); animation: jd-twinkle 4s ease-in-out infinite; }
+.jinome-dash .jd-chart__star.is-field { animation: none; opacity: .8; }
+.jinome-dash .jd-chart__lbl { font-family: var(--jd-serif); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; fill: var(--text-muted); }
+.jinome-dash .jd-chart__lbl.is-sub { text-transform: none; letter-spacing: .02em; font-style: italic; fill: var(--text-faint); font-size: 11px; }
+.jinome-dash .jd-chart__sky { transform-origin: 50% 50%; transform-box: view-box; animation: jd-rot 720s linear infinite; }
+.jinome-dash .jd-chart__legend { font-size: 13.5px; font-style: italic; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+@keyframes jd-rot { to { transform: rotate(360deg); } }
+@keyframes jd-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) {
+	.jinome-dash .jd-plate__img, .jinome-dash .jd-chart__sky, .jinome-dash .jd-chart__star { animation: none; }
+}
