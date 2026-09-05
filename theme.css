@@ -187,9 +187,9 @@ body {
 }
 
 /* ---- lists: the bullet is a short rule, not a dot ---------------------- */
-.markdown-rendered ul > li:not(.task-list-item)::marker { content: "–2"; color: var(--list-marker-color, var(--text-faint)); font-family: "EB Garamond", "Noto Serif KR", serif; }
+.markdown-rendered ul > li:not(.task-list-item)::marker { content: "—2"; color: var(--list-marker-color, var(--text-faint)); font-family: "EB Garamond", "Noto Serif KR", serif; }
 .cm-s-obsidian .HyperMD-list-line .list-bullet::after {
-  content: "–"; position: static; width: auto; height: auto; border-radius: 0; transform: none; background: none;
+  content: "—"; position: static; width: auto; height: auto; border-radius: 0; transform: none; background: none;
   font-family: "EB Garamond", "Noto Serif KR", serif; color: var(--list-marker-color, var(--text-faint)); line-height: 1;
 }
 
