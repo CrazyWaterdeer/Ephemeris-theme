@@ -4,7 +4,8 @@ An Obsidian theme for a Hogwarts student's notebook — wizarding-world dark aca
 
 - Dark: **Midnight** `#141A2A`, moon-silver ink, bronze links and rules, blue-black seals (callouts, H3).
 - Light: **Parchment** `#EFE8D6`, iron-gall ink.
-- Frame (sidebar, tabs, status bar) stays dark leather in both modes.
+- Frame (sidebar, tabs, status bar): navy book cloth in dark mode, leather in light mode.
+- Status emoji (📚 ✏ 📖 📗 📜 💀) render monochrome, in the text colour, via a local symbol font (Segoe UI Symbol on Windows; install Noto Emoji elsewhere).
 - Type: IM Fell English headings, EB Garamond for Latin (both embedded), **Noto Serif KR** for the body — install it on each machine.
 - Ornaments, deliberately few: one star on section rules, a manicule on callouts, a feather beside the vault name, a drop cap in Reading view.
 
