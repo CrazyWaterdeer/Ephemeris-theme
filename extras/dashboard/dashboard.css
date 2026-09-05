@@ -2866,3 +2866,15 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 /* --- a card title that is a link (Favourites, Commonplace → their index) ---- */
 .jinome-dash .jd-card__label--link { cursor: pointer; }
 .jinome-dash .jd-card__label--link:hover, .jinome-dash .jd-card__label--link:focus-visible { color: var(--text-accent); outline: none; }
+
+/* --- round 12: one type family everywhere. The base used a monospace for every figure (weather,
+       dates, week numbers, counts); in the two layouts those become EB Garamond with tabular lining
+       figures, and the big temperature takes the display face like the register numbers. */
+.jinome-dash .jd--log, .jinome-dash .jd--broadsheet { --jd-mono: var(--font-text); }
+.jinome-dash .jd--log .jd-wx__temp, .jinome-dash .jd--broadsheet .jd-wx__temp { font-family: var(--jd-serif); font-weight: 400; letter-spacing: 0; }
+.jinome-dash .jd--log :is(.jd-wx__range, .jd-wx__hum, .jd-wx__dow, .jd-date, .jd-num, .jd-cal__wk, .jd-cal__title, .jd-cal__more, .jd-card__count, .jd-tab__n, .jd-sub, .jd-nav__hint, .jd-plate__cap),
+.jinome-dash .jd--broadsheet :is(.jd-wx__range, .jd-wx__hum, .jd-wx__dow, .jd-date, .jd-num, .jd-cal__wk, .jd-cal__title, .jd-cal__more, .jd-card__count, .jd-tab__n, .jd-sub, .jd-nav__hint, .jd-plate__cap) {
+	font-family: var(--font-text); font-variant-numeric: tabular-nums lining-nums; letter-spacing: 0;
+}
+.jinome-dash .jd--log .jd-wx__range, .jinome-dash .jd--broadsheet .jd-wx__range { font-size: 14px; }
+.jinome-dash .jd--log .jd-plate__cap, .jinome-dash .jd--broadsheet .jd-plate__cap { font-size: 13px; font-style: italic; color: var(--text-faint); }
