@@ -2835,3 +2835,19 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 
 /* the count badge on the work table sits above the table box and got clipped by overflow-x */
 .jinome-dash .jd--log .jd-work .jd-table, .jinome-dash .jd--broadsheet .jd-work .jd-table { padding-top: 4px; }
+
+/* --- round 9: the header row was never clipped — the base gives th 0 top / 6 bottom padding; even it out */
+.jinome-dash .jd--log .jd-work .jd-table, .jinome-dash .jd--broadsheet .jd-work .jd-table { padding-top: 0; }
+.jinome-dash .jd--log .jd-card .jd-table table.table-view-table > thead > tr > th,
+.jinome-dash .jd--broadsheet .jd-card .jd-table table.table-view-table > thead > tr > th { padding: 7px 10px; }
+
+/* --- nav in the layouts: items carry their own hairlines, so the old ornamented rule becomes a plain gap;
+       the first item ("This week") takes the full row, the rest pair up */
+.jinome-dash .jd--log .jd-nav__rule, .jinome-dash .jd--broadsheet .jd-nav__rule { grid-column: 1 / -1; border: 0; height: 0; margin: 8px 0 0; background: none; }
+.jinome-dash .jd--log .jd-nav__rule::before, .jinome-dash .jd--log .jd-nav__rule::after,
+.jinome-dash .jd--broadsheet .jd-nav__rule::before, .jinome-dash .jd--broadsheet .jd-nav__rule::after { display: none; content: none; }
+.jinome-dash .jd--log .jd-nav > .jd-nav__item:first-child { grid-column: 1 / -1; }
+
+/* --- projects in the layouts: the title is the name; the code shows only when there is no note to name it */
+.jinome-dash .jd--log .jd-proj__item:not(.is-unresolved) .jd-proj__code,
+.jinome-dash .jd--broadsheet .jd-proj__item:not(.is-unresolved) .jd-proj__code { display: none; }
