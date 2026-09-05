@@ -516,6 +516,18 @@ const root = dv.container.createDiv({ cls: "jd" });
 // element; every card, query and control below is shared.
 const LAYOUT = (() => { try { return String(input?.layout ?? "cards"); } catch (e) { return "cards"; } })();
 root.addClass("jd--" + LAYOUT);
+/** Moon phase from the date (synodic month from the 2000-01-06 new moon): name + illumination %. */
+const moonPhase = (d = new Date()) => {
+    const syn = 29.530588853;
+    const age = (((d.getTime() / 86400000 + 2440587.5) - 2451550.1) % syn + syn) % syn;
+    const ill = Math.round((1 - Math.cos(age / syn * 2 * Math.PI)) / 2 * 100);
+    const names = ["New moon", "Waxing crescent", "First quarter", "Waxing gibbous", "Full moon", "Waning gibbous", "Last quarter", "Waning crescent"];
+    return { age, ill, name: names[Math.floor(((age / syn) * 8 + 0.5) % 8)] };
+};
+const hhmm = (v) => { const m = /T(\d{2}:\d{2})/.exec(String(v ?? "")); return m ? m[1] : "—"; };
+const nowHHMM = () => new Date().toTimeString().slice(0, 5);
+const beaufort = (kmh) => { const t = [1, 5, 11, 19, 28, 38, 49, 61, 74, 88, 102, 117]; let b = 0; while (b < 12 && Number(kmh) >= t[b]) b++; return b; };
+const transparency = (cloud) => Number.isFinite(Number(cloud)) ? Math.max(1, Math.min(5, 5 - Math.floor(Number(cloud) / 20))) : null;
 const dateLine = () => {
     const d = new Date();
     return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -670,15 +682,18 @@ if (LAYOUT === "broadsheet") {
     const m = root.createDiv({ cls: "jd-mast" });
     const ears = m.createDiv({ cls: "jd-mast__ears" });
     ears.createSpan({ text: dateLine() });
-    ears.createSpan({ text: `${rows.length.toLocaleString("en-US")} notes` });
+    ears.createSpan({ cls: "jd-mast__ear-wx", text: "" });
     m.createEl("h1", { cls: "jd-mast__name", text: "JINOME" });
     m.createDiv({ cls: "jd-mast__sub", text: "Drosophila · Neurobiology · Genetics" });
+    const mp = moonPhase();
+    m.createDiv({ cls: "jd-mast__folio", text: `${rows.length.toLocaleString("en-US")} notes · ${mp.name}, ${mp.ill}% · as of ${nowHHMM()}` });
     mountEpigraph(m);
 }
 if (LAYOUT === "log") {
     const h = root.createDiv({ cls: "jd-head" });
     h.createEl("h1", { cls: "jd-head__name", text: "JINOME" });
-    h.createDiv({ cls: "jd-head__sub", text: "Observation log · " + dateLine() });
+    const mp = moonPhase();
+    h.createDiv({ cls: "jd-head__sub", text: `Observation log · ${dateLine()} · ${WX.name} · ${nowHHMM()} KST · ${mp.name}, ${mp.ill}%` });
     mountEpigraph(h);
 }
 
@@ -687,14 +702,23 @@ const strip = grid.createDiv({ cls: "jd-strip" });
 const colLeft = grid.createDiv({ cls: "jd-col jd-col--left" });
 const colMain = grid.createDiv({ cls: "jd-col jd-col--main" });
 const colRight = grid.createDiv({ cls: "jd-col jd-col--right" });
-if (LAYOUT === "broadsheet" && COVER) {
+if (LAYOUT === "broadsheet") {
     try {
-        const f = app.vault.getAbstractFileByPath(MEDIA + COVER);
+        // Photo of the day: the newest image in Media by the date its filename carries (MAX_/AVG_ YYYYMMDD …),
+        // else by mtime. The cutline is the filename's own encoded fields, not a caption written by hand.
+        const imgs = app.vault.getFiles().filter((f) => f.path.startsWith(MEDIA) && /^(png|jpe?g|webp|gif)$/i.test(f.extension));
+        const stampOf = (f) => { const m = /^(?:MAX_|AVG_)?(\d{8})/.exec(f.basename); return m ? m[1] : ""; };
+        imgs.sort((a, b) => stampOf(b).localeCompare(stampOf(a)) || (b.stat?.mtime ?? 0) - (a.stat?.mtime ?? 0));
+        const f = imgs[0] ?? (COVER ? app.vault.getAbstractFileByPath(MEDIA + COVER) : null);
         if (f) {
             const plate = colLeft.createDiv({ cls: "jd-plate" });
-            const img = plate.createDiv({ cls: "jd-plate__img", attr: { role: "img", "aria-label": COVER } });
+            const img = plate.createDiv({ cls: "jd-plate__img", attr: { role: "img", "aria-label": f.basename } });
             img.style.backgroundImage = `url("${app.vault.adapter.getResourcePath(f.path).replace(/"/g, '\\"')}")`;
-            plate.createDiv({ cls: "jd-plate__cap", text: COVER.replace(/\.[a-z0-9]+$/i, "") });
+            const m = /^(MAX_|AVG_)?(\d{4})(\d{2})(\d{2})\s*(.*)$/.exec(f.basename);
+            const cut = m ? [m[1] ? (m[1] === "MAX_" ? "Max projection" : "Average projection") : null, `${m[2]}-${m[3]}-${m[4]}`, m[5]].filter(Boolean).join(" · ") : f.basename;
+            const cap = plate.createDiv({ cls: "jd-plate__cap" });
+            cap.createSpan({ text: cut });
+            cap.addEventListener("click", () => { try { app.workspace.openLinkText(f.path, "", false); } catch (e) { } });
         }
     } catch (e) { /* a missing plate is not a broken page */ }
 }
@@ -1787,6 +1811,19 @@ const wxFail = () => {
 /** A temperature, or an em dash — never the string "NaN°". */
 const degC = (v) => (Number.isFinite(Number(v)) ? `${Math.round(Number(v))}°` : "—");
 
+/** The observer's lines: transparency from cloud cover, wind as Beaufort force, sun and moon. */
+const wxExtra = (cur, day, meta) => {
+    const lines = [];
+    const tr = transparency(cur.cloud_cover);
+    if (tr) lines.push(`Transparency ${tr}/5 · cloud ${Math.round(cur.cloud_cover)}%`);
+    if (Number.isFinite(Number(cur.wind_speed_10m))) lines.push(`Wind force ${beaufort(cur.wind_speed_10m)} · ${Math.round(cur.wind_speed_10m)} km/h`);
+    const sr = day.sunrise?.[0], ss = day.sunset?.[0];
+    if (sr && ss) lines.push(`Sunrise ${hhmm(sr)} · Sunset ${hhmm(ss)}`);
+    if (LAYOUT === "log") { const mp = moonPhase(); lines.push(`Moon ${mp.name.toLowerCase()}, ${mp.ill}%`); }
+    for (const t of lines) meta.createEl("span", { cls: "jd-wx__obs", text: t });
+    const ear = document.querySelector(".jd-mast__ear-wx");
+    if (ear && sr && ss) ear.textContent = `Sunrise ${hhmm(sr)} · Sunset ${hhmm(ss)}`;
+};
 const wxPaint = (d) => {
     try {
         wxEl.removeAttribute("data-empty");
@@ -1810,6 +1847,7 @@ const wxPaint = (d) => {
         // The weekday, not "Today / Tomorrow / Day after": three three-letter
         // labels are the same width and say the same thing without the reader
         // having to hold an offset in their head.
+        if (LAYOUT !== "cards") wxExtra(cur, day, meta);
         for (let i = 0; i < Math.min(3, day.time.length); i++) {
             const iso = asDate(day.time[i]);
             const [t2, i2] = wmo(day.weather_code?.[i]);
@@ -1837,8 +1875,8 @@ const wxPaint = (d) => {
  */
 const WX_URL = "https://api.open-meteo.com/v1/forecast"
     + `?latitude=${WX.lat}&longitude=${WX.lon}`
-    + "&current=temperature_2m,weather_code,relative_humidity_2m,is_day"
-    + "&daily=temperature_2m_max,temperature_2m_min,weather_code"
+    + "&current=temperature_2m,weather_code,relative_humidity_2m,is_day,cloud_cover,wind_speed_10m"
+    + "&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset"
     + "&timezone=Asia%2FSeoul&forecast_days=3";
 const WX_TTL = 30 * 60 * 1000;
 /*
@@ -1926,10 +1964,18 @@ if (LAYOUT === "log") {
         const g = el("g", { class: "jd-chart__sky" });
         const key = [];
         const rnd = seeded(7);
-        const fieldN = Math.min(60, Number(reviewWaiting) || 0);
+        const waiting = rows.filter((r) => isType(r, "Review") && asArray(r.p?.status).map(String).some((s) => s.includes("Not started")))
+            .sort((a, b) => String(b.stamp).localeCompare(String(a.stamp)));
+        const fieldN = Math.min(60, waiting.length || Number(reviewWaiting) || 0);
+        svg.style.setProperty("--jd-moon", String(moonPhase().ill / 100));
         for (let i = 0; i < fieldN; i++) {
             const a = rnd() * Math.PI * 2, d = 40 + rnd() * 145;
-            el("circle", { cx: (200 + Math.cos(a) * d).toFixed(1), cy: (200 + Math.sin(a) * d).toFixed(1), r: (0.7 + rnd() * 0.6).toFixed(2), class: "jd-chart__star is-field" }, field);
+            const c = el("circle", { cx: (200 + Math.cos(a) * d).toFixed(1), cy: (200 + Math.sin(a) * d).toFixed(1), r: (0.7 + rnd() * 0.6).toFixed(2), class: "jd-chart__star is-field" }, field);
+            const w = waiting[i];
+            if (w) {   // catalogue number = the note's own zk stamp; the star opens the review
+                const t = document.createElementNS(NS, "title"); t.textContent = `${w.stamp ?? ""} · ${titleOf(w)}`; c.appendChild(t);
+                c.style.cursor = "pointer"; c.addEventListener("click", () => goto(w.path));
+            }
         }
         mainsAll.forEach((main, i) => {
             const papers = count(main, "Paper"), exps = count(main, "Experiment");
@@ -2028,6 +2074,64 @@ if (LAYOUT === "broadsheet") {
     panel("commonplace", () => {
         if (!cps.length) { empty(cpCard, "No note is tagged Commonplace yet."); return; }
         stories(cpCard.body, cps);
+    });
+}
+if (LAYOUT !== "cards") {
+    // Splash and off-lead: the two most urgent items, by the same order the Today tab uses.
+    try {
+        const seen = new Set();
+        const byDate = (a, b) => String(a.due ?? a.sch).localeCompare(String(b.due ?? b.sch));
+        const lead = [...[...overdue].sort(byDate), ...[...todayItems].sort(byDate), ...[...dueThisWeek].sort(byDate)]
+            .filter((r) => !seen.has(r.path) && seen.add(r.path)).slice(0, 2);
+        if (lead.length) {
+            const box = document.createElement("section"); box.className = "jd-splash";
+            lead.forEach((r, i) => {
+                const a = box.createEl("article", { cls: "jd-splash__item" + (i ? " is-offlead" : "") });
+                const kicker = [...(r.pids ?? []), ...asArray(r.p?.status).map(String)].join(" · ");
+                if (kicker) a.createDiv({ cls: "jd-splash__kicker", text: kicker });
+                const h = a.createEl("a", { cls: "jd-splash__hl", text: titleOf(r), attr: { role: "button", tabindex: "0" } });
+                const fire = (ev) => { ev.preventDefault(); goto(r.path); };
+                h.addEventListener("click", fire);
+                h.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") fire(ev); });
+                const when = r.due ?? r.sch;
+                const late = when ? lateMark(when) : "";
+                a.createDiv({ cls: "jd-splash__by", text: [when ? (r.due ? "due " : "scheduled ") + fmtDay(when) : null, late || null].filter(Boolean).join(" · ") });
+                const ex = a.createEl("p", { cls: "jd-splash__ex" });
+                excerptOf(r.path).then((t) => { if (t) ex.textContent = t; else ex.remove(); });
+            });
+            colMain.insertBefore(box, colMain.firstChild);
+        }
+    } catch (e) { /* no splash is a valid state */ }
+    // Index box: the navigation list carries the count behind each label.
+    try {
+        const isT = (r, t) => asArray(r.p?.type).map(String).includes(t);
+        const counts = {
+            "Papers": rows.filter((r) => isT(r, "Paper")).length,
+            "Projects": projects.length,
+            "Favourites": rows.filter((r) => r.p?.favourite === true || String(r.p?.favourite) === "true").length,
+            "Commonplace": rows.filter((r) => tagStrings(r.p).includes("Commonplace")).length,
+        };
+        navCard.body.querySelectorAll(".jd-nav__item").forEach((a) => {
+            const label = a.querySelector(".jd-nav__label")?.textContent?.trim();
+            const n = counts[label];
+            if (Number.isFinite(n) && n > 0) a.createEl("span", { cls: "jd-nav__count", text: n.toLocaleString("en-US") });
+        });
+    } catch (e) { }
+    // Briefs: the review pipeline by stage — the parts behind the ticker's single "waiting" sum.
+    const revCard = card(colLeft, "reviews", "Reviews");
+    panel("reviews", () => {
+        const STAGES = ["📚Not started", "✏Draft", "📖In progress", "📗Done", "📜Final", "💀Not today"];
+        const reviews = rows.filter((r) => asArray(r.p?.type).map(String).includes("Review"));
+        if (!reviews.length) { empty(revCard, "No note carries type: Review."); return; }
+        const list = revCard.body.createEl("ul", { cls: "jd-briefs" });
+        for (const st of STAGES) {
+            const n = reviews.filter((r) => asArray(r.p?.status).map(String).some((s) => s.replace(/\s+/g, "") === st.replace(/\s+/g, ""))).length;
+            const li = list.createEl("li");
+            li.createSpan({ cls: "jd-briefs__k", text: st });
+            li.createSpan({ cls: "jd-briefs__n", text: String(n) });
+        }
+        const other = reviews.length - STAGES.reduce((s, st) => s + reviews.filter((r) => asArray(r.p?.status).map(String).some((x) => x.replace(/\s+/g, "") === st.replace(/\s+/g, ""))).length, 0);
+        if (other > 0) { const li = list.createEl("li"); li.createSpan({ cls: "jd-briefs__k", text: "other" }); li.createSpan({ cls: "jd-briefs__n", text: String(other) }); }
     });
 }
 panel("recent", () => {

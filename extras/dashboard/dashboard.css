@@ -2878,3 +2878,26 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 }
 .jinome-dash .jd--log .jd-wx__range, .jinome-dash .jd--broadsheet .jd-wx__range { font-size: 14px; }
 .jinome-dash .jd--log .jd-plate__cap, .jinome-dash .jd--broadsheet .jd-plate__cap { font-size: 13px; font-style: italic; color: var(--text-faint); }
+
+/* --- round 13: what the research earned ------------------------------------------------- */
+.jinome-dash .jd-mast__folio { font-size: 13px; color: var(--text-faint); margin-top: 6px; font-variant-numeric: tabular-nums; }
+.jinome-dash .jd-mast__ear-wx:empty::before { content: "\00a0"; }
+.jinome-dash .jd-splash { border-top: 3px double var(--text-normal); padding: 12px 0 4px; margin: 0 0 var(--jd-gap); display: grid; gap: 14px; }
+.jinome-dash .jd-splash__item { padding-bottom: 12px; border-bottom: 1px solid var(--jd-hairline); }
+.jinome-dash .jd-splash__item:last-child { border-bottom: 0; }
+.jinome-dash .jd-splash__kicker { font-family: var(--jd-serif); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-accent); margin-bottom: 4px; }
+.jinome-dash .jd-splash__hl { display: block; font-family: var(--jd-serif); font-size: 30px; line-height: 1.15; color: var(--text-normal); text-decoration: none; cursor: pointer; text-wrap: balance; }
+.jinome-dash .jd-splash__item.is-offlead .jd-splash__hl { font-size: 21px; }
+.jinome-dash .jd-splash__hl:hover { color: var(--text-accent); }
+.jinome-dash .jd-splash__by { font-size: 13.5px; font-style: italic; color: var(--text-faint); margin: 4px 0 6px; }
+.jinome-dash .jd-splash__ex { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text-muted); }
+.jinome-dash .jd-splash__item.is-offlead .jd-splash__ex { font-size: 15px; }
+.jinome-dash .jd-nav__count { margin-left: auto; font-size: 13px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.jinome-dash .jd-briefs { list-style: none; margin: 0; padding: 0; }
+.jinome-dash .jd-briefs li { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 2px; border-bottom: 1px solid var(--jd-hairline); font-size: 15px; }
+.jinome-dash .jd-briefs li:last-child { border-bottom: 0; }
+.jinome-dash .jd-briefs__n { font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.jinome-dash .jd-wx__obs { display: block; font-size: 13.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.jinome-dash .jd--log .jd-chart svg { background: linear-gradient(rgba(230,226,210, calc(var(--jd-moon, 0) * .05)), rgba(230,226,210, calc(var(--jd-moon, 0) * .05))), radial-gradient(circle at 50% 50%, var(--background-primary-alt), var(--background-primary) 72%); }
+.jinome-dash .jd-chart__star.is-field { opacity: calc(.85 - var(--jd-moon, 0) * .4); }
+.jinome-dash .jd-plate__cap { cursor: pointer; }
