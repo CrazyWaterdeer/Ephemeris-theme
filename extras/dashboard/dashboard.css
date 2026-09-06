@@ -2901,3 +2901,18 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 .jinome-dash .jd--log .jd-chart svg { background: linear-gradient(rgba(230,226,210, calc(var(--jd-moon, 0) * .05)), rgba(230,226,210, calc(var(--jd-moon, 0) * .05))), radial-gradient(circle at 50% 50%, var(--background-primary-alt), var(--background-primary) 72%); }
 .jinome-dash .jd-chart__star.is-field { opacity: calc(.85 - var(--jd-moon, 0) * .4); }
 .jinome-dash .jd-plate__cap { cursor: pointer; }
+
+/* --- round 14: weather sites; the third column takes projects and briefs ---------------------- */
+.jinome-dash .jd-wx__sites { display: flex; align-items: baseline; gap: 12px; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--jd-hairline); }
+.jinome-dash .jd-wx__site { background: none; border: 0; padding: 0; box-shadow: none; cursor: pointer; font-family: var(--jd-serif); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); }
+.jinome-dash .jd-wx__site:hover { color: var(--text-normal); }
+.jinome-dash .jd-wx__site.is-on { color: var(--text-accent); box-shadow: inset 0 -1px 0 var(--interactive-accent); }
+.jinome-dash .jd-wx__search { margin-left: auto; width: 7.5em; background: none; border: 0; border-bottom: 1px solid var(--jd-hairline); border-radius: 0; padding: 0 2px 2px; font-family: var(--font-text); font-size: 13px; color: var(--text-muted); box-shadow: none; }
+.jinome-dash .jd-wx__search:focus { outline: none; border-bottom-color: var(--interactive-accent); color: var(--text-normal); }
+.jinome-dash .jd-wx__search::placeholder { color: var(--text-faint); }
+@container jd (min-width: 900px) {
+	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="calendar"] { order: 1; }
+	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="weather"] { order: 2; }
+	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="projects"] { order: 3; }
+	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="reviews"] { order: 4; }
+}

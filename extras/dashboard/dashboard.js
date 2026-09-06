@@ -681,7 +681,9 @@ if (!root.querySelector(".jd-cover") && TITLE && LAYOUT === "cards") {
 if (LAYOUT === "broadsheet") {
     const m = root.createDiv({ cls: "jd-mast" });
     const ears = m.createDiv({ cls: "jd-mast__ears" });
-    ears.createSpan({ text: dateLine() });
+    const first = rows.filter((r) => r.stamp).map((r) => String(r.stamp)).sort()[0];
+    const issue = first && /^\d{8}/.test(first) ? Math.floor((dayNum(TODAY) - dayNum(`${first.slice(0, 4)}-${first.slice(4, 6)}-${first.slice(6, 8)}`))) + 1 : null;
+    ears.createSpan({ text: dateLine() + (issue ? ` · No. ${issue.toLocaleString("en-US")}` : "") });
     ears.createSpan({ cls: "jd-mast__ear-wx", text: "" });
     m.createEl("h1", { cls: "jd-mast__name", text: "JINOME" });
     m.createDiv({ cls: "jd-mast__sub", text: "Drosophila · Neurobiology · Genetics" });
@@ -1422,7 +1424,7 @@ panel("nav", () => {
 });
 
 // ── 4. projects ─────────────────────────────────────────────────────────
-const projectCard = card(colLeft, "projects", "Projects");
+const projectCard = card(LAYOUT === "broadsheet" ? colRight : colLeft, "projects", "Projects");
 
 panel("projects", () => {
     /*
@@ -1814,12 +1816,16 @@ const degC = (v) => (Number.isFinite(Number(v)) ? `${Math.round(Number(v))}°` :
 /** The observer's lines: transparency from cloud cover, wind as Beaufort force, sun and moon. */
 const wxExtra = (cur, day, meta) => {
     const lines = [];
-    const tr = transparency(cur.cloud_cover);
-    if (tr) lines.push(`Transparency ${tr}/5 · cloud ${Math.round(cur.cloud_cover)}%`);
-    if (Number.isFinite(Number(cur.wind_speed_10m))) lines.push(`Wind force ${beaufort(cur.wind_speed_10m)} · ${Math.round(cur.wind_speed_10m)} km/h`);
     const sr = day.sunrise?.[0], ss = day.sunset?.[0];
-    if (sr && ss) lines.push(`Sunrise ${hhmm(sr)} · Sunset ${hhmm(ss)}`);
-    if (LAYOUT === "log") { const mp = moonPhase(); lines.push(`Moon ${mp.name.toLowerCase()}, ${mp.ill}%`); }
+    if (LAYOUT === "log") {
+        const tr = transparency(cur.cloud_cover);
+        if (tr) lines.push(`Transparency ${tr}/5 · cloud ${Math.round(cur.cloud_cover)}%`);
+        if (Number.isFinite(Number(cur.wind_speed_10m))) lines.push(`Wind force ${beaufort(cur.wind_speed_10m)} · ${Math.round(cur.wind_speed_10m)} km/h`);
+        if (sr && ss) lines.push(`Sunrise ${hhmm(sr)} · Sunset ${hhmm(ss)}`);
+        const mp = moonPhase(); lines.push(`Moon ${mp.name.toLowerCase()}, ${mp.ill}%`);
+    } else if (Number.isFinite(Number(cur.wind_speed_10m))) {
+        lines.push(`Wind ${Math.round(cur.wind_speed_10m)} km/h`);
+    }
     for (const t of lines) meta.createEl("span", { cls: "jd-wx__obs", text: t });
     const ear = document.querySelector(".jd-mast__ear-wx");
     if (ear && sr && ss) ear.textContent = `Sunrise ${hhmm(sr)} · Sunset ${hhmm(ss)}`;
@@ -1873,79 +1879,76 @@ const wxPaint = (d) => {
  * error: the weather is the least important thing on this page and must never
  * be able to stop the rest of it from rendering.
  */
-const WX_URL = "https://api.open-meteo.com/v1/forecast"
-    + `?latitude=${WX.lat}&longitude=${WX.lon}`
+const WX_SITES = [WX, { name: "Jeonju", lat: 35.8242, lon: 127.1480 }];
+const wxUrl = (s) => "https://api.open-meteo.com/v1/forecast"
+    + `?latitude=${s.lat}&longitude=${s.lon}`
     + "&current=temperature_2m,weather_code,relative_humidity_2m,is_day,cloud_cover,wind_speed_10m"
     + "&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset"
     + "&timezone=Asia%2FSeoul&forecast_days=3";
 const WX_TTL = 30 * 60 * 1000;
-/*
- * Cooldown after a FAILED request, and it is the half that matters.
- *
- * The success path was already safe — one request per 30 minutes. The failure
- * path was not: nothing was written to the cache when the request failed, so
- * every re-render tried again, and Dataview re-renders this block on a 2.5s
- * debounce after ANY index change. Ten minutes of typing with Open-Meteo down,
- * rate-limiting, or simply no network is ~240 requests against a 600/min
- * budget — the dashboard would be the thing keeping itself throttled. So a
- * failure is cached too, and the next five minutes of re-renders cost nothing.
- */
 const WX_RETRY = 5 * 60 * 1000;
-
-(async () => {
+const wxGet = async (url) => {
+    if (OBS?.requestUrl) return (await OBS.requestUrl({ url, method: "GET" })).json;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(String(res.status));
+    return await res.json();
+};
+let wxSite = WX;
+try { const c = JSON.parse(store.get(LS_WX + ":site", "null")); if (c && c.name && Number.isFinite(Number(c.lat))) wxSite = c; } catch (e) { }
+const wxLabel = () => { const el = wxCard.section.querySelector(".jd-card__label"); if (el) el.textContent = wxSite.name; };
+/** Fetch-and-paint for one site, cached per site for 30 min with a 5 min cooldown after a failure. */
+const wxLoad = async (site) => {
+    wxSite = site; wxLabel();
+    try { store.set(LS_WX + ":site", JSON.stringify(site)); } catch (e) { }
+    const key = LS_WX + ":" + String(site.name).toLowerCase(), errKey = LS_WX_ERR + ":" + String(site.name).toLowerCase();
     let stale = null;
     try {
-        const raw = store.get(LS_WX, null);
-        if (raw) {
-            const c = JSON.parse(raw);
-            if (c && c.d) {
-                if (Date.now() - Number(c.t) < WX_TTL) return wxPaint(c.d);
-                stale = c.d;
-            }
-        }
-    } catch (e) { /* corrupt cache is just a cache miss */ }
-
-    if (stale) wxPaint(stale);      // show something immediately, then refresh
-
-    // A re-render mid-flight would otherwise fire a second identical request.
-    try {
-        if (window.__jinomeDashWx) { wxPaint(await window.__jinomeDashWx); return; }
+        const raw = store.get(key, null);
+        if (raw) { const c = JSON.parse(raw); if (c && c.d) { if (Date.now() - Number(c.t) < WX_TTL) return wxPaint(c.d); stale = c.d; } }
     } catch (e) { }
-
-    // Recently failed? Do not ask again yet — see WX_RETRY.
+    if (stale) wxPaint(stale);
     try {
-        const failedAt = Number(store.get(LS_WX_ERR, 0));
-        if (failedAt && Date.now() - failedAt < WX_RETRY) {
-            if (!stale) wxFail();
-            return;
-        }
+        const failedAt = Number(store.get(errKey, 0));
+        if (failedAt && Date.now() - failedAt < WX_RETRY) { if (!stale) wxFail(); return; }
     } catch (e) { }
-
-    const job = (async () => {
-        // requestUrl skips CORS entirely; Open-Meteo also sends ACAO: * so
-        // plain fetch works on mobile, where the obsidian module is absent.
-        if (OBS?.requestUrl) return (await OBS.requestUrl({ url: WX_URL, method: "GET" })).json;
-        const res = await fetch(WX_URL);
-        if (!res.ok) throw new Error(String(res.status));
-        return await res.json();
-    })();
-
-    try { window.__jinomeDashWx = job; } catch (e) { }
-
     try {
-        const d = await job;
-        store.set(LS_WX, JSON.stringify({ t: Date.now(), d }));
-        store.set(LS_WX_ERR, 0);            // clear the cooldown
-        wxPaint(d);
+        const d = await wxGet(wxUrl(site));
+        store.set(key, JSON.stringify({ t: Date.now(), d }));
+        store.set(errKey, 0);
+        if (wxSite === site) wxPaint(d);
     } catch (e) {
-        store.set(LS_WX_ERR, Date.now());   // start the cooldown
+        store.set(errKey, Date.now());
         if (!stale) wxFail();
-    } finally {
-        try { delete window.__jinomeDashWx; } catch (e) { }
     }
-})();
-
-// ── 7. recent ───────────────────────────────────────────────────────────
+};
+const wxGeocode = async (q) => {
+    const j = await wxGet("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(q) + "&count=1&language=ko&format=json");
+    const r = j?.results?.[0];
+    return r ? { name: r.name, lat: r.latitude, lon: r.longitude } : null;
+};
+{
+    const bar = document.createElement("div"); bar.className = "jd-wx__sites";
+    wxCard.body.insertBefore(bar, wxCard.body.firstChild);
+    const btns = WX_SITES.map((s) => {
+        const btn = bar.createEl("button", { cls: "jd-wx__site", text: s.name, attr: { type: "button" } });
+        btn.addEventListener("click", () => { wxLoad(s); mark(); });
+        return btn;
+    });
+    const inp = bar.createEl("input", { cls: "jd-wx__search", type: "text", attr: { placeholder: "다른 곳 ⏎", "aria-label": "place", spellcheck: "false" } });
+    const mark = () => btns.forEach((btn, i) => btn.toggleClass("is-on", wxSite.name === WX_SITES[i].name));
+    inp.addEventListener("keydown", async (ev) => {
+        if (ev.key !== "Enter") return;
+        const q = inp.value.trim(); if (!q) return;
+        inp.disabled = true;
+        try {
+            const s = await wxGeocode(q);
+            if (s) { inp.value = ""; await wxLoad(s); } else notify(`"${q}" — no such place.`);
+        } catch (e) { notify("Place lookup failed."); }
+        finally { inp.disabled = false; mark(); }
+    });
+    mark();
+}
+wxLoad(wxSite);
 if (LAYOUT === "log") {
     try {
         const idsOf = (r) => r.pids ?? pidList(r.p);
@@ -2118,7 +2121,7 @@ if (LAYOUT !== "cards") {
         });
     } catch (e) { }
     // Briefs: the review pipeline by stage — the parts behind the ticker's single "waiting" sum.
-    const revCard = card(colLeft, "reviews", "Reviews");
+    const revCard = card(LAYOUT === "broadsheet" ? colRight : colLeft, "reviews", "Reviews");
     panel("reviews", () => {
         const STAGES = ["📚Not started", "✏Draft", "📖In progress", "📗Done", "📜Final", "💀Not today"];
         const reviews = rows.filter((r) => asArray(r.p?.type).map(String).includes("Review"));
