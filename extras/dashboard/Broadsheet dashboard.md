@@ -11,7 +11,7 @@ type:
 tags:
   - Commonplace
 aliases:
-  - Dashboard
+  - Broadsheet dashboard
 favourite: false
 ---
 
