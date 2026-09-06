@@ -1424,7 +1424,7 @@ panel("nav", () => {
 });
 
 // ── 4. projects ─────────────────────────────────────────────────────────
-const projectCard = card(LAYOUT === "broadsheet" ? colRight : colLeft, "projects", "Projects");
+const projectCard = card(colLeft, "projects", "Projects");
 
 panel("projects", () => {
     /*
@@ -1664,7 +1664,7 @@ panel("calendar", () => {
 });
 
 // ── 6. weather ──────────────────────────────────────────────────────────
-const wxCard = card(colRight, "weather", WX.name);
+const wxCard = card(colRight, "weather", LAYOUT === "log" ? "Conditions" : LAYOUT === "broadsheet" ? "Weather" : WX.name);
 const wxEl = wxCard.body.createDiv({ cls: "jd-wx" });
 const wxNow = wxEl.createDiv({ cls: "jd-wx__now" });
 const wxDays = wxEl.createDiv({ cls: "jd-wx__days" });
@@ -1895,7 +1895,7 @@ const wxGet = async (url) => {
 };
 let wxSite = WX;
 try { const c = JSON.parse(store.get(LS_WX + ":site", "null")); if (c && c.name && Number.isFinite(Number(c.lat))) wxSite = c; } catch (e) { }
-const wxLabel = () => { const el = wxCard.section.querySelector(".jd-card__label"); if (el) el.textContent = wxSite.name; };
+const wxLabel = () => { if (LAYOUT !== "cards") return; const el = wxCard.section.querySelector(".jd-card__label"); if (el) el.textContent = wxSite.name; };
 /** Fetch-and-paint for one site, cached per site for 30 min with a 5 min cooldown after a failure. */
 const wxLoad = async (site) => {
     wxSite = site; wxLabel();
@@ -1927,22 +1927,41 @@ const wxGeocode = async (q) => {
     return r ? { name: r.name, lat: r.latitude, lon: r.longitude } : null;
 };
 {
+    // Site tabs: the two fixed places, then the last searched place as a third tab, then the search field.
+    // Every event is swallowed so Live Preview's editor never sees an Enter inside the widget.
     const bar = document.createElement("div"); bar.className = "jd-wx__sites";
     wxCard.body.insertBefore(bar, wxCard.body.firstChild);
-    const btns = WX_SITES.map((s) => {
+    const swallowAll = (el) => ["click", "mousedown", "keydown", "keyup", "keypress", "focus"].forEach((t) => el.addEventListener(t, (ev) => ev.stopPropagation()));
+    let custom = null;
+    try { const c = JSON.parse(store.get(LS_WX + ":custom", "null")); if (c && c.name && Number.isFinite(Number(c.lat))) custom = c; } catch (e) { }
+    const btns = [];
+    const tab = (s) => {
         const btn = bar.createEl("button", { cls: "jd-wx__site", text: s.name, attr: { type: "button" } });
-        btn.addEventListener("click", () => { wxLoad(s); mark(); });
+        btn.dataset.site = s.name;
+        swallowAll(btn);
+        btn.addEventListener("click", (ev) => { ev.preventDefault(); wxLoad(s); mark(); });
+        btns.push(btn);
         return btn;
-    });
+    };
+    WX_SITES.forEach(tab);
+    let customBtn = custom ? tab(custom) : null;
     const inp = bar.createEl("input", { cls: "jd-wx__search", type: "text", attr: { placeholder: "다른 곳 ⏎", "aria-label": "place", spellcheck: "false" } });
-    const mark = () => btns.forEach((btn, i) => btn.toggleClass("is-on", wxSite.name === WX_SITES[i].name));
+    swallowAll(inp);
+    const mark = () => btns.forEach((btn) => btn.toggleClass("is-on", btn.dataset.site === wxSite.name));
     inp.addEventListener("keydown", async (ev) => {
         if (ev.key !== "Enter") return;
+        ev.preventDefault();
         const q = inp.value.trim(); if (!q) return;
         inp.disabled = true;
         try {
             const s = await wxGeocode(q);
-            if (s) { inp.value = ""; await wxLoad(s); } else notify(`"${q}" — no such place.`);
+            if (!s) { notify(`"${q}" — no such place.`); return; }
+            custom = s;
+            try { store.set(LS_WX + ":custom", JSON.stringify(s)); } catch (e) { }
+            if (customBtn) { customBtn.textContent = s.name; customBtn.dataset.site = s.name; customBtn.onclick = (e2) => { e2.preventDefault(); wxLoad(s); mark(); }; }
+            else { customBtn = tab(s); bar.insertBefore(customBtn, inp); }
+            inp.value = "";
+            await wxLoad(s);
         } catch (e) { notify("Place lookup failed."); }
         finally { inp.disabled = false; mark(); }
     });

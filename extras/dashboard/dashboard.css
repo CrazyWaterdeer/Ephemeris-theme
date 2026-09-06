@@ -2913,6 +2913,5 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 @container jd (min-width: 900px) {
 	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="calendar"] { order: 1; }
 	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="weather"] { order: 2; }
-	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="projects"] { order: 3; }
-	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="reviews"] { order: 4; }
+	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="reviews"] { order: 3; }
 }
