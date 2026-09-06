@@ -2752,7 +2752,7 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 .jinome-dash .jd--broadsheet .jd-card__label { border-bottom: 1px dotted var(--jd-hairline); padding-bottom: 6px; }
 @container jd (min-width: 900px) {
 	.jinome-dash .jd--broadsheet .jd-grid {
-		grid-template-columns: 1fr 1.3fr .8fr;
+		grid-template-columns: .85fr 1.35fr .8fr;
 		grid-template-areas: "strip strip strip" "left main right";
 		column-gap: 32px;
 	}

@@ -561,7 +561,7 @@ const dateLine = () => {
  * To change the cover, put a file in Jinome/Introns/Media and edit COVER. Set
  * it to "" for no cover — the page is designed to look right without one.
  */
-const COVER = "AVG_20250715 Canton S vF Venerose Dh44-PI 3.png";   // was Home.webp; any file in Media works
+const COVER = "20260127 MAX_2966 + 1234 vF venerose injected rectum 2.png";   // the plate; empty string = newest image in Media
 const MEDIA = "Jinome/Introns/Media/";
 
 /*
@@ -724,13 +724,14 @@ if (LAYOUT === "broadsheet") {
         const imgs = app.vault.getFiles().filter((f) => f.path.startsWith(MEDIA) && /^(png|jpe?g|webp|gif)$/i.test(f.extension));
         const stampOf = (f) => { const m = /^(?:MAX_|AVG_)?(\d{8})/.exec(f.basename); return m ? m[1] : ""; };
         imgs.sort((a, b) => stampOf(b).localeCompare(stampOf(a)) || (b.stat?.mtime ?? 0) - (a.stat?.mtime ?? 0));
-        const f = imgs[0] ?? (COVER ? app.vault.getAbstractFileByPath(MEDIA + COVER) : null);
+        const f = (COVER && app.vault.getAbstractFileByPath(MEDIA + COVER)) || imgs[0] || null;
         if (f) {
             const plate = colLeft.createDiv({ cls: "jd-plate" });
             const img = plate.createDiv({ cls: "jd-plate__img", attr: { role: "img", "aria-label": f.basename } });
             img.style.backgroundImage = `url("${app.vault.adapter.getResourcePath(f.path).replace(/"/g, '\\"')}")`;
-            const m = /^(MAX_|AVG_)?(\d{4})(\d{2})(\d{2})\s*(.*)$/.exec(f.basename);
-            const cut = m ? [m[1] ? (m[1] === "MAX_" ? "Max projection" : "Average projection") : null, `${m[2]}-${m[3]}-${m[4]}`, m[5]].filter(Boolean).join(" · ") : f.basename;
+            const m = /^(MAX_|AVG_)?(\d{4})(\d{2})(\d{2})\s*(MAX_|AVG_)?(.*)$/.exec(f.basename);
+            const proj = m ? (m[1] || m[5]) : null;
+            const cut = m ? [proj ? (proj === "MAX_" ? "Max projection" : "Average projection") : null, `${m[2]}-${m[3]}-${m[4]}`, m[6]].filter(Boolean).join(" · ") : f.basename;
             const cap = plate.createDiv({ cls: "jd-plate__cap" });
             cap.createSpan({ text: cut });
             cap.addEventListener("click", () => { try { app.workspace.openLinkText(f.path, "", false); } catch (e) { } });
