@@ -525,6 +525,170 @@ const moonPhase = (d = new Date()) => {
     return { age, ill, name: names[Math.floor(((age / syn) * 8 + 0.5) % 8)] };
 };
 const hhmm = (v) => { const m = /T(\d{2}:\d{2})/.exec(String(v ?? "")); return m ? m[1] : "—"; };
+
+/*
+ * The sky's events of the day, without a library. Planets from the JPL approximate
+ * Keplerian elements (Standish, valid 1800–2050), the Moon from the Astronomical
+ * Almanac's low-precision series (~0.3°), longitudes brought to the equinox of date
+ * by general precession. Good to a degree and to about an hour, which is what a
+ * dated line needs: Moon phases (with the almanac names), the Sun's seasons and
+ * signs, planets at opposition, station or conjunction, the annual meteor showers
+ * on their conventional peak night, and the eclipses of 2026–2030 from a table.
+ * Checked in Node against 2026 (equinoxes, Saturn's opposition, Mercury's three
+ * retrogrades, the May blue moon, the March eclipse) before it was allowed here.
+ */
+const SKY = (() => {
+    const R = Math.PI / 180;
+    const norm = (x) => ((x % 360) + 360) % 360;
+    const wrap = (x) => ((x + 540) % 360) - 180;              // −180 … 180
+    // a e I L ϖ Ω, then their rates per Julian century.
+    const EL = {
+        Mercury: [0.38709927, 0.20563593, 7.00497902, 252.25032350, 77.45779628, 48.33076593, 0.00000037, 0.00001906, -0.00594749, 149472.67411175, 0.16047689, -0.12534081],
+        Venus:   [0.72333566, 0.00677672, 3.39467605, 181.97909950, 131.60246718, 76.67984255, 0.00000390, -0.00004107, -0.00078890, 58517.81538729, 0.00268329, -0.27769418],
+        Earth:   [1.00000261, 0.01671123, -0.00001531, 100.46457166, 102.93768193, 0.0, 0.00000562, -0.00004392, -0.01294668, 35999.37244981, 0.32327364, 0.0],
+        Mars:    [1.52371034, 0.09339410, 1.84969142, -4.55343205, -23.94362959, 49.55953891, 0.00001847, 0.00007882, -0.00813131, 19140.30268499, 0.44441088, -0.29257343],
+        Jupiter: [5.20288700, 0.04838624, 1.30439695, 34.39644051, 14.72847983, 100.47390909, -0.00011607, -0.00013253, -0.00183714, 3034.74612775, 0.21252668, 0.20469106],
+        Saturn:  [9.53667594, 0.05386179, 2.48599187, 49.95424423, 92.59887831, 113.66242448, -0.00125060, -0.00050991, 0.00193609, 1222.49362201, -0.41897216, -0.28867794],
+    };
+    const PLANETS = ["Mercury", "Venus", "Mars", "Jupiter", "Saturn"];
+    /** Heliocentric ecliptic (J2000) position in AU at Julian centuries T. */
+    const helio = (name, T) => {
+        const k = EL[name];
+        const a = k[0] + k[6] * T, e = k[1] + k[7] * T, I = (k[2] + k[8] * T) * R;
+        const L = k[3] + k[9] * T, wbar = k[4] + k[10] * T, O = (k[5] + k[11] * T) * R;
+        const w = (wbar - O / R) * R;
+        const M = norm(L - wbar) * R;
+        let E = M + e * Math.sin(M);
+        for (let i = 0; i < 10; i++) { const dE = (M - (E - e * Math.sin(E))) / (1 - e * Math.cos(E)); E += dE; if (Math.abs(dE) < 1e-9) break; }
+        const xp = a * (Math.cos(E) - e), yp = a * Math.sqrt(1 - e * e) * Math.sin(E);
+        const cw = Math.cos(w), sw = Math.sin(w), cO = Math.cos(O), sO = Math.sin(O), cI = Math.cos(I), sI = Math.sin(I);
+        return [
+            (cw * cO - sw * sO * cI) * xp + (-sw * cO - cw * sO * cI) * yp,
+            (cw * sO + sw * cO * cI) * xp + (-sw * sO + cw * cO * cI) * yp,
+            (sw * sI) * xp + (cw * sI) * yp,
+        ];
+    };
+    /** Ecliptic rectangular → RA/Dec in degrees (mean obliquity). */
+    const eq = (x, y, z) => {
+        const eps = 23.43928 * R;
+        const ye = y * Math.cos(eps) - z * Math.sin(eps), ze = y * Math.sin(eps) + z * Math.cos(eps);
+        return { ra: norm(Math.atan2(ye, x) / R), dec: Math.atan2(ze, Math.hypot(x, ye)) / R };
+    };
+    const altAz = ({ ra, dec }, lat, lon, jd) => {
+        const T = (jd - 2451545.0) / 36525;
+        const gmst = norm(280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T);
+        const H = norm(gmst + lon - ra) * R, phi = lat * R, d = dec * R;
+        return { alt: Math.asin(Math.sin(phi) * Math.sin(d) + Math.cos(phi) * Math.cos(d) * Math.cos(H)) / R };
+    };
+    /** Low-precision Moon of date: ecliptic longitude/latitude (deg) plus RA/Dec. */
+    const moonEcl = (T) => {
+        const s = (deg) => Math.sin(deg * R);
+        const lam = norm(218.32 + 481267.881 * T + 6.29 * s(135.0 + 477198.87 * T) - 1.27 * s(259.3 - 413335.36 * T) + 0.66 * s(235.7 + 890534.22 * T)
+            + 0.21 * s(269.9 + 954397.74 * T) - 0.19 * s(357.5 + 35999.05 * T) - 0.11 * s(186.5 + 966404.03 * T));
+        const bet = 5.13 * s(93.3 + 483202.02 * T) + 0.28 * s(228.2 + 960400.89 * T) - 0.28 * s(318.3 + 6003.15 * T) - 0.17 * s(217.6 - 407332.21 * T);
+        const l = lam * R, b = bet * R;
+        return { lon: lam, lat: bet, ...eq(Math.cos(b) * Math.cos(l), Math.cos(b) * Math.sin(l), Math.sin(b)) };
+    };
+    const jdOf = (date) => date.getTime() / 86400000 + 2440587.5;
+    /** Geocentric ecliptic longitudes (equinox of date) and RA/Dec of Sun, Moon and planets. */
+    const geo = (date) => {
+        const jd = jdOf(date), T = (jd - 2451545.0) / 36525;
+        const [ex, ey, ez] = helio("Earth", T);
+        // The elements are in the J2000 frame; the Moon series and the zodiac are of date.
+        // General precession in longitude, 1.39697°/century, moves them onto the equinox of date.
+        const lonOf = (x, y) => norm(Math.atan2(y, x) / R + 1.39697 * T);
+        const out = { jd, sun: { lon: lonOf(-ex, -ey), ...eq(-ex, -ey, -ez) }, moon: moonEcl(T), planets: {} };
+        for (const n of PLANETS) {
+            const [x, y, z] = helio(n, T); const gx = x - ex, gy = y - ey, gz = z - ez;
+            out.planets[n] = { lon: lonOf(gx, gy), ...eq(gx, gy, gz) };
+        }
+        return out;
+    };
+    /** Angular separation in degrees. */
+    const sep = (a, b) => {
+        const d1 = a.dec * R, d2 = b.dec * R, dr = (a.ra - b.ra) * R;
+        return Math.acos(Math.min(1, Math.sin(d1) * Math.sin(d2) + Math.cos(d1) * Math.cos(d2) * Math.cos(dr))) / R;
+    };
+    /** Did an angle pass `target` between a and b, in either direction? (near the target, never its antipode) */
+    const crossed = (a, b, target) => {
+        const da = wrap(target - a), db = wrap(target - b);
+        return Math.abs(da) < 90 && Math.abs(db) < 90 && da * db <= 0;
+    };
+    const SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+    const MOONS = ["Wolf", "Snow", "Worm", "Pink", "Flower", "Strawberry", "Buck", "Sturgeon", "Corn", "Hunter's", "Beaver", "Cold"];
+    const SHOWERS = [[1, 3, "Quadrantids"], [4, 22, "Lyrids"], [5, 5, "Eta Aquariids"], [8, 12, "Perseids"], [10, 21, "Orionids"], [11, 17, "Leonids"], [12, 13, "Geminids"], [12, 22, "Ursids"]];
+    // Greatest eclipse, UTC. Lunar visibility is computed for the site; for solar the flag says whether Korea sees a partial phase.
+    const ECLIPSES = [
+        ["2026-03-03T11:34Z", "Total lunar eclipse"], ["2026-08-12T17:46Z", "Total solar eclipse", false], ["2026-08-28T04:13Z", "Partial lunar eclipse"],
+        ["2027-02-06T15:59Z", "Annular solar eclipse", false], ["2027-08-02T10:06Z", "Total solar eclipse", false],
+        ["2028-01-12T04:13Z", "Partial lunar eclipse"], ["2028-01-26T15:08Z", "Annular solar eclipse", false], ["2028-07-06T18:20Z", "Partial lunar eclipse"],
+        ["2028-07-22T02:56Z", "Total solar eclipse", false], ["2028-12-31T16:52Z", "Total lunar eclipse"],
+        ["2029-01-14T17:13Z", "Partial solar eclipse", false], ["2029-06-12T04:06Z", "Partial solar eclipse", false], ["2029-06-26T03:22Z", "Total lunar eclipse"],
+        ["2029-07-11T15:37Z", "Partial solar eclipse", false], ["2029-12-05T15:03Z", "Partial solar eclipse", false], ["2029-12-20T22:42Z", "Total lunar eclipse"],
+        ["2030-06-01T06:29Z", "Annular solar eclipse", true], ["2030-06-15T18:33Z", "Partial lunar eclipse"], ["2030-11-25T06:51Z", "Total solar eclipse", false],
+    ];
+    const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const phase = (g) => norm(g.moon.lon - g.sun.lon);
+    /** Was there a full moon between two local midnights? Stepped by day, so the arc is never ambiguous. */
+    const fullMoonBetween = (from, to) => {
+        for (let t = from.getTime(); t < to.getTime(); t += 86400000) {
+            if (crossed(phase(geo(new Date(t))), phase(geo(new Date(t + 86400000))), 180)) return true;
+        }
+        return false;
+    };
+    /** The sky's events on one local day, as short lines. Empty on most days. */
+    const events = (day, lat, lon) => {
+        const d0 = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+        const at = (h) => new Date(d0.getTime() + h * 3600000);
+        const A = geo(d0), B = geo(at(24)), P = geo(at(-12)), N = geo(at(12)), Q = geo(at(36));
+        const out = [];
+        // the Moon: new and full, the full one by its almanac name
+        const pa = phase(A), pb = phase(B);
+        if (crossed(pa, pb, 0)) out.push("New moon");
+        if (crossed(pa, pb, 180)) {
+            let name = MOONS[d0.getMonth()];
+            if (Math.abs(wrap(N.sun.lon - 180)) < 15) name = "Harvest";              // the full moon nearest the autumn equinox
+            if (d0.getDate() > 15 && fullMoonBetween(new Date(d0.getFullYear(), d0.getMonth(), 1), d0)) name = "Blue";
+            out.push(`Full moon · ${name} Moon`);
+        }
+        // the Sun's road: seasons and signs
+        for (let k = 0; k < 12; k++) {
+            if (!crossed(A.sun.lon, B.sun.lon, k * 30)) continue;
+            out.push(k === 0 ? "Spring equinox" : k === 3 ? "Summer solstice" : k === 6 ? "Autumn equinox" : k === 9 ? "Winter solstice" : `Sun enters ${SIGNS[k]}`);
+        }
+        // planets: opposition, station, conjunction
+        for (const n of ["Mars", "Jupiter", "Saturn"]) {
+            if (crossed(norm(A.planets[n].lon - A.sun.lon), norm(B.planets[n].lon - B.sun.lon), 180)) out.push(`${n} at opposition`);
+        }
+        for (const n of PLANETS) {
+            const v1 = wrap(N.planets[n].lon - P.planets[n].lon), v2 = wrap(Q.planets[n].lon - N.planets[n].lon);
+            if (v1 > 0 && v2 <= 0) out.push(`${n} stations retrograde`);
+            else if (v1 < 0 && v2 >= 0) out.push(`${n} stations direct`);
+        }
+        for (let i = 0; i < PLANETS.length; i++) for (let j = i + 1; j < PLANETS.length; j++) {
+            const a = PLANETS[i], b = PLANETS[j];
+            const s = sep(N.planets[a], N.planets[b]);
+            if (s < 1.5 && s <= sep(P.planets[a], P.planets[b]) && s <= sep(Q.planets[a], Q.planets[b])) out.push(`${a}–${b} conjunction, ${s.toFixed(1)}°`);
+        }
+        for (const n of PLANETS) {
+            const s = sep(N.moon, N.planets[n]);
+            if (s < 1.0 && s <= sep(P.moon, P.planets[n]) && s <= sep(Q.moon, Q.planets[n])) out.push(`Moon passes ${n}, ${s.toFixed(1)}°`);
+        }
+        // meteor showers, on the conventional peak night
+        for (const [m, d, name] of SHOWERS) if (d0.getMonth() + 1 === m && d0.getDate() === d) out.push(`${name} peak tonight`);
+        // eclipses
+        for (const [iso, what, koreaSolar] of ECLIPSES) {
+            const t = new Date(iso);
+            if (!sameDay(t, d0)) continue;
+            if (/lunar/.test(what)) {
+                const alt = altAz(geo(t).moon, lat, lon, jdOf(t)).alt;
+                out.push(`${what}${alt > 0 ? " — visible here" : " — Moon below the horizon here"}`);
+            } else out.push(`${what}${koreaSolar ? " — partial phase visible here" : " — not visible from here"}`);
+        }
+        return out;
+    };
+    return { geo, events };
+})();
 const nowHHMM = () => new Date().toTimeString().slice(0, 5);
 const beaufort = (kmh) => { const t = [1, 5, 11, 19, 28, 38, 49, 61, 74, 88, 102, 117]; let b = 0; while (b < 12 && Number(kmh) >= t[b]) b++; return b; };
 const transparency = (cloud) => Number.isFinite(Number(cloud)) ? Math.max(1, Math.min(5, 5 - Math.floor(Number(cloud) / 20))) : null;
@@ -1355,6 +1519,12 @@ panel("nav", () => {
         () => goto("Jinome/Introns/Indeces/Papers"));
     item("star", "Favourites", "Favourites",
         () => goto("Jinome/Introns/Indeces/Favourites"));
+    // The other two legs of the same catalogue: the author index (People notes)
+    // and the gene register (a Bases table, so the link carries its extension).
+    item("users", "Authors", "Author index",
+        () => goto("Jinome/Introns/Indeces/Authors"));
+    item("dna", "Genes", "Gene notes",
+        () => goto("Jinome/Exons/Genes.base"));
 
     /*
      * The one tile that is conditional. Templater registers a command per
@@ -2128,6 +2298,13 @@ if (LAYOUT === "log") {
         const fig = document.createElement("figure"); fig.className = "jd-chart__quote";
         const bq = document.createElement("blockquote"); bq.textContent = q[0]; fig.appendChild(bq);
         const fc = document.createElement("figcaption"); fc.textContent = "— " + q[1]; fig.appendChild(fc);
+        // The sky's events of the day, under the chart — a line only on a day that has one:
+        // a new or full moon, a season or sign, a planet at opposition, station or conjunction,
+        // a meteor shower's peak night, an eclipse. Most days there is nothing, and nothing is shown.
+        try {
+            const ev = SKY.events(new Date(), WX.lat, WX.lon);
+            if (ev.length) { const p = document.createElement("p"); p.className = "jd-chart__events"; p.textContent = ev.join(" · "); box.appendChild(p); }
+        } catch (e) { /* the sky is optional */ }
         box.appendChild(fig);
         colLeft.insertBefore(box, colLeft.firstChild);
         colLeft.insertBefore(strip, box.nextSibling);   // the register sits under the chart, as in the mock
@@ -2237,6 +2414,10 @@ if (LAYOUT !== "cards") {
             "Projects": projects.length,
             "Favourites": rows.filter((r) => r.p?.favourite === true || String(r.p?.favourite) === "true").length,
             "Commonplace": rows.filter((r) => tagStrings(r.p).includes("Commonplace")).length,
+            "Genes": rows.filter((r) => tagStrings(r.p).includes("Gene")).length,
+            // People are outside the scan (VAULT negates the folder), so the
+            // author count is the folder's own file count — no second scan.
+            "Authors": (() => { try { return (app.vault.getAbstractFileByPath("Jinome/Introns/People")?.children ?? []).filter((f) => f.extension === "md").length; } catch (e) { return 0; } })(),
         };
         navCard.body.querySelectorAll(".jd-nav__item").forEach((a) => {
             const label = a.querySelector(".jd-nav__label")?.textContent?.trim();
@@ -2269,6 +2450,8 @@ if (LAYOUT !== "cards") {
             const VIEWS = [
                 { id: "commonplace", label: "Commonplace", head: ["Note", "Created"], none: "No note is tagged Commonplace.",
                   list: rows.filter((r) => r.stamp && tagStrings(r.p).includes("Commonplace")).sort(byStamp).slice(0, 6) },
+                { id: "favourites", label: "Favourites", head: ["Note", "Created"], none: "No note is marked favourite.",
+                  list: rows.filter((r) => r.stamp && (r.p?.favourite === true || String(r.p?.favourite) === "true")).sort(byStamp).slice(0, 6) },
                 { id: "reviews", label: "Reviews", head: ["Review", "Created"], none: "No review is at 📖In progress.",
                   list: rows.filter((r) => asArray(r.p?.type).map(String).includes("Review") && asArray(r.p?.status).map(String).some((s) => s.includes("In progress"))).sort(byStamp).slice(0, 6) },
             ];

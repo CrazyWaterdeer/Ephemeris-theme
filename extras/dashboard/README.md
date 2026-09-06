@@ -1,6 +1,6 @@
 # Dashboard (extras)
 
-The vault dashboard that goes with Grimoire: one DataviewJS script, one stylesheet, two notes.
+The vault dashboard that goes with Ephemeris: one DataviewJS script, one stylesheet, two notes.
 
 - `dashboard.js` → `Vector/dashboard.js` (loaded with `dv.view("Vector/dashboard", { layout })`)
 - `dashboard.css` → `.obsidian/snippets/dashboard.css` (enable the snippet)

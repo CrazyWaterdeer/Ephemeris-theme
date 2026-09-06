@@ -2708,9 +2708,9 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 }
 
 /* ---------------------------------------------------------------------------
-   4. GRIMOIRE — the theme skin and two layouts, 2026-09-05
+   4. EPHEMERIS — the theme skin and two layouts, 2026-09-05
    Activated per note: dv.view("Vector/dashboard", { layout: "broadsheet" | "log" }).
-   Everything here rides on Grimoire's tokens (--text-accent is bronze, --h3-color
+   Everything here rides on Ephemeris's tokens (--text-accent is bronze, --h3-color
    the blue-black seal), so the dashboard recolours with the theme.
 --------------------------------------------------------------------------- */
 .jinome-dash {
@@ -3005,6 +3005,8 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 .jinome-dash .jd-chart__quote { margin: 12px 4px 0; }
 .jinome-dash .jd-chart__quote blockquote { margin: 0; padding: 0; border: 0; background: none; font-family: var(--jd-serif); font-size: 17px; line-height: 1.45; color: var(--text-normal); text-wrap: balance; }
 .jinome-dash .jd-chart__quote figcaption { margin-top: 6px; font-size: 13px; color: var(--text-faint); font-style: italic; }
+/* the sky's events of the day — present only on a day that has one (dashboard.js SKY.events) */
+.jinome-dash .jd-chart__events { margin: 10px 4px 0; text-align: center; font-family: var(--jd-serif); font-size: 13.5px; font-style: italic; line-height: 1.4; color: var(--text-muted); font-variant-numeric: tabular-nums; text-wrap: balance; }
 
 /* --- round 23: the observation log on a phone — one column, in the order a phone is opened for:
        what is due, what was written last, where to go; then the sky; then the tables; the long lists last */
