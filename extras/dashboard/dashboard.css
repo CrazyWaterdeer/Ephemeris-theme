@@ -2960,3 +2960,9 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 
 /* the nav rule is an <hr>, and the theme draws every hr at 60% width for the star device — not here */
 .jinome-dash .jd-nav__rule { width: 100%; opacity: 1; position: static; }
+
+/* broadsheet column 1 had grown ~450px (nav at 16px, project rows with titles): sub-project rows go compact */
+.jinome-dash .jd--broadsheet .jd-proj__item--sub { padding: 5px 2px 5px 22px; }
+.jinome-dash .jd--broadsheet .jd-proj__item--sub .jd-proj__title { font-size: 14.5px; }
+.jinome-dash .jd--broadsheet .jd-proj__item--sub .jd-proj__status { font-size: 12px; }
+.jinome-dash .jd--broadsheet .jd-nav__item { padding: 7px 2px; }
