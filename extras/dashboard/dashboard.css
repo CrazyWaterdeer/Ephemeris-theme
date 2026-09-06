@@ -2954,3 +2954,6 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 
 /* the log lists constellations only — the sub-codes already sit in the chart key; keeps the columns level */
 .jinome-dash .jd--log .jd-proj__item--sub { display: none; }
+
+/* the group rule in the nav runs the full width; only the last fifth fades */
+.jinome-dash .jd--log .jd-nav__rule, .jinome-dash .jd--broadsheet .jd-nav__rule { background: linear-gradient(90deg, var(--interactive-accent) 0, var(--interactive-accent) 80%, transparent 100%); }
