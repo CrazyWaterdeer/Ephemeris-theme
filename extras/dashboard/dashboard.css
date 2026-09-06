@@ -3067,3 +3067,12 @@ body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat { align-items: center; te
 	.jinome-dash .jd--log [data-panel="recent"] { order: 9; }
 	.jinome-dash .jd--log [data-panel="reviews"] { order: 10; }
 }
+
+/* --- round 26: the weather site tabs — plain text with a hairline under the chosen one; on a phone
+       Obsidian gives buttons a tall rounded body, which made the marker a fat curved bar */
+.jinome-dash .jd-wx__site, body.is-mobile .jinome-dash .jd-wx__site {
+	min-height: 0; height: auto; padding: 0 0 3px; margin: 0; line-height: 1.3; border-radius: 0; background: none; box-shadow: none; border: 0; border-bottom: 1px solid transparent;
+}
+.jinome-dash .jd-wx__site.is-on, body.is-mobile .jinome-dash .jd-wx__site.is-on { box-shadow: none; border-bottom-color: var(--interactive-accent); }
+body.is-mobile .jinome-dash .jd-wx__sites { gap: 14px; padding-bottom: 6px; }
+body.is-mobile .jinome-dash .jd-wx__clear { min-height: 0; height: auto; padding: 0 2px; }
