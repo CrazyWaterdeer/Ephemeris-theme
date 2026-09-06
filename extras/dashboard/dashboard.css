@@ -2983,3 +2983,17 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z'/></svg>") center / contain no-repeat;
 	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z'/></svg>") center / contain no-repeat;
 }
+
+/* --- round 21: constellations are projects and their sub-codes ------------------------------ */
+.jinome-dash .jd--log .jd-proj__item--sub { display: flex; padding: 6px 2px 6px 22px; }
+.jinome-dash .jd--log .jd-proj__item--sub .jd-proj__title { font-size: 14.5px; }
+.jinome-dash .jd-proj__mag { display: none; }
+.jinome-dash .jd--log .jd-proj__mag { display: inline; margin-left: auto; font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.jinome-dash .jd--log .jd-proj__mag + .jd-proj__status { margin-left: 10px; }
+.jinome-dash .jd-chart__con-g.is-closed { opacity: .45; }
+.jinome-dash .jd-chart__con-g.is-closed .jd-chart__con { stroke-dasharray: 3 3; }
+.jinome-dash .jd-chart__star.is-alpha { fill: var(--text-accent); }
+.jinome-dash .jd-chart__field { animation-duration: 240s; }
+.jinome-dash .jd-chart__star:not(.is-field) { transform-box: fill-box; transform-origin: center; animation: jd-twinkle2 3.6s ease-in-out infinite; }
+@keyframes jd-twinkle2 { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.7); } }
+.jinome-dash .jd-chart__key { display: none; }

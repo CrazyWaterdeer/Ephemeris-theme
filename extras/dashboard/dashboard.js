@@ -1500,6 +1500,12 @@ panel("projects", () => {
         a.createEl("span", { cls: "jd-proj__code", text: codeOf(id) });
         if (r) {
             a.createEl("span", { cls: "jd-proj__title", text: titleOf(r) });
+            if (LAYOUT === "log") {
+                const has = (x, t) => asArray(x.p?.type).map(String).includes(t) || tagStrings(x.p).includes(t);
+                const hit = isSub ? (x) => (x.pids ?? []).includes(id) : (x) => (x.pids ?? []).some((pid) => mainOf(pid) === id);
+                const np = rows.filter((x) => hit(x) && has(x, "Paper")).length, ne = rows.filter((x) => hit(x) && has(x, "Experiment")).length;
+                a.createEl("span", { cls: "jd-proj__mag", text: `${np} · ${ne}` , attr: { title: `${np} papers · ${ne} experiments` } });
+            }
             const st = asArray(r.p?.status).map(String).join(" ");
             if (st) a.createEl("span", { cls: "jd-proj__status", text: st });
         }
@@ -2028,60 +2034,75 @@ const wxGeocode = async (q) => {
 }
 if (LAYOUT === "log") {
     try {
+        // The sky: every main project is a constellation. Its alpha is the project itself, the other stars
+        // are its sub-codes, sized by what each carries (papers + experiments). Closed projects (📗/📜)
+        // stay on the chart as set constellations — faint, dashed. At most eight; field stars are the
+        // reviews not yet begun (hover: zk stamp · title; click opens).
         const idsOf = (r) => r.pids ?? pidList(r.p);
-        const mainsAll = [...new Set(projects.flatMap((r) => idsOf(r).map(mainOf)))].sort().slice(0, 5);
         const isType = (r, t) => asArray(r.p?.type).map(String).includes(t) || tagStrings(r.p).includes(t);
-        const count = (main, t) => rows.filter((r) => idsOf(r).some((id) => mainOf(id) === main) && isType(r, t)).length;
-        const titleFor = (main) => { const r = projects.find((x) => idsOf(x).includes(main)); return r ? titleOf(r) : main; };
+        const statusOf = (r) => asArray(r?.p?.status).map(String).join(" ");
+        const isClosed = (r) => /Done|Final/.test(statusOf(r));
+        const byId = new Map();
+        for (const r of projects) for (const id of idsOf(r)) if (PRJ_RE.test(id) && !byId.has(id)) byId.set(id, r);
+        const allIds = [...byId.keys()];
+        const mains = [...new Set(allIds.map(mainOf))]
+            .sort((x, y) => (Number(isClosed(byId.get(x))) - Number(isClosed(byId.get(y)))) || x.localeCompare(y)).slice(0, 8);
+        const count = (id, t) => rows.filter((r) => idsOf(r).includes(id) && isType(r, t)).length;
+        const countMain = (main, t) => rows.filter((r) => idsOf(r).some((id) => mainOf(id) === main) && isType(r, t)).length;
+        const titleFor = (id) => { const r = byId.get(id); return r ? titleOf(r) : id; };
         const seeded = (s) => () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
         const NS = "http://www.w3.org/2000/svg";
         const box = document.createElement("div"); box.className = "jd-chart";
         const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 400 400"); svg.setAttribute("aria-label", "the vault as a star chart"); box.appendChild(svg);
-        const el = (n, a, parent) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); (parent ?? svg).appendChild(e); return e; };
+        const el = (n, at, parent) => { const e = document.createElementNS(NS, n); for (const k in at) e.setAttribute(k, at[k]); (parent ?? svg).appendChild(e); return e; };
         [190, 150, 100, 50].forEach((r, i) => el("circle", { cx: 200, cy: 200, r, class: "jd-chart__ring" + (i === 1 ? " is-major" : "") }));
         [[200, 10, 200, 22], [390, 200, 378, 200], [200, 390, 200, 378], [10, 200, 22, 200]].forEach(([x1, y1, x2, y2]) => el("line", { x1, y1, x2, y2, class: "jd-chart__tick" }));
-        const field = el("g", { class: "jd-chart__field" });   // the backdrop turns; the constellations hold still
+        const field = el("g", { class: "jd-chart__field" });
         const g = el("g", { class: "jd-chart__sky" });
-        const key = [];
         const rnd = seeded(7);
         const waiting = rows.filter((r) => isType(r, "Review") && asArray(r.p?.status).map(String).some((s) => s.includes("Not started")))
-            .sort((a, b) => String(b.stamp).localeCompare(String(a.stamp)));
+            .sort((x, y) => String(y.stamp).localeCompare(String(x.stamp)));
         const fieldN = Math.min(60, waiting.length || Number(reviewWaiting) || 0);
         svg.style.setProperty("--jd-moon", String(moonPhase().ill / 100));
         for (let i = 0; i < fieldN; i++) {
-            const a = rnd() * Math.PI * 2, d = 40 + rnd() * 145;
-            const c = el("circle", { cx: (200 + Math.cos(a) * d).toFixed(1), cy: (200 + Math.sin(a) * d).toFixed(1), r: (0.7 + rnd() * 0.6).toFixed(2), class: "jd-chart__star is-field" }, field);
+            const an = rnd() * Math.PI * 2, d = 40 + rnd() * 145;
+            const c = el("circle", { cx: (200 + Math.cos(an) * d).toFixed(1), cy: (200 + Math.sin(an) * d).toFixed(1), r: (0.7 + rnd() * 0.6).toFixed(2), class: "jd-chart__star is-field" }, field);
             const w = waiting[i];
-            if (w) {   // catalogue number = the note's own zk stamp; the star opens the review
-                const t = document.createElementNS(NS, "title"); t.textContent = `${w.stamp ?? ""} · ${titleOf(w)}`; c.appendChild(t);
-                c.style.cursor = "pointer"; c.addEventListener("click", () => goto(w.path));
-            }
+            if (w) { const t = document.createElementNS(NS, "title"); t.textContent = `${w.stamp ?? ""} · ${titleOf(w)}`; c.appendChild(t); c.style.cursor = "pointer"; c.addEventListener("click", () => goto(w.path)); }
         }
-        mainsAll.forEach((main, i) => {
-            const papers = count(main, "Paper"), exps = count(main, "Experiment");
-            const n = Math.max(3, Math.min(7, exps || 3));
-            const a0 = (i / mainsAll.length) * Math.PI * 2 - Math.PI / 2;
-            const cx = 200 + Math.cos(a0) * 105, cy = 200 + Math.sin(a0) * 105;
-            const r2 = seeded(11 + i * 97), pts = [];
-            for (let k = 0; k < n; k++) pts.push([cx + (r2() - 0.5) * 80, cy + (r2() - 0.5) * 70]);
-            el("polyline", { points: pts.map((p) => p.map((v) => v.toFixed(1)).join(",")).join(" "), class: "jd-chart__con" }, g);
-            pts.forEach((p, k) => el("circle", { cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: (1.8 + Math.min(2.4, papers / 40)).toFixed(2), class: "jd-chart__star", style: `animation-delay:${(k * 0.8 + i * 0.3).toFixed(1)}s` }, g));
-            const code = main.split("-")[1] ?? main;   // PRJ-VNRSIG-2025 → VNRSIG: short enough not to collide
-            el("text", { x: cx.toFixed(1), y: (cy - 44).toFixed(1), "text-anchor": "middle", class: "jd-chart__lbl" }, g).textContent = code;
-            key.push({ code, title: titleFor(main), papers, exps });
+        mains.forEach((main, i) => {
+            const subs = allIds.filter((id) => id !== main && mainOf(id) === main).sort();
+            const stars = [main, ...subs].map((id) => ({ id, papers: id === main ? countMain(main, "Paper") : count(id, "Paper"), exps: id === main ? countMain(main, "Experiment") : count(id, "Experiment") }));
+            // a chain with gentle turns — the way real constellations read — scaled into a 96px box
+            const r2 = seeded(101 + i * 37);
+            let ang = r2() * Math.PI * 2, x = 0, y = 0; const pts = [[0, 0]];
+            for (let k = 1; k < stars.length; k++) { ang += (r2() - 0.5) * 1.7; const step = 22 + r2() * 14; x += Math.cos(ang) * step; y += Math.sin(ang) * step; pts.push([x, y]); }
+            const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+            const bw = Math.max(...xs) - Math.min(...xs) || 1, bh = Math.max(...ys) - Math.min(...ys) || 1;
+            const sc = Math.min(1, 96 / Math.max(bw, bh));
+            const cxm = (Math.max(...xs) + Math.min(...xs)) / 2, cym = (Math.max(...ys) + Math.min(...ys)) / 2;
+            const a0 = (i / mains.length) * Math.PI * 2 - Math.PI / 2, R = mains.length <= 3 ? 105 : 120;
+            const cx = 200 + Math.cos(a0) * R, cy = 200 + Math.sin(a0) * R;
+            const P = pts.map(([px, py]) => [cx + (px - cxm) * sc, cy + (py - cym) * sc]);
+            const closed = isClosed(byId.get(main));
+            const grp = el("g", { class: "jd-chart__con-g" + (closed ? " is-closed" : "") }, g);
+            if (P.length > 1) el("polyline", { points: P.map((p) => p.map((v) => v.toFixed(1)).join(",")).join(" "), class: "jd-chart__con" }, grp);
+            stars.forEach((s, k) => {
+                const mag = s.papers + s.exps;
+                const rad = (k === 0 ? 3.0 : 1.7) + Math.min(2.4, mag / 14);
+                const c = el("circle", { cx: P[k][0].toFixed(1), cy: P[k][1].toFixed(1), r: rad.toFixed(2), class: "jd-chart__star" + (k === 0 ? " is-alpha" : ""), style: `animation-delay:${(k * 0.7 + i * 0.35).toFixed(2)}s` }, grp);
+                const t = document.createElementNS(NS, "title");
+                t.textContent = `${s.id} · ${titleFor(s.id)} · ${s.papers} papers · ${s.exps} experiments`;
+                c.appendChild(t);
+                const rr = byId.get(s.id);
+                if (rr) { c.style.cursor = "pointer"; c.addEventListener("click", () => goto(rr.path)); }
+            });
+            const ly = Math.min(...P.map((p) => p[1])) - 9;
+            el("text", { x: cx.toFixed(1), y: ly.toFixed(1), "text-anchor": "middle", class: "jd-chart__lbl" }, grp).textContent = main.split("-")[1] ?? main;
         });
         el("text", { x: 200, y: 392, "text-anchor": "middle", class: "jd-chart__lbl is-sub" }).textContent = `field stars: ${fieldN} reviews not yet begun`;
-        const ul = document.createElement("ul"); ul.className = "jd-chart__key";
-        for (const k of key) {
-            const li = document.createElement("li");
-            const b = document.createElement("b"); b.textContent = k.code; li.appendChild(b);
-            const span = document.createElement("span"); span.textContent = k.title;
-            const small = document.createElement("small"); small.textContent = `${k.papers} papers · ${k.exps} experiments`; span.appendChild(small);
-            li.appendChild(span); ul.appendChild(li);
-        }
-        box.appendChild(ul);
         const legend = document.createElement("div"); legend.className = "jd-chart__legend";
-        legend.textContent = "a star per experiment, sized by papers; field stars are reviews not yet begun. The sky turns behind the constellations, once an hour.";
+        legend.textContent = "a constellation per project: its alpha the project itself, the other stars its sub-codes, sized by papers and experiments; set constellations are projects finished. Field stars are reviews not yet begun. Hover a star for its name, click to open.";
         box.appendChild(legend);
         colLeft.insertBefore(box, colLeft.firstChild);
         colLeft.insertBefore(strip, box.nextSibling);   // the register sits under the chart, as in the mock
