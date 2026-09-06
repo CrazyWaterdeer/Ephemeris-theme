@@ -2915,3 +2915,15 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="weather"] { order: 2; }
 	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="reviews"] { order: 3; }
 }
+
+/* --- round 16: the empty third tab and its search --------------------------------------------- */
+.jinome-dash .jd-wx__clear { margin-left: auto; background: none; border: 0; padding: 0 2px; box-shadow: none; cursor: pointer; font-family: var(--font-text); font-size: 18px; line-height: 1; color: var(--text-faint); }
+.jinome-dash .jd-wx__clear:hover { color: var(--text-normal); }
+.jinome-dash .jd-wx__find { display: grid; gap: 6px; }
+.jinome-dash .jd-wx__find .jd-wx__search { margin-left: 0; width: 100%; font-size: 15px; padding: 4px 2px; }
+.jinome-dash .jd-wx__cands { list-style: none; margin: 0; padding: 0; }
+.jinome-dash .jd-wx__cand { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--jd-hairline); cursor: pointer; font-size: 15px; }
+.jinome-dash .jd-wx__cand:last-child { border-bottom: 0; }
+.jinome-dash .jd-wx__cand:hover, .jinome-dash .jd-wx__cand:focus-visible { color: var(--text-accent); outline: none; }
+.jinome-dash .jd-wx__cand-sub { color: var(--text-faint); font-size: 13px; white-space: nowrap; }
+.jinome-dash .jd-wx__cand.is-muted { color: var(--text-faint); cursor: default; }

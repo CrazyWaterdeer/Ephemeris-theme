@@ -1894,7 +1894,6 @@ const wxGet = async (url) => {
     return await res.json();
 };
 let wxSite = WX;
-try { const c = JSON.parse(store.get(LS_WX + ":site", "null")); if (c && c.name && Number.isFinite(Number(c.lat))) wxSite = c; } catch (e) { }
 const wxLabel = () => { if (LAYOUT !== "cards") return; const el = wxCard.section.querySelector(".jd-card__label"); if (el) el.textContent = wxSite.name; };
 /** Fetch-and-paint for one site, cached per site for 30 min with a 5 min cooldown after a failure. */
 const wxLoad = async (site) => {
@@ -1923,51 +1922,91 @@ const wxLoad = async (site) => {
 };
 const wxGeocode = async (q) => {
     const j = await wxGet("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(q) + "&count=1&language=ko&format=json");
-    const r = j?.results?.[0];
-    return r ? { name: r.name, lat: r.latitude, lon: r.longitude } : null;
+    return (j?.results ?? []).slice(0, 6).map((r) => ({ name: r.name, lat: r.latitude, lon: r.longitude, admin1: r.admin1, country: r.country }));
 };
 {
-    // Site tabs: the two fixed places, then the last searched place as a third tab, then the search field.
-    // Every event is swallowed so Live Preview's editor never sees an Enter inside the widget.
+    // Three tabs: Gwangju, Jeonju, and a third that starts empty. On the empty tab only a search box shows;
+    // typing a name lists candidates, choosing one makes the tab that place. The × at the bar's right empties it.
+    // Every event is swallowed so Live Preview's editor never sees keys pressed inside the widget.
     const bar = document.createElement("div"); bar.className = "jd-wx__sites";
     wxCard.body.insertBefore(bar, wxCard.body.firstChild);
-    const swallowAll = (el) => ["click", "mousedown", "keydown", "keyup", "keypress", "focus"].forEach((t) => el.addEventListener(t, (ev) => ev.stopPropagation()));
+    const swallowAll = (el) => ["click", "mousedown", "keydown", "keyup", "keypress", "focus", "input"].forEach((t) => el.addEventListener(t, (ev) => ev.stopPropagation()));
     let custom = null;
     try { const c = JSON.parse(store.get(LS_WX + ":custom", "null")); if (c && c.name && Number.isFinite(Number(c.lat))) custom = c; } catch (e) { }
     const btns = [];
-    const tab = (s) => {
-        const btn = bar.createEl("button", { cls: "jd-wx__site", text: s.name, attr: { type: "button" } });
-        btn.dataset.site = s.name;
+    const tabBtn = (label, i) => {
+        const btn = bar.createEl("button", { cls: "jd-wx__site", text: label, attr: { type: "button" } });
         swallowAll(btn);
-        btn.addEventListener("click", (ev) => { ev.preventDefault(); wxLoad(s); mark(); });
+        btn.addEventListener("click", (ev) => { ev.preventDefault(); select(i); });
         btns.push(btn);
         return btn;
     };
-    WX_SITES.forEach(tab);
-    let customBtn = custom ? tab(custom) : null;
-    const inp = bar.createEl("input", { cls: "jd-wx__search", type: "text", attr: { placeholder: "다른 곳 ⏎", "aria-label": "place", spellcheck: "false" } });
+    WX_SITES.forEach((s, i) => tabBtn(s.name, i));
+    const third = tabBtn(custom ? custom.name : "Elsewhere", 2);
+    const clear = bar.createEl("button", { cls: "jd-wx__clear", text: "×", attr: { type: "button", title: "Empty this tab", "aria-label": "Empty this tab" } });
+    swallowAll(clear);
+    const find = wxCard.body.createDiv({ cls: "jd-wx__find" });
+    const inp = find.createEl("input", { cls: "jd-wx__search", type: "text", attr: { placeholder: "City ⏎", "aria-label": "place", spellcheck: "false" } });
+    const list = find.createEl("ul", { cls: "jd-wx__cands" });
     swallowAll(inp);
-    const mark = () => btns.forEach((btn) => btn.toggleClass("is-on", btn.dataset.site === wxSite.name));
+    let cur = 0;
+    const render = () => {
+        btns.forEach((btn, i) => btn.toggleClass("is-on", i === cur));
+        const searching = cur === 2 && !custom;
+        find.toggle(searching);
+        wxEl.toggle(!searching);
+        clear.toggle(cur === 2 && !!custom);
+        third.textContent = custom ? custom.name : "Elsewhere";
+        if (searching) setTimeout(() => { try { inp.focus(); } catch (e) { } }, 0);
+    };
+    const select = (i) => {
+        cur = i;
+        try { store.set(LS_WX + ":tab", String(i)); } catch (e) { }
+        render();
+        const s = i === 2 ? custom : WX_SITES[i];
+        if (s) wxLoad(s);
+    };
+    clear.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        custom = null;
+        try { store.set(LS_WX + ":custom", "null"); } catch (e) { }
+        inp.value = ""; list.empty();
+        render();
+    });
+    const muted = (text) => { list.empty(); list.createEl("li", { cls: "jd-wx__cand is-muted", text }); };
     inp.addEventListener("keydown", async (ev) => {
         if (ev.key !== "Enter") return;
         ev.preventDefault();
         const q = inp.value.trim(); if (!q) return;
-        inp.disabled = true;
+        muted("…");
         try {
-            const s = await wxGeocode(q);
-            if (!s) { notify(`"${q}" — no such place.`); return; }
-            custom = s;
-            try { store.set(LS_WX + ":custom", JSON.stringify(s)); } catch (e) { }
-            if (customBtn) { customBtn.textContent = s.name; customBtn.dataset.site = s.name; customBtn.onclick = (e2) => { e2.preventDefault(); wxLoad(s); mark(); }; }
-            else { customBtn = tab(s); bar.insertBefore(customBtn, inp); }
-            inp.value = "";
-            await wxLoad(s);
-        } catch (e) { notify("Place lookup failed."); }
-        finally { inp.disabled = false; mark(); }
+            const cands = await wxGeocode(q);
+            if (!cands.length) { muted(`"${q}" — no such place.`); return; }
+            list.empty();
+            for (const c of cands) {
+                const li = list.createEl("li", { cls: "jd-wx__cand", attr: { role: "button", tabindex: "0" } });
+                li.createSpan({ text: c.name });
+                li.createSpan({ cls: "jd-wx__cand-sub", text: [c.admin1, c.country].filter(Boolean).join(", ") });
+                swallowAll(li);
+                const pick = (e2) => {
+                    e2.preventDefault();
+                    custom = { name: c.name, lat: c.lat, lon: c.lon };
+                    try { store.set(LS_WX + ":custom", JSON.stringify(custom)); } catch (e) { }
+                    inp.value = ""; list.empty();
+                    render();
+                    wxLoad(custom);
+                };
+                li.addEventListener("click", pick);
+                li.addEventListener("keydown", (e2) => { if (e2.key === "Enter" || e2.key === " ") pick(e2); });
+            }
+        } catch (e) { muted("Place lookup failed."); }
     });
-    mark();
+    let saved = 0;
+    try { saved = Number(store.get(LS_WX + ":tab", 0)) || 0; } catch (e) { }
+    cur = saved === 2 && custom ? 2 : saved === 1 ? 1 : 0;
+    render();
+    wxLoad(cur === 2 ? custom : WX_SITES[cur]);
 }
-wxLoad(wxSite);
 if (LAYOUT === "log") {
     try {
         const idsOf = (r) => r.pids ?? pidList(r.p);
