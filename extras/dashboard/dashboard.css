@@ -2966,3 +2966,20 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 .jinome-dash .jd--broadsheet .jd-proj__item--sub .jd-proj__title { font-size: 14.5px; }
 .jinome-dash .jd--broadsheet .jd-proj__item--sub .jd-proj__status { font-size: 12px; }
 .jinome-dash .jd--broadsheet .jd-nav__item { padding: 7px 2px; }
+
+/* --- the nav's group rule carries the same star as the note's section rule: a solid bronze hairline,
+       a page-coloured gap at the centre, the star mask in the accent colour on top */
+.jinome-dash .jd--log .jd-nav__rule, .jinome-dash .jd--broadsheet .jd-nav__rule {
+	position: relative; overflow: visible;
+	background: var(--interactive-accent);
+}
+.jinome-dash .jd--log .jd-nav__rule::before, .jinome-dash .jd--broadsheet .jd-nav__rule::before,
+.jinome-dash .jd--log .jd-nav__rule::after, .jinome-dash .jd--broadsheet .jd-nav__rule::after {
+	content: ""; display: block; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+}
+.jinome-dash .jd--log .jd-nav__rule::before, .jinome-dash .jd--broadsheet .jd-nav__rule::before { width: 24px; height: 8px; background: var(--background-primary); }
+.jinome-dash .jd--log .jd-nav__rule::after, .jinome-dash .jd--broadsheet .jd-nav__rule::after {
+	width: 9px; height: 9px; background: var(--text-accent);
+	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z'/></svg>") center / contain no-repeat;
+	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z'/></svg>") center / contain no-repeat;
+}
