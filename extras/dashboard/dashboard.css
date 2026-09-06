@@ -3040,6 +3040,10 @@ body.is-mobile:not(.is-phone) .ephemeris-dash .jd > .jd-grid {
 	.ephemeris-dash .jd--log .jd-col--left .jd-nav, .ephemeris-dash .jd--log .jd-nav { grid-template-columns: minmax(0, 1fr); margin: 0; }
 	.ephemeris-dash .jd--log .jd-nav__item { padding: 8px 2px; }
 	.ephemeris-dash .jd--log .jd-nav__rule { margin-left: 0; margin-right: 0; }
+	/* In the two-column layout the last TWO items before a group rule drop their hairline
+	   (the rule sits under them). In one column only the LAST item is on the last row, so the
+	   second-to-last keeps its line — otherwise Authors | Genes lose the hairline between them. */
+	.ephemeris-dash .jd--log .jd-nav__item:has(+ .jd-nav__item + .jd-nav__rule) { border-bottom: 1px solid var(--jd-hairline); }
 
 	/* constellations: magnitude drops to a whisper so titles keep their room */
 	.ephemeris-dash .jd--log .jd-proj__mag { font-size: 11px; }
