@@ -3000,3 +3000,8 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 
 /* the log head line may wrap; keep it right-aligned and off the edge */
 .jinome-dash .jd-head__sub { text-align: right; max-width: 72%; line-height: 1.6; }
+
+/* --- round 22: the line under the chart ------------------------------------------------------ */
+.jinome-dash .jd-chart__quote { margin: 12px 4px 0; }
+.jinome-dash .jd-chart__quote blockquote { margin: 0; padding: 0; border: 0; background: none; font-family: var(--jd-serif); font-size: 17px; line-height: 1.45; color: var(--text-normal); text-wrap: balance; }
+.jinome-dash .jd-chart__quote figcaption { margin-top: 6px; font-size: 13px; color: var(--text-faint); font-style: italic; }

@@ -707,8 +707,7 @@ if (LAYOUT === "broadsheet") {
 if (LAYOUT === "log") {
     const h = root.createDiv({ cls: "jd-head" });
     h.createEl("h1", { cls: "jd-head__name", text: "JINOME" });
-    const mp = moonPhase();
-    h.createDiv({ cls: "jd-head__sub", text: `Observation log · ${dateLine()} · ${WX.name} · ${nowHHMM()} KST · ${mp.name}, ${mp.ill}%` });
+    h.createDiv({ cls: "jd-head__sub", text: `Observation log · ${dateLine()}` });
     mountEpigraph(h);
 }
 
@@ -2101,9 +2100,35 @@ if (LAYOUT === "log") {
             el("text", { x: cx.toFixed(1), y: ly.toFixed(1), "text-anchor": "middle", class: "jd-chart__lbl" }, grp).textContent = main.split("-")[1] ?? main;
         });
         el("text", { x: 200, y: 392, "text-anchor": "middle", class: "jd-chart__lbl is-sub" }).textContent = `field stars: ${fieldN} reviews not yet begun`;
-        const legend = document.createElement("div"); legend.className = "jd-chart__legend";
-        legend.textContent = "a constellation per project: its alpha the project itself, the other stars its sub-codes, sized by papers and experiments; set constellations are projects finished. Field stars are reviews not yet begun. Hover a star for its name, click to open.";
-        box.appendChild(legend);
+        const how = document.createElementNS(NS, "title");
+        how.textContent = "A constellation per project: the alpha is the project itself, the other stars its sub-codes, sized by papers and experiments. Set constellations are projects finished. Field stars are reviews not yet begun. Hover a star for its name; click to open.";
+        svg.insertBefore(how, svg.firstChild);
+        // Under the chart: one line a day, from people who looked up or worked late. Sources are the real ones.
+        const QUOTES = [
+            ["We are all in the gutter, but some of us are looking at the stars.", "Oscar Wilde, Lady Windermere's Fan"],
+            ["Look up at the stars and not down at your feet.", "Stephen Hawking, 2011"],
+            ["We are made of starstuff. We are a way for the cosmos to know itself.", "Carl Sagan, Cosmos"],
+            ["Astronomy compels the soul to look upwards and leads us from this world to another.", "Plato, Republic VII"],
+            ["The time will come when diligent research over long periods will bring to light things which now lie hidden.", "Seneca, Natural Questions VII"],
+            ["If I have seen further it is by standing on the shoulders of Giants.", "Isaac Newton, letter to Robert Hooke, 1675"],
+            ["In the fields of observation chance favours only the prepared mind.", "Louis Pasteur, 1854"],
+            ["Nothing is too wonderful to be true, if it be consistent with the laws of nature.", "Michael Faraday, laboratory notebook, 1849"],
+            ["The first principle is that you must not fool yourself — and you are the easiest person to fool.", "Richard Feynman, Caltech commencement, 1974"],
+            ["Every man can, if he so desires, become the sculptor of his own brain.", "Santiago Ramón y Cajal, Advice for a Young Investigator"],
+            ["From so simple a beginning endless forms most beautiful and most wonderful have been, and are being, evolved.", "Charles Darwin, On the Origin of Species"],
+            ["Nothing in biology makes sense except in the light of evolution.", "Theodosius Dobzhansky, 1973"],
+            ["It is a capital mistake to theorize before one has data.", "Sherlock Holmes, A Scandal in Bohemia"],
+            ["Curiosity is not a sin. But we should exercise caution with our curiosity.", "Albus Dumbledore, Goblet of Fire"],
+            ["It is our choices that show what we truly are, far more than our abilities.", "Albus Dumbledore, Chamber of Secrets"],
+            ["Things we lose have a way of coming back to us in the end, if not always in the way we expect.", "Luna Lovegood, Order of the Phoenix"],
+            ["Books! And cleverness! There are more important things — friendship and bravery.", "Hermione Granger, Philosopher's Stone"],
+            ["I can teach you how to bottle fame, brew glory, even stopper death.", "Severus Snape, Philosopher's Stone"],
+        ];
+        const q = QUOTES[Math.abs(dayNum(TODAY)) % QUOTES.length];
+        const fig = document.createElement("figure"); fig.className = "jd-chart__quote";
+        const bq = document.createElement("blockquote"); bq.textContent = q[0]; fig.appendChild(bq);
+        const fc = document.createElement("figcaption"); fc.textContent = "— " + q[1]; fig.appendChild(fc);
+        box.appendChild(fig);
         colLeft.insertBefore(box, colLeft.firstChild);
         colLeft.insertBefore(strip, box.nextSibling);   // the register sits under the chart, as in the mock
     } catch (e) { /* the chart is decoration; never break the page */ }
@@ -2237,10 +2262,30 @@ if (LAYOUT !== "cards") {
         const obsCard = card(colMain, "observations", "Observations in progress");
         colMain.insertBefore(obsCard.section, workCard.section.nextSibling);
         panel("observations", () => {
-            const list = rows.filter((r) => asArray(r.p?.type).map(String).includes("Review") && asArray(r.p?.status).map(String).some((s) => s.includes("In progress")))
-                .sort((a, b) => String(b.stamp).localeCompare(String(a.stamp))).slice(0, 6);
-            if (!list.length) { empty(obsCard, "No review is at 📖In progress."); return; }
-            table(obsCard.body, ["Review", "Created"], list.map((r) => [link(r), fmtDay(r.zk)]));
+            // Two views of the notebook's own writing: the commonplace entries, then the reviews being written.
+            const tabsEl = obsCard.body.createDiv({ cls: "jd-tabs" });
+            const host = obsCard.body.createDiv({ cls: "jd-obs" });
+            const byStamp = (x, y) => String(y.stamp).localeCompare(String(x.stamp));
+            const VIEWS = [
+                { id: "commonplace", label: "Commonplace", head: ["Note", "Created"], none: "No note is tagged Commonplace.",
+                  list: rows.filter((r) => r.stamp && tagStrings(r.p).includes("Commonplace")).sort(byStamp).slice(0, 6) },
+                { id: "reviews", label: "Reviews", head: ["Review", "Created"], none: "No review is at 📖In progress.",
+                  list: rows.filter((r) => asArray(r.p?.type).map(String).includes("Review") && asArray(r.p?.status).map(String).some((s) => s.includes("In progress"))).sort(byStamp).slice(0, 6) },
+            ];
+            const btns = new Map();
+            const show = (id) => {
+                host.empty();
+                btns.forEach((b, k) => b.setAttribute("aria-selected", String(k === id)));
+                const v = VIEWS.find((x) => x.id === id);
+                if (!v.list.length) { host.createEl("p", { cls: "jd-empty", text: v.none }); return; }
+                table(host, v.head, v.list.map((r) => [link(r), fmtDay(r.zk)]));
+            };
+            for (const v of VIEWS) {
+                const b = tabsEl.createEl("button", { cls: "jd-tab", text: v.label, attr: { "data-tab": v.id, type: "button", "aria-selected": "false" } });
+                b.addEventListener("click", () => show(v.id));
+                btns.set(v.id, b);
+            }
+            show("commonplace");
         });
     }
     const revCard = card(colRight, "reviews", "Reviews");
