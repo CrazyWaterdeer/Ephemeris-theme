@@ -2951,3 +2951,6 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 .jinome-dash .jd--log .jd-nav__item { padding: 9px 10px; }
 .jinome-dash .jd--log .jd-nav__rule { margin-left: 10px; margin-right: 10px; }
 .jinome-dash .jd--log .jd-strip .jd-stat__n { font-size: 24px; }
+
+/* the log lists constellations only — the sub-codes already sit in the chart key; keeps the columns level */
+.jinome-dash .jd--log .jd-proj__item--sub { display: none; }
