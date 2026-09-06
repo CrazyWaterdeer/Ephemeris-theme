@@ -2997,3 +2997,6 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 .jinome-dash .jd-chart__star:not(.is-field) { transform-box: fill-box; transform-origin: center; animation: jd-twinkle2 3.6s ease-in-out infinite; }
 @keyframes jd-twinkle2 { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.7); } }
 .jinome-dash .jd-chart__key { display: none; }
+
+/* the log head line may wrap; keep it right-aligned and off the edge */
+.jinome-dash .jd-head__sub { text-align: right; max-width: 72%; line-height: 1.6; }
