@@ -2777,11 +2777,13 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 @container jd (min-width: 900px) {
 	.jinome-dash .jd--log .jd-grid {
 		grid-template-columns: minmax(340px, 440px) minmax(0, 1fr);
-		grid-template-areas: "strip strip" "left main" "left right" "left .";
-		grid-template-rows: auto auto auto 1fr;   /* the left column's extra height lands in the empty last row */
+		grid-template-areas: "left main" "left right" "left .";
+		grid-template-rows: auto auto 1fr;   /* the left column's extra height lands in the empty last row */
 		column-gap: 36px;
 	}
-	.jinome-dash .jd--log .jd-strip { grid-area: strip; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+	.jinome-dash .jd--log .jd-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+	.jinome-dash .jd--log .jd-col--right > [data-panel="recent"] { order: 3; }
+	.jinome-dash .jd--log .jd-col--right > [data-panel="reviews"] { order: 4; grid-column: 1 / -1; }
 	.jinome-dash .jd--log .jd-col--left { grid-area: left; }
 	.jinome-dash .jd--log .jd-col--main { grid-area: main; }
 	.jinome-dash .jd--log .jd-col--right { grid-area: right; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--jd-gap); align-items: start; }
@@ -2943,3 +2945,9 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 .jinome-dash .jd-ear__b:empty::before { content: "\00a0"; }
 .jinome-dash .jd-mast__folio { display: flex; justify-content: center; gap: 0; margin-top: 10px; padding-top: 7px; border-top: 1px solid var(--jd-hairline); font-size: 13px; color: var(--text-muted); font-style: italic; }
 @container jd (max-width: 899.98px) { .jinome-dash .jd-mast__ears { grid-template-columns: 1fr; } .jinome-dash .jd-ear, .jinome-dash .jd-ear--weather { justify-self: center; } }
+
+/* --- round 18: the log's nav rules run edge to edge ------------------------------------------ */
+.jinome-dash .jd--log .jd-col--left .jd-nav { column-gap: 0; margin: 0 -10px; }
+.jinome-dash .jd--log .jd-nav__item { padding: 9px 10px; }
+.jinome-dash .jd--log .jd-nav__rule { margin-left: 10px; margin-right: 10px; }
+.jinome-dash .jd--log .jd-strip .jd-stat__n { font-size: 24px; }

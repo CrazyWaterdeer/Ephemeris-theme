@@ -1166,7 +1166,7 @@ let selectTab = () => { };
 const scrollTo = (c) => { try { c.section.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) { } };
 
 // ── 2. work (built early so the strip can drive its tabs) ───────────────
-const workCard = card(colMain, "work", "Work");
+const workCard = card(colMain, "work", LAYOUT === "log" ? "Orders of the day" : "Work");
 const tabsEl = workCard.body.createDiv({ cls: "jd-tabs" });
 const workHost = workCard.body.createDiv({ cls: "jd-work" });
 
@@ -1314,7 +1314,7 @@ panel("strip", () => {
 });
 
 // ── 3. nav ──────────────────────────────────────────────────────────────
-const navCard = card(colLeft, "nav", "Navigation");
+const navCard = card(colLeft, "nav", LAYOUT === "log" ? "Indices" : "Navigation");
 
 panel("nav", () => {
     const wrap = navCard.body.createDiv({ cls: "jd-nav" });
@@ -1437,7 +1437,7 @@ panel("nav", () => {
 });
 
 // ── 4. projects ─────────────────────────────────────────────────────────
-const projectCard = card(colLeft, "projects", "Projects");
+const projectCard = card(colLeft, "projects", LAYOUT === "log" ? "Constellations" : "Projects");
 
 panel("projects", () => {
     /*
@@ -1528,7 +1528,7 @@ panel("projects", () => {
 });
 
 // ── 5. calendar ─────────────────────────────────────────────────────────
-const calCard = card(colRight, "calendar", "Calendar");
+const calCard = card(colRight, "calendar", LAYOUT === "log" ? "Ephemeris" : "Calendar");
 
 panel("calendar", () => {
     const KIND_ORDER = ["due", "sch", "fin", "new"];
@@ -2083,6 +2083,7 @@ if (LAYOUT === "log") {
         legend.textContent = "a star per experiment, sized by papers; field stars are reviews not yet begun. The sky turns behind the constellations, once an hour.";
         box.appendChild(legend);
         colLeft.insertBefore(box, colLeft.firstChild);
+        colLeft.insertBefore(strip, box.nextSibling);   // the register sits under the chart, as in the mock
     } catch (e) { /* the chart is decoration; never break the page */ }
 }
 const recentCard = card(LAYOUT === "broadsheet" ? colMain : colRight, "recent", LAYOUT === "broadsheet" ? "Latest" : "Recent");
@@ -2209,7 +2210,18 @@ if (LAYOUT !== "cards") {
             }
         } catch (e) { }
     }
-    const revCard = card(LAYOUT === "broadsheet" ? colRight : colLeft, "reviews", "Reviews");
+    if (LAYOUT === "log") {
+        // Observations in progress: the reviews being written now (📖), newest first.
+        const obsCard = card(colMain, "observations", "Observations in progress");
+        colMain.insertBefore(obsCard.section, workCard.section.nextSibling);
+        panel("observations", () => {
+            const list = rows.filter((r) => asArray(r.p?.type).map(String).includes("Review") && asArray(r.p?.status).map(String).some((s) => s.includes("In progress")))
+                .sort((a, b) => String(b.stamp).localeCompare(String(a.stamp))).slice(0, 6);
+            if (!list.length) { empty(obsCard, "No review is at 📖In progress."); return; }
+            table(obsCard.body, ["Review", "Created"], list.map((r) => [link(r), fmtDay(r.zk)]));
+        });
+    }
+    const revCard = card(colRight, "reviews", "Reviews");
     panel("reviews", () => {
         const STAGES = ["📚Not started", "✏Draft", "📖In progress", "📗Done", "📜Final", "💀Not today"];
         const reviews = rows.filter((r) => asArray(r.p?.type).map(String).includes("Review"));
