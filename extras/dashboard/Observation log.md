@@ -1,6 +1,6 @@
 ---
 cssclasses:
-  - jinome-dash
+  - ephemeris-dash
   - jd-petri
 status:
   - 📜Final
@@ -12,6 +12,8 @@ tags:
   - Commonplace
 aliases:
   - Observation log
+  - Dashboard
+  - Almanac
 favourite: false
 ---
 

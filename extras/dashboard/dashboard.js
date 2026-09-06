@@ -128,15 +128,15 @@ const runCommand = (id) => { try { app.commands.executeCommandById(id); } catch 
  * data). Every read carries a default and every write is allowed to fail —
  * the dashboard must render identically with no stored value at all.
  */
-const LS_TAB = "jinome-dash.tab";
-const LS_MONTH = "jinome-dash.month";
+const LS_TAB = "ephemeris-dash.tab";
+const LS_MONTH = "ephemeris-dash.month";
 /* Bumped to wx2 when is_day joined the request. An entry written before that
    carries no is_day, and the `=== 0` night guard would then keep drawing the
    DAY glyph — for 30 minutes normally, but forever while the network is down,
    because a stale entry is deliberately reused rather than dropped. A new key
    costs one refetch and the field is present from the first render. */
-const LS_WX = "jinome-dash.wx2";
-const LS_WX_ERR = "jinome-dash.wxfail";
+const LS_WX = "ephemeris-dash.wx2";
+const LS_WX_ERR = "ephemeris-dash.wxfail";
 const store = {
     get(k, d) { try { const v = window.localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
     set(k, v) { try { window.localStorage.setItem(k, String(v)); } catch (e) { } },
@@ -870,8 +870,14 @@ if (LAYOUT === "broadsheet") {
 }
 if (LAYOUT === "log") {
     const h = root.createDiv({ cls: "jd-head" });
-    h.createEl("h1", { cls: "jd-head__name", text: "JINOME" });
-    h.createDiv({ cls: "jd-head__sub", text: `Observation log · ${dateLine()}` });
+    // The masthead is the page's title, not the vault's name: `title` defaults to
+    // Almanac, and `owner` — a name written on the cover, as on any notebook — is
+    // optional and leads the small line. Both come from the dv.view() call, so the
+    // script itself carries no personal name.
+    const title = String(input?.title ?? "Almanac").trim() || "Almanac";
+    const owner = String(input?.owner ?? "").trim();
+    h.createEl("h1", { cls: "jd-head__name", text: title.toUpperCase() });
+    h.createDiv({ cls: "jd-head__sub", text: [owner, dateLine()].filter(Boolean).join(" · ") });
     mountEpigraph(h);
 }
 

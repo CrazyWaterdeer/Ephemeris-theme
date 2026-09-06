@@ -2,7 +2,7 @@
    Jinome Dashboard — "Petri"
    Install to: .obsidian/snippets/dashboard.css   (snippets load only there)
    Pairs with: Vector/dashboard.js + Vector/Dashboard.md
-               (note frontmatter: cssclasses: [jinome-dash])
+               (note frontmatter: cssclasses: [ephemeris-dash])
 
    WHY THE FILE LOOKS LIKE THIS
    ---------------------------------------------------------------------------
@@ -116,27 +116,27 @@
    setting --file-line-width wins by inheritance (no specificity fight with
    core's .is-readable-line-width rule) and max-width: none covers the rest.
 --------------------------------------------------------------------------- */
-.jinome-dash {
+.ephemeris-dash {
 	--file-line-width: 100%;
 	--jd-edge: var(--size-4-6, 24px);   /* the sizer's inline padding */
 }
 
-.jinome-dash .cm-sizer,
-.jinome-dash .markdown-preview-sizer {
+.ephemeris-dash .cm-sizer,
+.ephemeris-dash .markdown-preview-sizer {
 	max-width: none;
 	width: 100%;
 	padding-inline: var(--jd-edge);
 }
 
 /* Properties block is noise on a dashboard. */
-.jinome-dash .metadata-container {
+.ephemeris-dash .metadata-container {
 	display: none;
 }
 
 /* The dashboard is one dataviewjs block; its Live-Preview wrapper must not
    draw a box around the entire page. :has(.jd) keeps every OTHER embedded
    block in the note untouched. */
-.jinome-dash .cm-embed-block:has(.jd),
+.ephemeris-dash .cm-embed-block:has(.jd),
 /* .cm-embed-block written twice on purpose. Core's hover rule is
    `.markdown-source-view.mod-cm6 .cm-embed-block:not(.cm-table-widget,
    .cm-lang-base):hover` = (0,5,0) and sets box-shadow: var(
@@ -144,35 +144,35 @@
    hovering anywhere on the dashboard in Live Preview drew exactly the ring
    this rule exists to remove. Doubling the class ties at (0,5,0), and snippets
    load after app.css, so later source order settles it. */
-.jinome-dash .cm-embed-block.cm-embed-block:hover:has(.jd) {
+.ephemeris-dash .cm-embed-block.cm-embed-block:hover:has(.jd) {
 	padding: 0;
 	border: none;
 	box-shadow: none;
 	background: none;
 }
-.jinome-dash .cm-embed-block:has(.jd) .edit-block-button {
+.ephemeris-dash .cm-embed-block:has(.jd) .edit-block-button {
 	z-index: 2;
 }
 /* Reading-view wrapper of the same block. */
-.jinome-dash .block-language-dataviewjs:has(.jd) {
+.ephemeris-dash .block-language-dataviewjs:has(.jd) {
 	overflow: visible;
 }
 /* dv.el / renderCompactMarkdown emit an inline <span> wrapper; without this
    every markdown table the dashboard renders would sit in an inline box. */
-.jinome-dash .jd > span,
-.jinome-dash .jd-table > span,
-.jinome-dash .jd-card__body > span {
+.ephemeris-dash .jd > span,
+.ephemeris-dash .jd-table > span,
+.ephemeris-dash .jd-card__body > span {
 	display: block;
 }
 
 
 /* ---------------------------------------------------------------------------
    2. TOKENS
-   On .jinome-dash, not on .jd: the cover banner is a markdown embed that sits
+   On .ephemeris-dash, not on .jd: the cover banner is a markdown embed that sits
    OUTSIDE the dataviewjs block, so tokens declared on .jd would not reach it
    and every var() over there would fall back to the initial value.
 --------------------------------------------------------------------------- */
-.jinome-dash {
+.ephemeris-dash {
 	/* type — remote webfonts are CSP-blocked and "Noto Sans KR" is not
 	   registered on this machine, so every stack is locally resolvable */
 	--jd-serif: Georgia, Constantia, "HCR Batang", Batang, serif;
@@ -214,11 +214,11 @@
    accent ink cannot, because it is derived from a fixed hue and needs the
    opposite end of the lightness range on a near-white ground (62% would be
    3.10 : 1 there, 42% is 5.57 : 1). */
-.theme-light .jinome-dash {
+.theme-light .ephemeris-dash {
 	--jd-accent-l: 42%;
 }
 
-.jinome-dash {
+.ephemeris-dash {
 	/* semantic — the only other hues allowed */
 	--jd-overdue: rgb(var(--color-red-rgb));
 	--jd-overdue-wash: rgba(var(--color-red-rgb), 0.12);
@@ -238,7 +238,7 @@
 	--jd-dur: var(--anim-duration-fast, 140ms);
 }
 
-.jinome-dash .jd {
+.ephemeris-dash .jd {
 	/* the query container: every breakpoint below reads THIS element's width,
 	   so a split pane reflows the dashboard the same way a narrow window does */
 	container: jd / inline-size;
@@ -257,14 +257,14 @@
    weather. Ordering by column alone cannot do that, because the calendar and
    the weather widget both live in the right column.
 --------------------------------------------------------------------------- */
-.jinome-dash .jd-grid {
+.ephemeris-dash .jd-grid {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
 	gap: var(--jd-gap);
 	align-items: start;
 }
 
-.jinome-dash .jd-col {
+.ephemeris-dash .jd-col {
 	display: flex;
 	flex-direction: column;
 	gap: var(--jd-gap);
@@ -272,9 +272,9 @@
 }
 
 /* Full-width items, whether dashboard.js puts them in .jd-grid or beside it. */
-.jinome-dash .jd-grid > .jd-strip,
-.jinome-dash .jd-grid > .jd-cover,
-.jinome-dash .jd-grid > .jd-quote {
+.ephemeris-dash .jd-grid > .jd-strip,
+.ephemeris-dash .jd-grid > .jd-cover,
+.ephemeris-dash .jd-grid > .jd-quote {
 	grid-column: 1 / -1;
 	/* These three carry their own bottom margin so they still separate correctly
 	   when dashboard.js renders them OUTSIDE the grid (the cover and the quote
@@ -284,15 +284,15 @@
 	margin-bottom: 0;
 }
 
-/* Every selector inside the @container blocks below repeats the .jinome-dash
+/* Every selector inside the @container blocks below repeats the .ephemeris-dash
    prefix ON PURPOSE: a container query adds no specificity of its own, so a
-   bare `.jd-grid` (0,1,0) would lose to the base `.jinome-dash .jd-grid`
+   bare `.jd-grid` (0,1,0) would lose to the base `.ephemeris-dash .jd-grid`
    (0,2,0) and the layout would never change. Equal specificity + later source
    order is what makes the breakpoints apply. */
 
 /* --- < 780px : single column, explicit card order ------------------------ */
 @container jd (max-width: 779.98px) {
-	.jinome-dash .jd-col {
+	.ephemeris-dash .jd-col {
 		display: contents;   /* cards become direct grid items -> orderable */
 	}
 	/* order on a scale of 10 so extra cards can be slotted between tiers.
@@ -300,40 +300,40 @@
 	   that is how the calendar and the weather widget escape the right
 	   column's block and land in the work -> calendar -> nav -> weather
 	   reading order. */
-	.jinome-dash .jd-strip,
-	.jinome-dash .jd-cover,
-	.jinome-dash .jd-quote { order: 0; }
-	.jinome-dash .jd-col--main > * { order: 10; }
-	.jinome-dash .jd-card[data-panel="calendar"],
-	.jinome-dash .jd-card:has(.jd-cal) { order: 20; }
-	.jinome-dash .jd-col--left > * { order: 30; }
-	.jinome-dash .jd-col--right > * { order: 35; }
-	.jinome-dash .jd-card[data-panel="weather"],
-	.jinome-dash .jd-card:has(.jd-wx) { order: 40; }
+	.ephemeris-dash .jd-strip,
+	.ephemeris-dash .jd-cover,
+	.ephemeris-dash .jd-quote { order: 0; }
+	.ephemeris-dash .jd-col--main > * { order: 10; }
+	.ephemeris-dash .jd-card[data-panel="calendar"],
+	.ephemeris-dash .jd-card:has(.jd-cal) { order: 20; }
+	.ephemeris-dash .jd-col--left > * { order: 30; }
+	.ephemeris-dash .jd-col--right > * { order: 35; }
+	.ephemeris-dash .jd-card[data-panel="weather"],
+	.ephemeris-dash .jd-card:has(.jd-wx) { order: 40; }
 }
 
 /* --- >= 780px : main + right, nav becomes a full-width icon band --------- */
 @container jd (min-width: 780px) {
-	.jinome-dash .jd-grid {
+	.ephemeris-dash .jd-grid {
 		grid-template-columns: minmax(0, 1fr) 300px;
 	}
-	.jinome-dash .jd-col--left {
+	.ephemeris-dash .jd-col--left {
 		grid-column: 1 / -1;   /* the nav band sits above the two columns */
 	}
-	.jinome-dash .jd-col--left .jd-nav {
+	.ephemeris-dash .jd-col--left .jd-nav {
 		grid-template-columns: repeat(4, minmax(0, 1fr));
 	}
 }
 
 /* --- >= 1150px : the full three-column dashboard ------------------------- */
 @container jd (min-width: 1150px) {
-	.jinome-dash .jd-grid {
+	.ephemeris-dash .jd-grid {
 		grid-template-columns: 260px minmax(0, 1fr) 300px;
 	}
-	.jinome-dash .jd-col--left {
+	.ephemeris-dash .jd-col--left {
 		grid-column: auto;
 	}
-	.jinome-dash .jd-col--left .jd-nav {
+	.ephemeris-dash .jd-col--left .jd-nav {
 		grid-template-columns: minmax(0, 1fr);   /* back to a vertical list */
 	}
 }
@@ -349,9 +349,9 @@
    inside a .cm-line, and a negative inline margin there can push a horizontal
    scrollbar onto the editor. Full-bleed here means "the full dashboard width".
 --------------------------------------------------------------------------- */
-.jinome-dash .internal-embed:has(> img[alt="banner"]),
-.jinome-dash .image-embed:has(> img[alt="banner"]),
-.jinome-dash .jd-cover {
+.ephemeris-dash .internal-embed:has(> img[alt="banner"]),
+.ephemeris-dash .image-embed:has(> img[alt="banner"]),
+.ephemeris-dash .jd-cover {
 	position: relative;
 	display: block;
 	width: 100%;
@@ -361,7 +361,7 @@
 	line-height: 0;   /* kill the inline-image descender gap */
 }
 
-.jinome-dash img[alt="banner"] {
+.ephemeris-dash img[alt="banner"] {
 	display: block;
 	width: 100%;
 	height: var(--jd-cover-h);
@@ -375,9 +375,9 @@
    10,.4) in dark; Velocity light: a color-mix of --color-base-90), which is why
    it is used here instead of a black literal or rgba(var(--mono-rgb-0)) —
    mono-rgb-0 inverts between themes and would wash the image out in dark. */
-.jinome-dash .internal-embed:has(> img[alt="banner"])::after,
-.jinome-dash .image-embed:has(> img[alt="banner"])::after,
-.jinome-dash .jd-cover::after {
+.ephemeris-dash .internal-embed:has(> img[alt="banner"])::after,
+.ephemeris-dash .image-embed:has(> img[alt="banner"])::after,
+.ephemeris-dash .jd-cover::after {
 	content: "";
 	position: absolute;
 	inset: 0;
@@ -387,7 +387,7 @@
 
 /* Title laid over the cover (only when dashboard.js builds the .jd-cover
    wrapper itself; a bare markdown banner just renders as a clean band). */
-.jinome-dash .jd-cover__title {
+.ephemeris-dash .jd-cover__title {
 	position: absolute;
 	left: var(--size-4-6, 24px);
 	right: var(--size-4-6, 24px);
@@ -402,7 +402,7 @@
 	color: var(--text-on-accent);   /* white in both themes, over the scrim */
 	text-wrap: balance;
 }
-.jinome-dash .jd-cover__sub {
+.ephemeris-dash .jd-cover__sub {
 	position: absolute;
 	left: var(--size-4-6, 24px);
 	bottom: calc(var(--size-4-5, 20px) - 2px);
@@ -420,14 +420,14 @@
    Obsidian's default 2px rule right under the inline title. Rendered here as
    the same hairline .jd-rule uses, so it reads as a title underline instead of
    a stray divider. dashboard.js never emits <hr>, so this selector is exact. */
-.jinome-dash hr {
+.ephemeris-dash hr {
 	height: 1px;
 	margin: var(--jd-pad-tight) 0 var(--jd-gap);
 	border: none;
 	background: var(--jd-hairline);
 }
 
-.jinome-dash .inline-title {
+.ephemeris-dash .inline-title {
 	font-family: var(--jd-serif);
 	font-weight: var(--font-semibold, 600);
 	letter-spacing: -0.015em;
@@ -440,18 +440,18 @@
    row ("Quote" + icon) is chrome from a different design language and is
    hidden; the tint, the serif italic and the padding come from the shared rule
    below. Written as one selector list so the two forms can never drift. */
-.jinome-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"] > .callout-title {
+.ephemeris-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"] > .callout-title {
 	display: none;
 }
-.jinome-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"] > .callout-content > :first-child {
+.ephemeris-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"] > .callout-content > :first-child {
 	margin-top: 0;
 }
-.jinome-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"] > .callout-content > :last-child {
+.ephemeris-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"] > .callout-content > :last-child {
 	margin-bottom: 0;
 }
 
-.jinome-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"],
-.jinome-dash .jd-quote {
+.ephemeris-dash .callout[data-callout="quote"][data-callout-metadata="jd-quote"],
+.ephemeris-dash .jd-quote {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: baseline;
@@ -468,7 +468,7 @@
 	line-height: 1.65;
 	color: var(--text-muted);
 }
-.jinome-dash .jd-quote__cite {
+.ephemeris-dash .jd-quote__cite {
 	margin-left: auto;
 	font-family: var(--jd-sans);
 	font-style: normal;
@@ -485,7 +485,7 @@
    One hairline-divided band: the 1px grid gap over a hairline background
    paints the dividers, so no per-cell borders and no double lines at wrap.
 --------------------------------------------------------------------------- */
-.jinome-dash .jd-strip {
+.ephemeris-dash .jd-strip {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
 	gap: 1px;
@@ -501,7 +501,7 @@
 	overflow: hidden;
 }
 
-.jinome-dash .jd-stat {
+.ephemeris-dash .jd-stat {
 	display: flex;
 	flex-direction: column;
 	gap: 3px;
@@ -511,22 +511,22 @@
 	text-decoration: none;
 	transition: background-color var(--jd-dur) ease;
 }
-.jinome-dash a.jd-stat,
-.jinome-dash .jd-stat[data-nav] {
+.ephemeris-dash a.jd-stat,
+.ephemeris-dash .jd-stat[data-nav] {
 	cursor: pointer;
 }
 /* dashboard.js makes every stat a keyboard-operable role="button" */
-.jinome-dash .jd-stat[role="button"],
-.jinome-dash a.jd-stat {
+.ephemeris-dash .jd-stat[role="button"],
+.ephemeris-dash a.jd-stat {
 	cursor: pointer;
 }
 /* hover drops the cell back to the ground colour, so the strip reads as a row
    of keys being pressed rather than a row of tinted boxes */
-.jinome-dash .jd-stat[role="button"]:hover,
-.jinome-dash a.jd-stat:hover {
+.ephemeris-dash .jd-stat[role="button"]:hover,
+.ephemeris-dash a.jd-stat:hover {
 	background: var(--jd-ground);
 }
-.jinome-dash .jd-stat:focus-visible {
+.ephemeris-dash .jd-stat:focus-visible {
 	outline: 2px solid var(--jd-accent-text);
 	outline-offset: -2px;
 }
@@ -534,15 +534,15 @@
 /* A zero is the honest state of this vault today (0 scheduled, 0 due), so it
    is shown and muted rather than hidden — the tooltip dashboard.js attaches
    says which frontmatter key would make it count. */
-.jinome-dash .jd-stat[data-zero="true"] .jd-stat__n {
+.ephemeris-dash .jd-stat[data-zero="true"] .jd-stat__n {
 	color: var(--text-faint);
 	font-weight: var(--font-normal, 400);
 }
-.jinome-dash .jd-stat[data-tone="overdue"] .jd-stat__n { color: var(--jd-overdue); }
-.jinome-dash .jd-stat[data-tone="done"] .jd-stat__n { color: var(--jd-done); }
-.jinome-dash .jd-stat[data-tone="accent"] .jd-stat__n { color: var(--jd-accent-text); }
+.ephemeris-dash .jd-stat[data-tone="overdue"] .jd-stat__n { color: var(--jd-overdue); }
+.ephemeris-dash .jd-stat[data-tone="done"] .jd-stat__n { color: var(--jd-done); }
+.ephemeris-dash .jd-stat[data-tone="accent"] .jd-stat__n { color: var(--jd-accent-text); }
 
-.jinome-dash .jd-stat__n {
+.ephemeris-dash .jd-stat__n {
 	font-family: var(--jd-mono);
 	font-variant-numeric: tabular-nums;
 	font-feature-settings: "tnum" 1;
@@ -552,7 +552,7 @@
 	letter-spacing: -0.02em;
 	color: var(--text-normal);
 }
-.jinome-dash .jd-stat__l {
+.ephemeris-dash .jd-stat__l {
 	overflow: hidden;
 	font-size: 10.5px;
 	font-weight: var(--font-semibold, 600);
@@ -567,7 +567,7 @@
 /* ---------------------------------------------------------------------------
    6. CARDS
 --------------------------------------------------------------------------- */
-.jinome-dash .jd-card {
+.ephemeris-dash .jd-card {
 	min-width: 0;
 	padding: var(--jd-pad);
 	background: var(--jd-card);
@@ -576,11 +576,11 @@
 	/* restrained hover: the border only. No lift, no shadow bloom. */
 	transition: border-color var(--jd-dur) ease;
 }
-.jinome-dash .jd-card:hover {
+.ephemeris-dash .jd-card:hover {
 	border-color: var(--jd-hairline-hover);
 }
 
-.jinome-dash .jd-card__label {
+.ephemeris-dash .jd-card__label {
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-2, 8px);
@@ -592,12 +592,12 @@
 	line-height: 1.2;
 	color: var(--text-faint);
 }
-.jinome-dash .jd-card__label .svg-icon {
+.ephemeris-dash .jd-card__label .svg-icon {
 	width: 14px;
 	height: 14px;
 }
 /* count chip in the label row */
-.jinome-dash .jd-card__count {
+.ephemeris-dash .jd-card__count {
 	padding: 1px 6px;
 	border-radius: 999px;
 	background: var(--jd-tint);
@@ -609,27 +609,27 @@
 	color: var(--text-muted);
 }
 /* anything pushed to the right of the label row (tabs, a "more" link) */
-.jinome-dash .jd-card__label > .jd-card__aside,
-.jinome-dash .jd-card__label > .jd-tabs {
+.ephemeris-dash .jd-card__label > .jd-card__aside,
+.ephemeris-dash .jd-card__label > .jd-tabs {
 	margin-left: auto;
 }
 /* tabs hosted inside the label row lose the strip's own rule and spacing */
-.jinome-dash .jd-card__label > .jd-tabs {
+.ephemeris-dash .jd-card__label > .jd-tabs {
 	margin-bottom: 0;
 	border-bottom: none;
 }
-.jinome-dash .jd-card__label > .jd-tabs .jd-tab {
+.ephemeris-dash .jd-card__label > .jd-tabs .jd-tab {
 	padding: 2px 8px;
 	font-size: 11px;
 }
-.jinome-dash .jd-card__label > .jd-tabs .jd-tab[aria-selected="true"]::after {
+.ephemeris-dash .jd-card__label > .jd-tabs .jd-tab[aria-selected="true"]::after {
 	bottom: 0;
 }
 
-.jinome-dash .jd-card__body { min-width: 0; }
-.jinome-dash .jd-card__body > :first-child { margin-top: 0; }
-.jinome-dash .jd-card__body > :last-child { margin-bottom: 0; }
-.jinome-dash .jd-card__body--scroll {
+.ephemeris-dash .jd-card__body { min-width: 0; }
+.ephemeris-dash .jd-card__body > :first-child { margin-top: 0; }
+.ephemeris-dash .jd-card__body > :last-child { margin-bottom: 0; }
+.ephemeris-dash .jd-card__body--scroll {
 	max-height: 360px;
 	overflow-y: auto;
 	overscroll-behavior: contain;
@@ -642,13 +642,13 @@
    most of the dashboard (0 scheduled, no open due dates). The
    :has() guard is the whole difference between a teaching page and a blank
    one: prose stays, a genuinely mute card collapses. */
-.jinome-dash .jd-card[data-empty="true"]:not(:has(.jd-empty)),
-.jinome-dash .jd-col[data-empty="true"]:not(:has(.jd-empty)) {
+.ephemeris-dash .jd-card[data-empty="true"]:not(:has(.jd-empty)),
+.ephemeris-dash .jd-col[data-empty="true"]:not(:has(.jd-empty)) {
 	display: none;
 }
 
 /* Empty state: one line of next action. Quiet, but marked as a message. */
-.jinome-dash .jd-empty {
+.ephemeris-dash .jd-empty {
 	margin: 0;
 	padding: 2px 0 2px var(--jd-pad-tight);
 	border-left: 2px solid var(--jd-hairline);
@@ -656,8 +656,8 @@
 	font-size: var(--font-smaller, 0.875em);
 	line-height: 1.7;
 }
-.jinome-dash .jd-empty strong,
-.jinome-dash .jd-empty b {
+.ephemeris-dash .jd-empty strong,
+.ephemeris-dash .jd-empty b {
 	font-weight: var(--font-semibold, 600);
 	color: var(--text-normal);
 }
@@ -669,7 +669,7 @@
    Velocity's `button:not(.clickable-icon):hover { filter: brightness(.97) }`
    (0,2,1) both have to be undone. Every rule below carries >= 3 classes.
 --------------------------------------------------------------------------- */
-.jinome-dash .jd-tabs {
+.ephemeris-dash .jd-tabs {
 	display: flex;
 	align-items: stretch;
 	gap: 2px;
@@ -678,10 +678,10 @@
 	overflow-x: auto;
 	scrollbar-width: none;
 }
-.jinome-dash .jd-tabs::-webkit-scrollbar { display: none; }
-.jinome-dash .jd-card__label + .jd-tabs { margin-top: -2px; }
+.ephemeris-dash .jd-tabs::-webkit-scrollbar { display: none; }
+.ephemeris-dash .jd-card__label + .jd-tabs { margin-top: -2px; }
 
-.jinome-dash .jd-tabs .jd-tab {
+.ephemeris-dash .jd-tabs .jd-tab {
 	position: relative;
 	flex: 0 0 auto;
 	height: auto;
@@ -702,22 +702,22 @@
 	white-space: nowrap;
 	transition: color var(--jd-dur) ease, background-color var(--jd-dur) ease;
 }
-.jinome-dash .jd-tabs .jd-tab:hover {
+.ephemeris-dash .jd-tabs .jd-tab:hover {
 	background: var(--jd-tint);
 	color: var(--text-normal);
 	filter: none;       /* Velocity brightens every button on hover */
 	box-shadow: none;
 }
-.jinome-dash .jd-tabs .jd-tab:active {
+.ephemeris-dash .jd-tabs .jd-tab:active {
 	filter: none;
 }
-.jinome-dash .jd-tabs .jd-tab[aria-selected="true"] {
+.ephemeris-dash .jd-tabs .jd-tab[aria-selected="true"] {
 	color: var(--text-normal);
 	font-weight: var(--font-medium, 500);
 }
 /* the accent underline sits ON the strip's hairline, hence bottom: -1px.
    --text-accent, not --interactive-accent: see the accent note at the top. */
-.jinome-dash .jd-tabs .jd-tab[aria-selected="true"]::after {
+.ephemeris-dash .jd-tabs .jd-tab[aria-selected="true"]::after {
 	content: "";
 	position: absolute;
 	left: 8px;
@@ -727,14 +727,14 @@
 	border-radius: 2px 2px 0 0;
 	background: var(--jd-accent-text);
 }
-.jinome-dash .jd-tabs .jd-tab .jd-tab__n {
+.ephemeris-dash .jd-tabs .jd-tab .jd-tab__n {
 	margin-left: 6px;
 	font-family: var(--jd-mono);
 	font-variant-numeric: tabular-nums;
 	font-size: 10px;
 	color: var(--text-faint);
 }
-.jinome-dash .jd-tabs .jd-tab:focus-visible {
+.ephemeris-dash .jd-tabs .jd-tab:focus-visible {
 	outline: 2px solid var(--jd-accent-text);
 	outline-offset: -2px;
 }
@@ -748,14 +748,14 @@
    per-cell border-left + heavy header rule, and Dataview's "font-size: larger,
    font-weight: 700, border-bottom: solid" header.
 --------------------------------------------------------------------------- */
-.jinome-dash .jd-table {
+.ephemeris-dash .jd-table {
 	width: 100%;
 	overflow-x: auto;
 	overscroll-behavior-x: contain;
 }
 
-.jinome-dash .jd-card .jd-table table,
-.jinome-dash .jd-card .jd-table table.table-view-table {
+.ephemeris-dash .jd-card .jd-table table,
+.ephemeris-dash .jd-card .jd-table table.table-view-table {
 	width: 100%;
 	margin: 0;
 	border: none;
@@ -764,8 +764,8 @@
 	line-height: 1.45;
 }
 
-.jinome-dash .jd-card .jd-table table thead th,
-.jinome-dash .jd-card .jd-table table.table-view-table > thead > tr > th {
+.ephemeris-dash .jd-card .jd-table table thead th,
+.ephemeris-dash .jd-card .jd-table table.table-view-table > thead > tr > th {
 	padding: 0 10px 6px;
 	border: none;
 	border-bottom: 1px solid var(--jd-hairline);
@@ -780,8 +780,8 @@
 	white-space: nowrap;
 }
 
-.jinome-dash .jd-card .jd-table table tbody td,
-.jinome-dash .jd-card .jd-table table.table-view-table > tbody > tr > td {
+.ephemeris-dash .jd-card .jd-table table tbody td,
+.ephemeris-dash .jd-card .jd-table table.table-view-table > tbody > tr > td {
 	padding: 6px 10px;
 	border: none;         /* Velocity draws a border-left on every cell */
 	vertical-align: top;
@@ -790,21 +790,21 @@
 }
 
 /* zebra + row hover (Velocity zeroes --table-row-background-hover) */
-.jinome-dash .jd-card .jd-table table tbody tr:nth-child(even) > td {
+.ephemeris-dash .jd-card .jd-table table tbody tr:nth-child(even) > td {
 	background: var(--jd-tint);
 }
-.jinome-dash .jd-card .jd-table table tbody tr:hover > td {
+.ephemeris-dash .jd-card .jd-table table tbody tr:hover > td {
 	background: var(--jd-tint-strong);
 }
 
 /* first column carries the identity of the row */
-.jinome-dash .jd-card .jd-table table tbody tr > td:first-child {
+.ephemeris-dash .jd-card .jd-table table tbody tr > td:first-child {
 	font-weight: var(--font-medium, 500);
 }
 
 /* numeric / d-day columns line up when they are mono + tabular */
-.jinome-dash .jd-card .jd-table table td .jd-dday,
-.jinome-dash .jd-card .jd-table table td .jd-num {
+.ephemeris-dash .jd-card .jd-table table td .jd-dday,
+.ephemeris-dash .jd-card .jd-table table td .jd-num {
 	font-family: var(--jd-mono);
 	font-variant-numeric: tabular-nums;
 	font-size: 0.92em;
@@ -813,11 +813,11 @@
 
 /* Links: quiet by default, accent on hover. :not(.is-unresolved) keeps
    Obsidian's broken-link signal intact — that is worth more than uniformity. */
-.jinome-dash .jd-card a.internal-link:not(.is-unresolved) {
+.ephemeris-dash .jd-card a.internal-link:not(.is-unresolved) {
 	color: var(--text-normal);
 	text-decoration: none;
 }
-.jinome-dash .jd-card a.internal-link:not(.is-unresolved):hover {
+.ephemeris-dash .jd-card a.internal-link:not(.is-unresolved):hover {
 	color: var(--jd-accent-text);
 	text-decoration: none;
 }
@@ -825,11 +825,11 @@
 /* Dataview's small-text counter: drop the literal "(" / ")" it adds via
    ::before/::after and make it a chip. (DV's rules are (0,2,1); these are
    (0,4,1) and (0,3,0).) */
-.jinome-dash .jd-card .dataview.small-text::before,
-.jinome-dash .jd-card .dataview.small-text::after {
+.ephemeris-dash .jd-card .dataview.small-text::before,
+.ephemeris-dash .jd-card .dataview.small-text::after {
 	content: none;
 }
-.jinome-dash .jd-card .dataview.small-text {
+.ephemeris-dash .jd-card .dataview.small-text {
 	margin-left: 6px;
 	padding: 1px 6px;
 	border-radius: 999px;
@@ -842,18 +842,18 @@
 }
 
 /* Bare lists inside a card body (used where a table would be overkill). */
-.jinome-dash .jd-card__body ul,
-.jinome-dash .jd-card__body ol {
+.ephemeris-dash .jd-card__body ul,
+.ephemeris-dash .jd-card__body ol {
 	margin: 0;
 	padding-left: 1.1em;
 }
-.jinome-dash .jd-card__body li {
+.ephemeris-dash .jd-card__body li {
 	margin: 2px 0;
 	line-height: 1.5;
 }
 
 /* Status pills — the only semantic colour outside the calendar. */
-.jinome-dash .jd-pill {
+.ephemeris-dash .jd-pill {
 	display: inline-block;
 	padding: 1px 7px;
 	border-radius: 999px;
@@ -864,15 +864,15 @@
 	color: var(--text-muted);
 	white-space: nowrap;
 }
-.jinome-dash .jd-pill--overdue {
+.ephemeris-dash .jd-pill--overdue {
 	background: var(--jd-overdue-wash);
 	color: var(--jd-overdue);
 }
-.jinome-dash .jd-pill--done {
+.ephemeris-dash .jd-pill--done {
 	background: var(--jd-done-wash);
 	color: var(--jd-done);
 }
-.jinome-dash .jd-pill--accent {
+.ephemeris-dash .jd-pill--accent {
 	background: var(--jd-accent-wash);
 	color: var(--jd-accent-text);
 }
@@ -881,24 +881,24 @@
    the cells because a <tr> background is painted under them, and the marker
    bar on the first cell makes it read as one row rather than one red cell.
    Declared after the zebra rules on purpose — same specificity, later wins. */
-.jinome-dash .jd-card .jd-table table tbody tr[data-overdue="true"] > td,
-.jinome-dash .jd-card .jd-table table tbody tr.jd-row--overdue > td {
+.ephemeris-dash .jd-card .jd-table table tbody tr[data-overdue="true"] > td,
+.ephemeris-dash .jd-card .jd-table table tbody tr.jd-row--overdue > td {
 	background: var(--jd-overdue-wash);
 }
-.jinome-dash .jd-card .jd-table table tbody tr[data-overdue="true"] > td:first-child,
-.jinome-dash .jd-card .jd-table table tbody tr.jd-row--overdue > td:first-child {
+.ephemeris-dash .jd-card .jd-table table tbody tr[data-overdue="true"] > td:first-child,
+.ephemeris-dash .jd-card .jd-table table tbody tr.jd-row--overdue > td:first-child {
 	box-shadow: inset 2px 0 0 var(--jd-overdue);
 }
 
 /* the "↳" that marks a subproject row under its main PRJ id */
-.jinome-dash .jd-sub {
+.ephemeris-dash .jd-sub {
 	margin-right: 4px;
 	color: var(--text-faint);
 	font-family: var(--jd-mono);
 }
 
 /* the work card's tab body: the tab strip swaps this host's contents */
-.jinome-dash .jd-work {
+.ephemeris-dash .jd-work {
 	min-width: 0;
 }
 
@@ -912,7 +912,7 @@
    so nothing is hidden, only deferred.
    Capped in vh as well as px so a short laptop screen never gives one card
    half the viewport. */
-.jinome-dash .jd-card[data-panel="work"] .jd-work .jd-table {
+.ephemeris-dash .jd-card[data-panel="work"] .jd-work .jd-table {
 	max-height: min(44vh, 420px);
 	overflow: auto;
 	overscroll-behavior: contain;
@@ -922,7 +922,7 @@
    borders of a sticky <th> in Chromium, so the rule is painted as an inset
    shadow instead, and the th needs its own background or the rows show
    through it. */
-.jinome-dash .jd-card[data-panel="work"] .jd-work .jd-table thead th {
+.ephemeris-dash .jd-card[data-panel="work"] .jd-work .jd-table thead th {
 	position: sticky;
 	top: 0;
 	z-index: 1;
@@ -938,7 +938,7 @@
    with `collapse`, border-radius on a <td> is ignored, and the today cell needs
    both a radius and a ring.
 --------------------------------------------------------------------------- */
-.jinome-dash .jd-cal {
+.ephemeris-dash .jd-cal {
 	width: 100%;
 	margin: 0;
 	table-layout: fixed;
@@ -950,7 +950,7 @@
 	font-feature-settings: "tnum" 1;
 }
 
-.jinome-dash .jd-cal thead th {
+.ephemeris-dash .jd-cal thead th {
 	padding: 0 0 6px;
 	border: none;
 	background: none;
@@ -961,12 +961,12 @@
 	color: var(--text-faint);
 	text-align: center;
 }
-.jinome-dash .jd-cal thead th:first-child,
-.jinome-dash .jd-cal .jd-cal__wk {
+.ephemeris-dash .jd-cal thead th:first-child,
+.ephemeris-dash .jd-cal .jd-cal__wk {
 	width: 30px;
 }
 
-.jinome-dash .jd-cal td {
+.ephemeris-dash .jd-cal td {
 	padding: 0;
 	border: none;
 	background: none;
@@ -974,7 +974,7 @@
 
 /* week-number column — this is what makes the calendar navigation rather than
    decoration: each cell links to [[GGGG-[W]WW]] (2026-W35.md resolves). */
-.jinome-dash .jd-cal .jd-cal__wk {
+.ephemeris-dash .jd-cal .jd-cal__wk {
 	padding-right: 6px;
 	border-right: 1px solid var(--jd-hairline);
 	font-family: var(--jd-mono);
@@ -983,11 +983,11 @@
 	text-align: right;
 	vertical-align: middle;
 }
-.jinome-dash .jd-cal .jd-cal__wk a {
+.ephemeris-dash .jd-cal .jd-cal__wk a {
 	color: inherit;
 	text-decoration: none;
 }
-.jinome-dash .jd-cal .jd-cal__wk a:hover {
+.ephemeris-dash .jd-cal .jd-cal__wk a:hover {
 	color: var(--jd-accent-text);
 	text-decoration: none;
 }
@@ -998,7 +998,7 @@
    "W36" looks identical to "W35" and the one piece of state that matters here
    — which weeks have been planned — is invisible. Dotted, not coloured: the
    week column is 30px of 9.5px mono and a hue change would be lost in it. */
-.jinome-dash .jd-cal .jd-cal__wk a.is-unresolved {
+.ephemeris-dash .jd-cal .jd-cal__wk a.is-unresolved {
 	/* NOT --link-unresolved-color. Velocity lightness-corrects that token only
 	   inside .theme-light (theme.css:584 `oklch(from var(--color-accent) 72% 36%
 	   h)`); under .theme-dark — the pinned theme here — it falls through to
@@ -1016,7 +1016,7 @@
 }
 
 /* day cell */
-.jinome-dash .jd-cal .jd-cal__day {
+.ephemeris-dash .jd-cal .jd-cal__day {
 	position: relative;
 	height: 38px;
 	padding: 4px 3px 5px;
@@ -1028,49 +1028,49 @@
 	vertical-align: top;
 	transition: background-color var(--jd-dur) ease;
 }
-.jinome-dash .jd-cal .jd-cal__day:hover {
+.ephemeris-dash .jd-cal .jd-cal__day:hover {
 	background: var(--jd-tint);
 }
-.jinome-dash .jd-cal .jd-cal__date {
+.ephemeris-dash .jd-cal .jd-cal__date {
 	display: block;
 	line-height: 1.3;
 }
 
 /* out-of-month padding days */
-.jinome-dash .jd-cal .jd-cal__day[data-out],
-.jinome-dash .jd-cal .jd-cal__day.is-out,
-.jinome-dash .jd-cal .jd-cal__day--out {
+.ephemeris-dash .jd-cal .jd-cal__day[data-out],
+.ephemeris-dash .jd-cal .jd-cal__day.is-out,
+.ephemeris-dash .jd-cal .jd-cal__day--out {
 	color: var(--text-faint);
 	opacity: 0.45;
 }
 /* optional weekend hook */
-.jinome-dash .jd-cal .jd-cal__day[data-weekend] {
+.ephemeris-dash .jd-cal .jd-cal__day[data-weekend] {
 	background: var(--jd-tint);
 }
 
 /* today — accent wash + ring. The wash is intentionally faint (Jin's accent is
    a near-black plum, so hsla(...,.12) barely tints a dark ground); the ring and
    the accent-coloured, bolder number are what actually carry the state. */
-.jinome-dash .jd-cal .jd-cal__day[data-today] {
+.ephemeris-dash .jd-cal .jd-cal__day[data-today] {
 	background: var(--jd-accent-wash);
 	box-shadow: inset 0 0 0 1px var(--jd-accent-text);
 	color: var(--jd-accent-text);
 	font-weight: var(--font-semibold, 600);
 }
-.jinome-dash .jd-cal .jd-cal__day[data-today]:hover {
+.ephemeris-dash .jd-cal .jd-cal__day[data-today]:hover {
 	background: var(--jd-accent-wash);
 }
 
 /* deadline: a 3px bar on the cell's right edge, inside the radius.
    dashboard.js marks a deadline three ways (data-deadline, data-due and the
    --due class) so the bar cannot depend on which hook this file picked. */
-.jinome-dash .jd-cal .jd-cal__day[data-deadline],
-.jinome-dash .jd-cal .jd-cal__day--due {
+.ephemeris-dash .jd-cal .jd-cal__day[data-deadline],
+.ephemeris-dash .jd-cal .jd-cal__day--due {
 	position: relative;
 }
-.jinome-dash .jd-cal .jd-cal__day[data-deadline]::after,
-.jinome-dash .jd-cal .jd-cal__day--due::after,
-.jinome-dash .jd-cal .jd-cal__day:has(.jd-cal__dot--due)::after {
+.ephemeris-dash .jd-cal .jd-cal__day[data-deadline]::after,
+.ephemeris-dash .jd-cal .jd-cal__day--due::after,
+.ephemeris-dash .jd-cal .jd-cal__day:has(.jd-cal__dot--due)::after {
 	content: "";
 	position: absolute;
 	top: 4px;
@@ -1084,7 +1084,7 @@
 /* dots. Preferred markup wraps them in .jd-cal__dots; the bare form (spans
    directly in the td, as the class contract lists them) is handled by the
    ::before line-break below, so both render as number-over-dots. */
-.jinome-dash .jd-cal .jd-cal__dots {
+.ephemeris-dash .jd-cal .jd-cal__dots {
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -1107,13 +1107,13 @@
    to a second line before "+N" was even involved. Zeroed inside the wrapper:
    3 x 4.5 + 2 x 3 = 19.5px fits, and only the "+N" wraps, which is what the
    wrapping was added for. */
-.jinome-dash .jd-cal .jd-cal__dots .jd-cal__dot {
+.ephemeris-dash .jd-cal .jd-cal__dots .jd-cal__dot {
 	margin: 0;
 }
-.jinome-dash .jd-cal .jd-cal__dots .jd-cal__more {
+.ephemeris-dash .jd-cal .jd-cal__dots .jd-cal__more {
 	margin-left: 0;   /* it is alone on the wrapped line; centre it honestly */
 }
-.jinome-dash .jd-cal .jd-cal__dot {
+.ephemeris-dash .jd-cal .jd-cal__dot {
 	display: inline-block;
 	flex: 0 0 auto;
 	width: 4.5px;
@@ -1128,22 +1128,22 @@
    Only the three palette hues, and "new" deliberately recedes: on a vault
    where 1,141 notes carry a zk stamp, creation dots would otherwise drown
    every other signal in the grid. */
-.jinome-dash .jd-cal .jd-cal__dot--due { background: var(--jd-overdue); }
-.jinome-dash .jd-cal .jd-cal__dot--sch { background: var(--jd-accent-text); }
-.jinome-dash .jd-cal .jd-cal__dot--fin { background: var(--jd-done); }
-.jinome-dash .jd-cal .jd-cal__dot--new {
+.ephemeris-dash .jd-cal .jd-cal__dot--due { background: var(--jd-overdue); }
+.ephemeris-dash .jd-cal .jd-cal__dot--sch { background: var(--jd-accent-text); }
+.ephemeris-dash .jd-cal .jd-cal__dot--fin { background: var(--jd-done); }
+.ephemeris-dash .jd-cal .jd-cal__dot--new {
 	background: none;
 	box-shadow: inset 0 0 0 1px var(--text-faint);   /* hollow: a quieter mark */
 }
 /* Unwrapped dots only (direct child of the td): force them onto their own
    line under the date number. Scoped with `>` so a wrapped dot — which is a
    flex item — never grows a stray text node. */
-.jinome-dash .jd-cal .jd-cal__day > .jd-cal__dot:first-of-type::before {
+.ephemeris-dash .jd-cal .jd-cal__day > .jd-cal__dot:first-of-type::before {
 	content: "\A";
 	white-space: pre;
 }
 /* "+N" — the truncation is always shown, never silent */
-.jinome-dash .jd-cal .jd-cal__more {
+.ephemeris-dash .jd-cal .jd-cal__more {
 	display: inline-block;
 	margin-left: 2px;
 	font-family: var(--jd-mono);
@@ -1154,14 +1154,14 @@
 }
 
 /* month header / stepper */
-.jinome-dash .jd-cal__head {
+.ephemeris-dash .jd-cal__head {
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-2, 8px);
 	margin-bottom: var(--size-4-2, 8px);
 }
 /* clickable: it jumps the grid back to the current month */
-.jinome-dash .jd-cal__title {
+.ephemeris-dash .jd-cal__title {
 	margin-right: auto;
 	font-family: var(--jd-mono);
 	font-variant-numeric: tabular-nums;
@@ -1169,13 +1169,13 @@
 	color: var(--text-muted);
 	cursor: pointer;
 }
-.jinome-dash .jd-cal__title:hover {
+.ephemeris-dash .jd-cal__title:hover {
 	color: var(--text-normal);
 }
-.jinome-dash .jd-cal__host {
+.ephemeris-dash .jd-cal__host {
 	min-width: 0;
 }
-.jinome-dash .jd-cal__nav {
+.ephemeris-dash .jd-cal__nav {
 	height: auto;
 	margin: 0;
 	padding: 2px 6px;
@@ -1189,13 +1189,13 @@
 	line-height: 1;
 	cursor: pointer;
 }
-.jinome-dash .jd-cal__nav:hover {
+.ephemeris-dash .jd-cal__nav:hover {
 	background: var(--jd-tint);
 	box-shadow: none;
 	filter: none;
 	color: var(--text-normal);
 }
-.jinome-dash .jd-cal__nav .svg-icon { width: 14px; height: 14px; }
+.ephemeris-dash .jd-cal__nav .svg-icon { width: 14px; height: 14px; }
 
 
 /* ---------------------------------------------------------------------------
@@ -1204,16 +1204,16 @@
    need an explicit cursor and their own colour (Obsidian only styles a[href]
    and .internal-link).
 --------------------------------------------------------------------------- */
-.jinome-dash .jd-nav {
+.ephemeris-dash .jd-nav {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
 	gap: 2px;
 }
 @container jd (min-width: 520px) and (max-width: 779.98px) {
-	.jinome-dash .jd-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.ephemeris-dash .jd-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-.jinome-dash .jd-nav__item {
+.ephemeris-dash .jd-nav__item {
 	display: flex;
 	align-items: center;
 	gap: 10px;
@@ -1227,12 +1227,12 @@
 	cursor: pointer;
 	transition: background-color var(--jd-dur) ease, color var(--jd-dur) ease;
 }
-.jinome-dash .jd-nav__item:hover {
+.ephemeris-dash .jd-nav__item:hover {
 	background: var(--jd-tint);
 	color: var(--text-normal);
 	text-decoration: none;
 }
-.jinome-dash .jd-nav__item:focus-visible {
+.ephemeris-dash .jd-nav__item:focus-visible {
 	outline: 2px solid var(--jd-accent-text);
 	outline-offset: -2px;
 }
@@ -1240,19 +1240,19 @@
    calendar's week column: no href, so Obsidian's unresolved styling never
    applies, and "This week · 2026-W36" would read as an existing note. Here
    label has room, so the theme's unresolved colour is used directly. */
-.jinome-dash .jd-nav__item.is-unresolved,
-.jinome-dash .jd-nav__item.is-unresolved .jd-nav__icon {
+.ephemeris-dash .jd-nav__item.is-unresolved,
+.ephemeris-dash .jd-nav__item.is-unresolved .jd-nav__icon {
 	/* --text-faint, not --link-unresolved-color — see the week column above: in
 	   .theme-dark that token is core's near-black plum (1.12 : 1) and this tile
 	   is unresolved every week until Jin makes the note, so it would be the
 	   dashboard's most reliably invisible element. */
 	color: var(--text-faint);
 }
-.jinome-dash .jd-nav__item.is-unresolved .jd-nav__label {
+.ephemeris-dash .jd-nav__item.is-unresolved .jd-nav__label {
 	text-decoration: underline dotted;
 	text-underline-offset: 2px;
 }
-.jinome-dash .jd-nav__icon {
+.ephemeris-dash .jd-nav__icon {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -1261,12 +1261,12 @@
 	height: 16px;
 	color: var(--text-faint);
 }
-.jinome-dash .jd-nav__icon .svg-icon,
-.jinome-dash .jd-nav__icon svg {
+.ephemeris-dash .jd-nav__icon .svg-icon,
+.ephemeris-dash .jd-nav__icon svg {
 	width: 16px;
 	height: 16px;
 }
-.jinome-dash .jd-nav__item:hover .jd-nav__icon {
+.ephemeris-dash .jd-nav__item:hover .jd-nav__icon {
 	color: var(--jd-accent-text);
 }
 
@@ -1275,29 +1275,29 @@
    is why it is only ever used as a FILL, always under --text-on-accent.
    Placed AFTER the generic hover rules on purpose: these tie with them at
    (0,3,0)/(0,4,0), so source order is what keeps the tile's own colours. */
-.jinome-dash .jd-nav__item--primary,
-.jinome-dash .jd-nav__item--primary:hover {
+.ephemeris-dash .jd-nav__item--primary,
+.ephemeris-dash .jd-nav__item--primary:hover {
 	color: var(--text-on-accent);
 }
-.jinome-dash .jd-nav__item--primary {
+.ephemeris-dash .jd-nav__item--primary {
 	background: var(--jd-accent-fill);
 }
-.jinome-dash .jd-nav__item--primary:hover {
+.ephemeris-dash .jd-nav__item--primary:hover {
 	background: var(--interactive-accent-hover, var(--interactive-accent));
 }
-.jinome-dash .jd-nav__item--primary .jd-nav__icon,
-.jinome-dash .jd-nav__item--primary:hover .jd-nav__icon,
-.jinome-dash .jd-nav__item--primary .jd-nav__hint {
+.ephemeris-dash .jd-nav__item--primary .jd-nav__icon,
+.ephemeris-dash .jd-nav__item--primary:hover .jd-nav__icon,
+.ephemeris-dash .jd-nav__item--primary .jd-nav__hint {
 	color: var(--text-on-accent);
 	opacity: 0.85;
 }
-.jinome-dash .jd-nav__label {
+.ephemeris-dash .jd-nav__label {
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-.jinome-dash .jd-nav__hint {
+.ephemeris-dash .jd-nav__hint {
 	margin-left: auto;
 	font-family: var(--jd-mono);
 	font-size: 9.5px;
@@ -1308,14 +1308,14 @@
 /* In the 780-1149px band the nav is a 4-across icon band: stack icon over
    label so four tiles fit without truncating the labels. */
 @container jd (min-width: 780px) and (max-width: 1149.98px) {
-	.jinome-dash .jd-nav__item {
+	.ephemeris-dash .jd-nav__item {
 		flex-direction: column;
 		gap: 6px;
 		padding: var(--jd-pad-tight) var(--size-4-2, 8px);
 		text-align: center;
 	}
-	.jinome-dash .jd-nav__hint { margin-left: 0; }
-	.jinome-dash .jd-nav__label { white-space: normal; }
+	.ephemeris-dash .jd-nav__hint { margin-left: 0; }
+	.ephemeris-dash .jd-nav__label { white-space: normal; }
 }
 
 
@@ -1324,14 +1324,14 @@
    Filled asynchronously after the dashboard renders; the failure state is a
    muted line, never an empty box and never an exception.
 --------------------------------------------------------------------------- */
-.jinome-dash .jd-wx { min-width: 0; }
+.ephemeris-dash .jd-wx { min-width: 0; }
 
-.jinome-dash .jd-wx__now {
+.ephemeris-dash .jd-wx__now {
 	display: flex;
 	align-items: center;
 	gap: var(--jd-pad-tight);
 }
-.jinome-dash .jd-wx__icon {
+.ephemeris-dash .jd-wx__icon {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -1340,12 +1340,12 @@
 	height: 32px;
 	color: var(--text-muted);
 }
-.jinome-dash .jd-wx__icon .svg-icon,
-.jinome-dash .jd-wx__icon svg {
+.ephemeris-dash .jd-wx__icon .svg-icon,
+.ephemeris-dash .jd-wx__icon svg {
 	width: 30px;
 	height: 30px;
 }
-.jinome-dash .jd-wx__temp {
+.ephemeris-dash .jd-wx__temp {
 	font-family: var(--jd-mono);
 	font-variant-numeric: tabular-nums;
 	font-size: 28px;
@@ -1354,24 +1354,24 @@
 	letter-spacing: -0.02em;
 	color: var(--text-normal);
 }
-.jinome-dash .jd-wx__meta {
+.ephemeris-dash .jd-wx__meta {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	min-width: 0;
 }
-.jinome-dash .jd-wx__desc {
+.ephemeris-dash .jd-wx__desc {
 	font-size: var(--font-smaller, 0.875em);
 	color: var(--text-muted);
 	word-break: keep-all;
 }
-.jinome-dash .jd-wx__hum {
+.ephemeris-dash .jd-wx__hum {
 	font-size: 10.5px;
 	letter-spacing: var(--jd-track);
 	color: var(--text-faint);
 }
 
-.jinome-dash .jd-wx__days {
+.ephemeris-dash .jd-wx__days {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: var(--size-4-2, 8px);
@@ -1379,7 +1379,7 @@
 	padding-top: var(--jd-pad-tight);
 	border-top: 1px solid var(--jd-hairline);
 }
-.jinome-dash .jd-wx__day {
+.ephemeris-dash .jd-wx__day {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -1387,7 +1387,7 @@
 	min-width: 0;
 	text-align: center;
 }
-.jinome-dash .jd-wx__dow {
+.ephemeris-dash .jd-wx__dow {
 	font-size: 9.5px;
 	font-weight: var(--font-semibold, 600);
 	letter-spacing: var(--jd-track);
@@ -1399,13 +1399,13 @@
    into one, which defeats the only job a forecast icon has. 22 still clears
    the parent .jd-wx__icon's explicit 32x32 centred flex box, so no tile moves
    and no row reflows, on either platform. */
-.jinome-dash .jd-wx__day .svg-icon,
-.jinome-dash .jd-wx__day svg {
+.ephemeris-dash .jd-wx__day .svg-icon,
+.ephemeris-dash .jd-wx__day svg {
 	width: 22px;
 	height: 22px;
 	color: var(--text-muted);
 }
-.jinome-dash .jd-wx__range {
+.ephemeris-dash .jd-wx__range {
 	font-family: var(--jd-mono);
 	font-variant-numeric: tabular-nums;
 	font-size: 10.5px;
@@ -1416,13 +1416,13 @@
    and drops its "No weather data." line INSIDE .jd-wx__now — so this must
    hide __now (that is where the message lives); it only collapses the empty
    forecast row and unwraps the message from the now-row's flex layout. */
-.jinome-dash .jd-wx[data-empty="true"] .jd-wx__days {
+.ephemeris-dash .jd-wx[data-empty="true"] .jd-wx__days {
 	display: none;
 }
-.jinome-dash .jd-wx[data-empty="true"] .jd-wx__now {
+.ephemeris-dash .jd-wx[data-empty="true"] .jd-wx__now {
 	display: block;
 }
-.jinome-dash .jd-wx .jd-empty {
+.ephemeris-dash .jd-wx .jd-empty {
 	border-left: none;
 	padding-left: 0;
 }
@@ -1431,23 +1431,23 @@
 /* ---------------------------------------------------------------------------
    12. SCROLLBARS + MISC
 --------------------------------------------------------------------------- */
-.jinome-dash .jd ::-webkit-scrollbar {
+.ephemeris-dash .jd ::-webkit-scrollbar {
 	width: 8px;
 	height: 8px;
 }
-.jinome-dash .jd ::-webkit-scrollbar-thumb {
+.ephemeris-dash .jd ::-webkit-scrollbar-thumb {
 	background: var(--jd-tint-strong);
 	border-radius: 999px;
 }
-.jinome-dash .jd ::-webkit-scrollbar-thumb:hover {
+.ephemeris-dash .jd ::-webkit-scrollbar-thumb:hover {
 	background: var(--jd-hairline-hover);
 }
-.jinome-dash .jd ::-webkit-scrollbar-track {
+.ephemeris-dash .jd ::-webkit-scrollbar-track {
 	background: none;
 }
 
 /* Section rule between stacked groups inside one card. */
-.jinome-dash .jd-rule {
+.ephemeris-dash .jd-rule {
 	height: 1px;
 	margin: var(--jd-pad-tight) 0;
 	border: none;
@@ -1455,9 +1455,9 @@
 }
 
 /* Never let a card push a horizontal scrollbar onto the note. */
-.jinome-dash .jd,
-.jinome-dash .jd-grid,
-.jinome-dash .jd-card {
+.ephemeris-dash .jd,
+.ephemeris-dash .jd-grid,
+.ephemeris-dash .jd-card {
 	max-width: 100%;
 }
 
@@ -1466,10 +1466,10 @@
    13. REDUCED MOTION — scoped to the dashboard, not the app
 --------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-	.jinome-dash .jd,
-	.jinome-dash .jd *,
-	.jinome-dash .jd *::before,
-	.jinome-dash .jd *::after {
+	.ephemeris-dash .jd,
+	.ephemeris-dash .jd *,
+	.ephemeris-dash .jd *::before,
+	.ephemeris-dash .jd *::after {
 		transition-duration: 0.01ms !important;
 		animation-duration: 0.01ms !important;
 		animation-iteration-count: 1 !important;
@@ -1489,7 +1489,7 @@
    the old selector missed and the banner rendered as an ordinary inline image.
    An empty div needs its own height and sizing — the <img> used to supply
    both. */
-.jinome-dash .jd-cover {
+.ephemeris-dash .jd-cover {
 	height: var(--jd-cover-h);
 	background-size: cover;
 	background-position: center 42%;   /* faces and horizons sit above centre */
@@ -1500,7 +1500,7 @@
 
 /* A rule between "this week" and the four indices: one is the day's work, the
    others are reference. Quiet — it is a grouping cue, not a divider. */
-.jinome-dash .jd-nav__rule {
+.ephemeris-dash .jd-nav__rule {
 	/* .jd-nav is a GRID and this <hr> is one of its direct children, so without
 	   a span it occupies a single CELL. That is invisible at one column and
 	   wrong at two — and two is exactly what the 520-780px band above gives it.
@@ -1518,12 +1518,12 @@
 }
 
 /* ── projects: a list, not a table ──────────────────────────────────────── */
-.jinome-dash .jd-proj {
+.ephemeris-dash .jd-proj {
 	display: flex;
 	flex-direction: column;
 	gap: 1px;
 }
-.jinome-dash .jd-proj__item {
+.ephemeris-dash .jd-proj__item {
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-2, 8px);
@@ -1534,19 +1534,19 @@
 	cursor: pointer;
 	transition: background-color var(--jd-dur, 140ms) ease;
 }
-.jinome-dash .jd-proj__item:hover { background: var(--background-modifier-hover); }
-.jinome-dash .jd-proj__item:focus-visible {
+.ephemeris-dash .jd-proj__item:hover { background: var(--background-modifier-hover); }
+.ephemeris-dash .jd-proj__item:focus-visible {
 	outline: 2px solid var(--jd-accent-text, var(--interactive-accent));
 	outline-offset: -2px;
 }
-.jinome-dash .jd-proj__item--sub { padding-left: var(--size-4-5, 20px); }
-.jinome-dash .jd-proj__item--sub .jd-proj__code { color: var(--text-muted); }
-.jinome-dash .jd-proj__item.is-unresolved .jd-proj__code {
+.ephemeris-dash .jd-proj__item--sub { padding-left: var(--size-4-5, 20px); }
+.ephemeris-dash .jd-proj__item--sub .jd-proj__code { color: var(--text-muted); }
+.ephemeris-dash .jd-proj__item.is-unresolved .jd-proj__code {
 	color: var(--text-faint);
 	text-decoration: underline dotted;
 }
 
-.jinome-dash .jd-proj__code {
+.ephemeris-dash .jd-proj__code {
 	font-family: var(--jd-mono);
 	font-size: 0.82rem;
 	white-space: nowrap;
@@ -1556,23 +1556,23 @@
 
 /* Priority, as one hue in three steps. High solid, Medium half, Low a ring,
    none invisible but still occupying its 8px so the codes stay aligned. */
-.jinome-dash .jd-proj__dot {
+.ephemeris-dash .jd-proj__dot {
 	flex: none;
 	width: 8px;
 	height: 8px;
 	border-radius: 50%;
 	background: var(--jd-accent-text, var(--interactive-accent));
 }
-.jinome-dash .jd-proj__item[data-prio="medium"] .jd-proj__dot { opacity: 0.5; }
-.jinome-dash .jd-proj__item[data-prio="low"] .jd-proj__dot {
+.ephemeris-dash .jd-proj__item[data-prio="medium"] .jd-proj__dot { opacity: 0.5; }
+.ephemeris-dash .jd-proj__item[data-prio="low"] .jd-proj__dot {
 	background: transparent;
 	box-shadow: inset 0 0 0 1.5px var(--jd-accent-text, var(--interactive-accent));
 	opacity: 0.55;
 }
-.jinome-dash .jd-proj__item[data-prio="none"] .jd-proj__dot { background: transparent; }
+.ephemeris-dash .jd-proj__item[data-prio="none"] .jd-proj__dot { background: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
-	.jinome-dash .jd-proj__item { transition: none; }
+	.ephemeris-dash .jd-proj__item { transition: none; }
 }
 
 
@@ -1586,7 +1586,7 @@
    scroll cap and sticky header apply unchanged — only the two controls are new.
 
    BOTH MUST STAY USABLE WITH NO STYLESHEET AT ALL. The weekly note loads none
-   of this (it is a plain note, not .jinome-dash) and runs the same two
+   of this (it is a plain note, not .ephemeris-dash) and runs the same two
    controls out of Jinome/Introns/Scripts/weekly.js. Nothing below changes what
    a control DOES or where it sits; it only stops it looking like a raw browser
    widget. A native checkbox and a native date field are the fallback, and they
@@ -1596,8 +1596,8 @@
 /* The check column is as narrow as the box and never the column that wraps.
    width: 1% is the table-layout idiom for "shrink to content" — the title
    column takes everything that is left. */
-.jinome-dash .jd-card .jd-table table thead th.jd-action__check,
-.jinome-dash .jd-card .jd-table table tbody td.jd-action__check {
+.ephemeris-dash .jd-card .jd-table table thead th.jd-action__check,
+.ephemeris-dash .jd-card .jd-table table tbody td.jd-action__check {
 	width: 1%;
 	padding-right: 4px;
 	text-align: center;
@@ -1607,12 +1607,12 @@
 /* The title cell carries the identity of the row. Section 8 puts that weight
    on td:first-child, which is now the checkbox — so it is restated here on the
    cell that actually holds the name. */
-.jinome-dash .jd-card .jd-table table tbody td.jd-action__title {
+.ephemeris-dash .jd-card .jd-table table tbody td.jd-action__title {
 	font-weight: var(--font-medium, 500);
 }
 
-.jinome-dash .jd-card .jd-table table thead th.jd-action__date,
-.jinome-dash .jd-card .jd-table table tbody td.jd-action__date {
+.ephemeris-dash .jd-card .jd-table table thead th.jd-action__date,
+.ephemeris-dash .jd-card .jd-table table tbody td.jd-action__date {
 	width: 1%;
 	white-space: nowrap;
 }
@@ -1621,7 +1621,7 @@
 /* appearance: none turns off the platform widget so the box can be sized to
    the row (14px against a 6px/10px cell) and take the accent. position:
    relative is what the tick hangs off. */
-.jinome-dash .jd-check {
+.ephemeris-dash .jd-check {
 	appearance: none;
 	-webkit-appearance: none;
 	position: relative;
@@ -1638,7 +1638,7 @@
 	            border-color var(--jd-dur, 140ms) ease;
 }
 
-.jinome-dash .jd-check:hover {
+.ephemeris-dash .jd-check:hover {
 	border-color: var(--jd-accent-text, var(--interactive-accent));
 }
 
@@ -1647,10 +1647,10 @@
    drawn in --text-on-accent, which core already inverts for a dark accent. */
 /* `border`, not `border-color`: the Velocity theme sets `border: none` on
    input[type=checkbox]:checked, and that selector — (0,2,1) — outranks the
-   plain `.jinome-dash .jd-check` block above, which is (0,2,0). Restating the
+   plain `.ephemeris-dash .jd-check` block above, which is (0,2,0). Restating the
    whole shorthand here, at (0,3,0), keeps the 1.5px box the ::after offsets
    below are measured against, checked or not. */
-.jinome-dash .jd-check:checked {
+.ephemeris-dash .jd-check:checked {
 	background: var(--jd-accent-fill);
 	border: 1.5px solid var(--jd-accent-fill);
 }
@@ -1666,7 +1666,7 @@
    left alone, core's mask (65% of a 3x7px box) clips the tick below down to a
    smudge. Switching the mask and that background off is what makes the tick
    visible at all. */
-.jinome-dash .jd-check:checked::after {
+.ephemeris-dash .jd-check:checked::after {
 	content: "";
 	position: absolute;
 	left: 3.5px;
@@ -1681,15 +1681,15 @@
 	transform: rotate(43deg);
 }
 
-.jinome-dash .jd-check:focus-visible {
+.ephemeris-dash .jd-check:focus-visible {
 	outline: 2px solid var(--jd-accent-text, var(--interactive-accent));
 	outline-offset: 2px;
 }
 
 /* Locked between the click and the re-render that replaces the row. It is a
    wait, not a refusal, so it reads as one. */
-.jinome-dash .jd-check:disabled,
-.jinome-dash .jd-date:disabled {
+.ephemeris-dash .jd-check:disabled,
+.ephemeris-dash .jd-date:disabled {
 	opacity: 0.45;
 	cursor: progress;
 }
@@ -1700,7 +1700,7 @@
    rather than a column of form fields. The frame appears on hover and focus.
    The calendar itself is Electron's own, opened by one click on the field —
    that is the whole feature. */
-.jinome-dash .jd-date {
+.ephemeris-dash .jd-date {
 	appearance: none;
 	-webkit-appearance: none;
 	box-sizing: border-box;
@@ -1721,14 +1721,14 @@
 	            opacity var(--jd-dur, 140ms) ease;
 }
 
-.jinome-dash .jd-date:hover,
-.jinome-dash .jd-date:focus {
+.ephemeris-dash .jd-date:hover,
+.ephemeris-dash .jd-date:focus {
 	border-color: var(--jd-hairline-hover);
 	background: var(--jd-tint);
 	color: var(--text-normal);
 }
 
-.jinome-dash .jd-date:focus-visible {
+.ephemeris-dash .jd-date:focus-visible {
 	outline: 2px solid var(--jd-accent-text, var(--interactive-accent));
 	outline-offset: -1px;
 }
@@ -1739,13 +1739,13 @@
    data-empty is set by dashboard.js/weekly.js, because CSS has no selector for
    "this date input has no value" (:invalid needs `required`, which would make
    an empty row an error, which it is not). */
-.jinome-dash .jd-date[data-empty="true"] {
+.ephemeris-dash .jd-date[data-empty="true"] {
 	color: var(--text-faint);
 	opacity: 0.5;
 }
-.jinome-dash .jd-table tbody tr:hover .jd-date[data-empty="true"],
-.jinome-dash .jd-date[data-empty="true"]:hover,
-.jinome-dash .jd-date[data-empty="true"]:focus {
+.ephemeris-dash .jd-table tbody tr:hover .jd-date[data-empty="true"],
+.ephemeris-dash .jd-date[data-empty="true"]:hover,
+.ephemeris-dash .jd-date[data-empty="true"]:focus {
 	color: var(--text-muted);
 	opacity: 1;
 }
@@ -1753,28 +1753,28 @@
 /* Chromium's calendar glyph. Its own colour follows `color-scheme`, which
    Obsidian sets for the active theme, so it is left alone — only sized down
    and given the same quiet-until-hovered treatment as the field around it. */
-.jinome-dash .jd-date::-webkit-calendar-picker-indicator {
+.ephemeris-dash .jd-date::-webkit-calendar-picker-indicator {
 	margin-left: 2px;
 	padding: 0;
 	opacity: 0.4;
 	cursor: pointer;
 }
-.jinome-dash .jd-date:hover::-webkit-calendar-picker-indicator,
-.jinome-dash .jd-date:focus::-webkit-calendar-picker-indicator {
+.ephemeris-dash .jd-date:hover::-webkit-calendar-picker-indicator,
+.ephemeris-dash .jd-date:focus::-webkit-calendar-picker-indicator {
 	opacity: 0.9;
 }
 
 /* The late mark sits beside the picker in the same cell, not in a column of
    its own — .jd-dday already carries the mono/tabular treatment from
    section 8. */
-.jinome-dash .jd-card .jd-table table td.jd-action__date .jd-dday {
+.ephemeris-dash .jd-card .jd-table table td.jd-action__date .jd-dday {
 	margin-left: 6px;
 	color: var(--jd-overdue);
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.jinome-dash .jd-check,
-	.jinome-dash .jd-date { transition: none; }
+	.ephemeris-dash .jd-check,
+	.ephemeris-dash .jd-date { transition: none; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -1784,8 +1784,8 @@
    already hidden; the title was not. Both go, and the cover carries the name
    instead — which is also what every dashboard in the InlitX gallery does.
 --------------------------------------------------------------------------- */
-.jinome-dash .inline-title,
-.jinome-dash .mod-header {
+.ephemeris-dash .inline-title,
+.ephemeris-dash .mod-header {
 	display: none;
 }
 
@@ -1806,31 +1806,31 @@
    out of its container and CodeMirror never sees a horizontal overflow. On the
    desktop it stays because a 1440px-wide cover is not a design anyone asked
    for. */
-.jinome-dash .markdown-preview-sizer,
-.jinome-dash .cm-sizer {
+.ephemeris-dash .markdown-preview-sizer,
+.ephemeris-dash .cm-sizer {
 	padding-block-start: 0;
 }
-.jinome-dash .jd > .jd-cover:first-child {
+.ephemeris-dash .jd > .jd-cover:first-child {
 	margin-block-start: 0;
 }
 
 /* Title and epigraph sit on the image, so they need the scrim under them —
    .jd-cover::after already paints it, and z-index puts the text above it. */
-.jinome-dash .jd-cover {
+.ephemeris-dash .jd-cover {
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-end;
 	padding: var(--size-4-5, 20px) var(--size-4-6, 24px);
 }
-.jinome-dash .jd-cover__title,
-.jinome-dash .jd-cover__sub {
+.ephemeris-dash .jd-cover__title,
+.ephemeris-dash .jd-cover__sub {
 	position: static;   /* section 4 positioned these absolutely; flex now places them */
 	left: auto;
 	right: auto;
 	bottom: auto;
 	z-index: 1;
 }
-.jinome-dash .jd-cover__sub {
+.ephemeris-dash .jd-cover__sub {
 	margin: 2px 0 0;
 	font-family: var(--jd-serif);
 	font-style: italic;
@@ -1844,7 +1844,7 @@
 /* No cover file — a plain band so the page still opens with its name. Uses the
    card surface rather than an image, and drops the scrim it has nothing to
    darken. */
-.jinome-dash .jd-cover--bare {
+.ephemeris-dash .jd-cover--bare {
 	height: auto;
 	min-height: 0;
 	background: var(--jd-card);
@@ -1852,9 +1852,9 @@
 	filter: none;
 	padding-block: var(--size-4-4, 16px);
 }
-.jinome-dash .jd-cover--bare::after { content: none; }
-.jinome-dash .jd-cover--bare .jd-cover__title { color: var(--text-normal); }
-.jinome-dash .jd-cover--bare .jd-cover__sub { color: var(--text-muted); opacity: 1; }
+.ephemeris-dash .jd-cover--bare::after { content: none; }
+.ephemeris-dash .jd-cover--bare .jd-cover__title { color: var(--text-normal); }
+.ephemeris-dash .jd-cover--bare .jd-cover__sub { color: var(--text-muted); opacity: 1; }
 
 
 /* ---------------------------------------------------------------------------
@@ -1958,7 +1958,7 @@
    card width, so the case for squeezing the card's own padding gets WEAKER,
    not stronger. --jd-pad at 12px would add 8px to a 324px text column — 2.5%,
    invisible — and spend the air that makes a card read as a card. */
-body.is-mobile .jinome-dash {
+body.is-mobile .ephemeris-dash {
 	--jd-edge: var(--size-4-4, 16px);
 	--jd-pad: var(--size-4-4, 16px);
 }
@@ -1969,8 +1969,8 @@ body.is-mobile .jinome-dash {
    up with core's own left padding (44 + 44 = 88px against 16px on the right)
    in the rotation core DOES handle. max() leaves portrait, where the inset is
    0, on the 16px above. */
-body.is-mobile .jinome-dash .cm-sizer,
-body.is-mobile .jinome-dash .markdown-preview-sizer {
+body.is-mobile .ephemeris-dash .cm-sizer,
+body.is-mobile .ephemeris-dash .markdown-preview-sizer {
 	padding-inline-start: var(--jd-edge);
 	padding-inline-end: max(var(--jd-edge), var(--safe-area-inset-right, 0px));
 }
@@ -1984,8 +1984,8 @@ body.is-mobile .jinome-dash .markdown-preview-sizer {
    every nav label back 26px of width (16px box + 10px gap) it was indenting
    for nothing; it returns the same way, by giving those call sites the same
    treatment. */
-body.is-mobile .jinome-dash .jd-nav__icon:empty,
-body.is-mobile .jinome-dash .jd-wx__icon:empty {
+body.is-mobile .ephemeris-dash .jd-nav__icon:empty,
+body.is-mobile .ephemeris-dash .jd-wx__icon:empty {
 	display: none;
 }
 
@@ -2001,13 +2001,13 @@ body.is-mobile .jinome-dash .jd-wx__icon:empty {
    726.5px the cells are 144.8px and "Reviews waiting" ellipsises at 117 > 113,
    and at 813.5px, after the tablet block below, they are 161.8px and it does
    not. */
-body.is-mobile.is-phone .jinome-dash .jd-strip {
+body.is-mobile.is-phone .ephemeris-dash .jd-strip {
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 /* :nth-child(odd) guards the rule: today dashboard.js makes exactly 5 counters,
    so the 5th correctly spans. A 6th would otherwise leave the last one spanning
    both columns with its pair alone above it — broken rather than degraded. */
-body.is-mobile.is-phone .jinome-dash .jd-strip > .jd-stat:nth-child(odd):last-child {
+body.is-mobile.is-phone .ephemeris-dash .jd-strip > .jd-stat:nth-child(odd):last-child {
 	grid-column: 1 / -1;
 }
 
@@ -2017,11 +2017,11 @@ body.is-mobile.is-phone .jinome-dash .jd-strip > .jd-stat:nth-child(odd):last-ch
    overflows a ~250px body with nothing on screen to say so. Wrapping is the
    honest answer — one row when it fits, two when it does not, never clipped —
    and flex-grow keeps the tabs an even width either way. */
-body.is-mobile .jinome-dash .jd-tabs {
+body.is-mobile .ephemeris-dash .jd-tabs {
 	flex-wrap: wrap;
 	gap: var(--size-4-1, 4px);
 }
-body.is-mobile .jinome-dash .jd-tabs .jd-tab {
+body.is-mobile .ephemeris-dash .jd-tabs .jd-tab {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -2032,11 +2032,11 @@ body.is-mobile .jinome-dash .jd-tabs .jd-tab {
 /* --- nav and project rows on Obsidian's own touch scale -------------------
    40px, not 44px, for a project row: the list can run to 16 entries and the
    card is a glance, not a page. A nav tile is one of five and gets the full m. */
-body.is-mobile .jinome-dash .jd-nav__item {
+body.is-mobile .ephemeris-dash .jd-nav__item {
 	min-height: var(--touch-size-m, 44px);
 	padding-inline: var(--size-4-2, 8px);
 }
-body.is-mobile .jinome-dash .jd-proj__item {
+body.is-mobile .ephemeris-dash .jd-proj__item {
 	min-height: var(--touch-size-s, 40px);
 }
 
@@ -2045,7 +2045,7 @@ body.is-mobile .jinome-dash .jd-proj__item {
    at 44.3px; the work rows land near 54px because the date control below sets
    30px of its own. Padding rather than `height`, so a wrapping title cell
    still grows the row instead of stranding its text against a fixed box. */
-body.is-mobile .jinome-dash .jd-card .jd-table table tbody td {
+body.is-mobile .ephemeris-dash .jd-card .jd-table table tbody td {
 	padding-block: var(--size-4-3, 12px);
 }
 
@@ -2054,18 +2054,18 @@ body.is-mobile .jinome-dash .jd-card .jd-table table tbody td {
    ::before is the hit area, not a mark: -12px of inset inside a 44.3px row
    reaches the row boundary EXACTLY and no further, so an expanded target can
    never steal the tap from the row above or below it. */
-body.is-mobile .jinome-dash .jd-check {
+body.is-mobile .ephemeris-dash .jd-check {
 	width: 20px;
 	height: 20px;
 	margin: 0 auto;
 	border-radius: 5px;
 }
-body.is-mobile .jinome-dash .jd-check::before {
+body.is-mobile .ephemeris-dash .jd-check::before {
 	content: "";
 	position: absolute;
 	inset: -12px -10px;
 }
-body.is-mobile .jinome-dash .jd-check:checked::after {
+body.is-mobile .ephemeris-dash .jd-check:checked::after {
 	left: 5.5px;
 	top: 1.5px;
 	width: 4.3px;
@@ -2079,24 +2079,24 @@ body.is-mobile .jinome-dash .jd-check:checked::after {
    always on, empty state at full opacity, and the field on the touch scale.
    --touch-size-xs (30px), not -m: a 44px field would push every work row past
    68px, and the field already sits in 12px of cell padding on each side. */
-body.is-mobile .jinome-dash .jd-date {
+body.is-mobile .ephemeris-dash .jd-date {
 	min-height: var(--touch-size-xs, 30px);
 	padding: var(--size-4-1, 4px) var(--size-4-2, 8px);
 	border-color: var(--jd-hairline);
 	background: var(--jd-tint);
 	color: var(--text-muted);
 }
-body.is-mobile .jinome-dash .jd-date[data-empty="true"] {
+body.is-mobile .ephemeris-dash .jd-date[data-empty="true"] {
 	opacity: 1;
 	color: var(--text-faint);
 }
-body.is-mobile .jinome-dash .jd-date::-webkit-calendar-picker-indicator {
+body.is-mobile .ephemeris-dash .jd-date::-webkit-calendar-picker-indicator {
 	opacity: 0.75;
 }
 /* The base :hover/:focus rule is only (0,3,0) and now loses to the rule above,
    so restate focus here or the field looks identical focused and unfocused.
    (:focus-visible does not match on touch input in Chromium, so :focus it is.) */
-body.is-mobile .jinome-dash .jd-date:focus {
+body.is-mobile .ephemeris-dash .jd-date:focus {
 	border-color: var(--jd-hairline-hover);
 	background: var(--jd-tint-strong);
 	color: var(--text-normal);
@@ -2114,7 +2114,7 @@ body.is-mobile .jinome-dash .jd-date:focus {
    headers would scroll off the top of a 46-row, ~2,500px table. Keeping the cap
    keeps the header, keeps horizontal scrolling for the Project column, and the
    gesture now leaves the region cleanly. */
-body.is-mobile .jinome-dash .jd-card[data-panel="work"] .jd-work .jd-table {
+body.is-mobile .ephemeris-dash .jd-card[data-panel="work"] .jd-work .jd-table {
 	overscroll-behavior: auto;
 }
 
@@ -2126,20 +2126,20 @@ body.is-mobile .jinome-dash .jd-card[data-panel="work"] .jd-work .jd-table {
    pre-correction figures, carried over: all three omitted --file-margins-x
    and so were one step too generous.) The 9.5px labels come up with it: against
    15px UI text they were 0.63x, which is not small, it is unread. */
-body.is-mobile .jinome-dash .jd-cal .jd-cal__day {
+body.is-mobile .ephemeris-dash .jd-cal .jd-cal__day {
 	height: var(--touch-size-s, 40px);
 	font-size: 13px;
 }
-body.is-mobile .jinome-dash .jd-cal thead th,
-body.is-mobile .jinome-dash .jd-cal .jd-cal__wk {
+body.is-mobile .ephemeris-dash .jd-cal thead th,
+body.is-mobile .ephemeris-dash .jd-cal .jd-cal__wk {
 	font-size: 11px;
 }
-body.is-mobile .jinome-dash .jd-cal .jd-cal__more {
+body.is-mobile .ephemeris-dash .jd-cal .jd-cal__more {
 	font-size: 10px;
 }
 /* The week number is the calendar's only link, in a 30px column. Filling its
    cell turns a 9.5px string into a 30 x 40px target without widening anything. */
-body.is-mobile .jinome-dash .jd-cal .jd-cal__wk a {
+body.is-mobile .ephemeris-dash .jd-cal .jd-cal__wk a {
 	display: block;
 	padding-block: var(--size-4-2, 8px);
 }
@@ -2147,12 +2147,12 @@ body.is-mobile .jinome-dash .jd-cal .jd-cal__wk a {
    dashboard.js's text-arrow fallback — a bare "‹" in a 20 x 24px box, because
    setIcon needs the obsidian module. A box and the touch scale make them read
    as controls again. */
-body.is-mobile .jinome-dash .jd-cal__nav {
+body.is-mobile .ephemeris-dash .jd-cal__nav {
 	min-width: var(--touch-size-m, 44px);
 	min-height: var(--touch-size-m, 44px);
 	font-size: 20px;
 }
-body.is-mobile .jinome-dash .jd-cal__title {
+body.is-mobile .ephemeris-dash .jd-cal__title {
 	display: flex;
 	align-items: center;
 	min-height: var(--touch-size-m, 44px);
@@ -2163,12 +2163,12 @@ body.is-mobile .jinome-dash .jd-cal__title {
    Every size this file states in literal px stayed put while core's UI text
    went 13px -> 15px, so the whole label layer lost a fifth of its relative
    size on the smaller screen. These are the places where it reads as damage. */
-body.is-mobile .jinome-dash {
+body.is-mobile .ephemeris-dash {
 	--jd-label-size: 13px;
 }
-body.is-mobile .jinome-dash .jd-stat__l,
-body.is-mobile .jinome-dash .jd-card .jd-table table thead th,
-body.is-mobile .jinome-dash .jd-card .jd-table table.table-view-table > thead > tr > th {
+body.is-mobile .ephemeris-dash .jd-stat__l,
+body.is-mobile .ephemeris-dash .jd-card .jd-table table thead th,
+body.is-mobile .ephemeris-dash .jd-card .jd-table table.table-view-table > thead > tr > th {
 	font-size: 11.5px;
 }
 
@@ -2183,7 +2183,7 @@ body.is-mobile .jinome-dash .jd-card .jd-table table.table-view-table > thead > 
    are the same and it is correct; a tablet in a split gets a cover sized for
    the whole screen. Left as it is because cqi would need a container the cover
    is not inside. */
-body.is-mobile.is-phone .jinome-dash {
+body.is-mobile.is-phone .ephemeris-dash {
 	--jd-cover-h: clamp(112px, 30vw, 160px);
 }
 /* .jd-cover hardcodes --size-4-5/-4-6 rather than reading --jd-pad/--jd-edge,
@@ -2196,10 +2196,10 @@ body.is-mobile.is-phone .jinome-dash {
    aligning them exactly — and buys back ~16px of the band. The full-bleed rule
    at the end of this section overrides padding-inline here again, for the same
    reason and with the same 1px residue. */
-body.is-mobile.is-phone .jinome-dash .jd-cover {
+body.is-mobile.is-phone .ephemeris-dash .jd-cover {
 	padding: var(--jd-pad-tight) var(--jd-pad);
 }
-body.is-mobile.is-phone .jinome-dash .jd-cover__title {
+body.is-mobile.is-phone .ephemeris-dash .jd-cover__title {
 	font-size: clamp(30px, 9cqi, 40px);
 }
 
@@ -2224,7 +2224,7 @@ body.is-mobile.is-phone .jinome-dash .jd-cover__title {
    knows this and never does it either — wherever app.css wants a different
    file margin on a DESCENDANT it writes the composite (6933, 9410), and both
    -x/-y overrides sit on <body> beside it. Confirmed in a headless replay of
-   the real cascade: `--file-margins-x: 0` on .jinome-dash left the padding at
+   the real cascade: `--file-margins-x: 0` on .ephemeris-dash left the padding at
    8px 24px, `--file-margins: 8px 0` took it to 0.
 
    So write the composite. No compound selector is needed: in Reading view the
@@ -2265,7 +2265,7 @@ body.is-mobile.is-phone .jinome-dash .jd-cover__title {
    that no longer exists here, so a .base embedded INSIDE the dashboard would
    overflow by 48px rather than merely lose its padding. Nothing embeds one
    today; override both tokens alongside if anything ever does. */
-body.is-mobile.is-phone .jinome-dash {
+body.is-mobile.is-phone .ephemeris-dash {
 	--file-margins: var(--size-4-2) 0px;
 	--jd-edge: 0px;
 	--jd-gutter: var(--size-4-4, 16px);
@@ -2302,11 +2302,11 @@ body.is-mobile.is-phone .jinome-dash {
    full-bleed cover finally makes --jd-cover-h's 30vw mean "30% as tall as it
    is wide" — a fixed 10:3 band — instead of 37.5% of a .jd narrower than the
    window. */
-body.is-mobile.is-phone .jinome-dash .jd > .jd-cover:not(.jd-cover--bare) {
+body.is-mobile.is-phone .ephemeris-dash .jd > .jd-cover:not(.jd-cover--bare) {
 	padding-inline: calc(var(--jd-gutter) + var(--jd-pad));
 	border-radius: 0 0 var(--jd-radius-lg) var(--jd-radius-lg);
 }
-body.is-mobile.is-phone .jinome-dash .jd > .jd-grid {
+body.is-mobile.is-phone .ephemeris-dash .jd > .jd-grid {
 	margin-inline: var(--jd-gutter);
 }
 /* The no-image fallback (.jd-cover--bare) is a bordered band, not a
@@ -2320,7 +2320,7 @@ body.is-mobile.is-phone .jinome-dash .jd > .jd-grid {
    inline padding, which puts its title at 16 + 1 + 16 = 33px — the card text
    column exactly. (Selectors, not line numbers: every :NNNN reference into
    this file rots the next time a section above it grows.) */
-body.is-mobile.is-phone .jinome-dash .jd > .jd-cover--bare {
+body.is-mobile.is-phone .ephemeris-dash .jd > .jd-cover--bare {
 	margin-inline: var(--jd-gutter);
 	width: auto;
 }
@@ -2379,7 +2379,7 @@ body.is-mobile.is-phone .jinome-dash .jd > .jd-cover--bare {
    on this machine. The SUBTRACTION is exact either way, because the env() term
    cancels; the absolute height of the band is a range, roughly 100-148px
    before and 96-144px after. */
-body.is-mobile.is-phone .jinome-dash {
+body.is-mobile.is-phone .ephemeris-dash {
 	--view-top-spacing-markdown: calc(var(--safe-area-inset-top) + var(--view-header-height) + 12px);
 }
 
@@ -2391,7 +2391,7 @@ body.is-mobile.is-phone .jinome-dash {
    because in Live Preview core sets the token on .cm-editor, a DESCENDANT of
    the cssclass, so it wins there on its own and the two views would DISAGREE.
    Restating core's value at (0,4,1) keeps them identical in both states. */
-body.is-mobile.is-phone .document-search-container + .jinome-dash {
+body.is-mobile.is-phone .document-search-container + .ephemeris-dash {
 	--view-top-spacing-markdown: var(--size-4-3);
 }
 
@@ -2510,7 +2510,7 @@ body.is-mobile.is-phone .document-search-container + .jinome-dash {
    complement toggle guarantees by construction. It also keeps the desktop
    untouched by the same token section 11 relies on: no .is-mobile, no match.
 --------------------------------------------------------------------------- */
-body.is-mobile:not(.is-phone) .jinome-dash {
+body.is-mobile:not(.is-phone) .ephemeris-dash {
 	--file-margins: var(--file-margins-y) 0px;
 	--jd-edge: 0px;
 	--jd-gutter: var(--size-4-4, 16px);
@@ -2524,11 +2524,11 @@ body.is-mobile:not(.is-phone) .jinome-dash {
    .jd-cover needs `width: auto` with its margin because it is width: 100%
    (section 4); a margin alone would push it past its container, which is the
    overflow section 11 documents on .jd-cover--bare. */
-body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-cover {
+body.is-mobile:not(.is-phone) .ephemeris-dash .jd > .jd-cover {
 	margin-inline: var(--jd-gutter);
 	width: auto;
 }
-body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
+body.is-mobile:not(.is-phone) .ephemeris-dash .jd > .jd-grid {
 	margin-inline: var(--jd-gutter);
 }
 
@@ -2683,23 +2683,23 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
    in, and the trade that is right for a tablet held in two hands is not
    automatically right there. It is called out here because it is the exception. */
 @container jd (min-width: 780px) and (max-width: 1149.98px) {
-	body.is-mobile:not(.is-phone) .jinome-dash .jd-grid {
+	body.is-mobile:not(.is-phone) .ephemeris-dash .jd-grid {
 		grid-template-columns: minmax(0, 1fr);
 	}
-	body.is-mobile:not(.is-phone) .jinome-dash .jd-col--main,
-	body.is-mobile:not(.is-phone) .jinome-dash .jd-col--right {
+	body.is-mobile:not(.is-phone) .ephemeris-dash .jd-col--main,
+	body.is-mobile:not(.is-phone) .ephemeris-dash .jd-col--right {
 		display: contents;
 	}
-	body.is-mobile:not(.is-phone) .jinome-dash .jd-col--left {
+	body.is-mobile:not(.is-phone) .ephemeris-dash .jd-col--left {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: var(--jd-gap);
 		align-items: start;
 	}
-	body.is-mobile:not(.is-phone) .jinome-dash .jd-col--left .jd-nav {
+	body.is-mobile:not(.is-phone) .ephemeris-dash .jd-col--left .jd-nav {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
-	body.is-mobile:not(.is-phone) .jinome-dash .jd-nav__item {
+	body.is-mobile:not(.is-phone) .ephemeris-dash .jd-nav__item {
 		flex-direction: row;
 		gap: 10px;
 		padding: 7px 9px;
@@ -2713,7 +2713,7 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
    Everything here rides on Ephemeris's tokens (--text-accent is bronze, --h3-color
    the blue-black seal), so the dashboard recolours with the theme.
 --------------------------------------------------------------------------- */
-.jinome-dash {
+.ephemeris-dash {
 	--jd-sans: var(--font-text);
 	--jd-serif: var(--h1-font, var(--font-text));
 	--jd-mono: var(--font-monospace);
@@ -2724,357 +2724,357 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 	--jd-label-size: 12.5px;
 	--jd-track: .16em;
 }
-.jinome-dash .jd { font-size: 16px; line-height: 1.6; }
-.jinome-dash .jd-card { border: 1px solid var(--jd-hairline); box-shadow: none; background: var(--background-primary-alt); }
-.jinome-dash .jd-card__label { font-family: var(--jd-serif); font-weight: 400; text-transform: uppercase; letter-spacing: var(--jd-track); font-size: var(--jd-label-size); color: var(--text-muted); }
-.jinome-dash .jd-stat__n { font-family: var(--jd-serif); font-weight: 400; }
-.jinome-dash .jd-mast .jd-epigraph, .jinome-dash .jd-head .jd-epigraph { font-style: italic; color: var(--text-muted); }
+.ephemeris-dash .jd { font-size: 16px; line-height: 1.6; }
+.ephemeris-dash .jd-card { border: 1px solid var(--jd-hairline); box-shadow: none; background: var(--background-primary-alt); }
+.ephemeris-dash .jd-card__label { font-family: var(--jd-serif); font-weight: 400; text-transform: uppercase; letter-spacing: var(--jd-track); font-size: var(--jd-label-size); color: var(--text-muted); }
+.ephemeris-dash .jd-stat__n { font-family: var(--jd-serif); font-weight: 400; }
+.ephemeris-dash .jd-mast .jd-epigraph, .ephemeris-dash .jd-head .jd-epigraph { font-style: italic; color: var(--text-muted); }
 
 /* --- broadsheet: masthead, ticker, three ruled columns ------------------- */
-.jinome-dash .jd-mast { text-align: center; border-bottom: 3px double var(--text-normal); padding: 0 0 12px; margin: 0 0 6px; }
-.jinome-dash .jd-mast__ears { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13.5px; color: var(--text-faint); font-style: italic; margin-bottom: 2px; }
-.jinome-dash .jd-mast__name { font-family: var(--jd-serif); font-weight: 400; font-size: 60px; letter-spacing: .1em; line-height: 1; margin: 0; }
-.jinome-dash .jd-mast__sub { font-family: var(--jd-serif); font-size: 12.5px; letter-spacing: .3em; text-transform: uppercase; color: var(--text-muted); margin-top: 8px; }
-.jinome-dash .jd--broadsheet .jd-strip {
+.ephemeris-dash .jd-mast { text-align: center; border-bottom: 3px double var(--text-normal); padding: 0 0 12px; margin: 0 0 6px; }
+.ephemeris-dash .jd-mast__ears { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13.5px; color: var(--text-faint); font-style: italic; margin-bottom: 2px; }
+.ephemeris-dash .jd-mast__name { font-family: var(--jd-serif); font-weight: 400; font-size: 60px; letter-spacing: .1em; line-height: 1; margin: 0; }
+.ephemeris-dash .jd-mast__sub { font-family: var(--jd-serif); font-size: 12.5px; letter-spacing: .3em; text-transform: uppercase; color: var(--text-muted); margin-top: 8px; }
+.ephemeris-dash .jd--broadsheet .jd-strip {
 	display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 26px;
 	padding: 8px 0; margin-bottom: 10px; background: none; border: 0; border-radius: 0;
 	border-bottom: 1px solid var(--text-normal);
 }
-.jinome-dash .jd--broadsheet .jd-stat {
+.ephemeris-dash .jd--broadsheet .jd-stat {
 	display: inline-flex; flex-direction: row-reverse; align-items: baseline; gap: 8px;
 	background: none; border: 0; padding: 0; box-shadow: none;
 	font-family: var(--jd-serif); font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted);
 }
-.jinome-dash .jd--broadsheet .jd-stat__n { font-size: 15px; color: var(--text-normal); }
-.jinome-dash .jd--broadsheet .jd-stat__l { font-size: inherit; letter-spacing: inherit; }
-.jinome-dash .jd--broadsheet .jd-stat[data-tone] .jd-stat__n { color: var(--h3-color); }
-.jinome-dash .jd--broadsheet .jd-card { border: 0; border-top: 3px double var(--text-normal); background: none; padding-left: 0; padding-right: 0; }
-.jinome-dash .jd--broadsheet .jd-card__label { border-bottom: 1px dotted var(--jd-hairline); padding-bottom: 6px; }
+.ephemeris-dash .jd--broadsheet .jd-stat__n { font-size: 15px; color: var(--text-normal); }
+.ephemeris-dash .jd--broadsheet .jd-stat__l { font-size: inherit; letter-spacing: inherit; }
+.ephemeris-dash .jd--broadsheet .jd-stat[data-tone] .jd-stat__n { color: var(--h3-color); }
+.ephemeris-dash .jd--broadsheet .jd-card { border: 0; border-top: 3px double var(--text-normal); background: none; padding-left: 0; padding-right: 0; }
+.ephemeris-dash .jd--broadsheet .jd-card__label { border-bottom: 1px dotted var(--jd-hairline); padding-bottom: 6px; }
 @container jd (min-width: 900px) {
-	.jinome-dash .jd--broadsheet .jd-grid {
+	.ephemeris-dash .jd--broadsheet .jd-grid {
 		grid-template-columns: .85fr 1.35fr .8fr;
 		grid-template-areas: "strip strip strip" "left main right";
 		column-gap: 32px;
 	}
-	.jinome-dash .jd--broadsheet .jd-strip { grid-area: strip; }
-	.jinome-dash .jd--broadsheet .jd-col--main { grid-area: main; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
-	.jinome-dash .jd--broadsheet .jd-col--left { grid-area: left; }
-	.jinome-dash .jd--broadsheet .jd-col--right { grid-area: right; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
-	.jinome-dash .jd--broadsheet .jd-col--left .jd-nav { grid-template-columns: minmax(0, 1fr); }
+	.ephemeris-dash .jd--broadsheet .jd-strip { grid-area: strip; }
+	.ephemeris-dash .jd--broadsheet .jd-col--main { grid-area: main; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
+	.ephemeris-dash .jd--broadsheet .jd-col--left { grid-area: left; }
+	.ephemeris-dash .jd--broadsheet .jd-col--right { grid-area: right; border-left: 1px solid var(--jd-hairline); padding-left: 32px; }
+	.ephemeris-dash .jd--broadsheet .jd-col--left .jd-nav { grid-template-columns: minmax(0, 1fr); }
 }
 /* the plate: the cover image as a newspaper photograph that moves */
-.jinome-dash .jd-plate { margin: 0 0 var(--jd-gap); }
-.jinome-dash .jd-plate__img { aspect-ratio: 4 / 3; border: 1px solid var(--jd-hairline); background-position: 50% 50%; background-size: 110%; background-repeat: no-repeat; animation: jd-drift 26s ease-in-out infinite alternate; }
+.ephemeris-dash .jd-plate { margin: 0 0 var(--jd-gap); }
+.ephemeris-dash .jd-plate__img { aspect-ratio: 4 / 3; border: 1px solid var(--jd-hairline); background-position: 50% 50%; background-size: 110%; background-repeat: no-repeat; animation: jd-drift 26s ease-in-out infinite alternate; }
 @keyframes jd-drift { from { background-position: 44% 44%; background-size: 108%; } to { background-position: 56% 56%; background-size: 118%; } }
-.jinome-dash .jd-plate__cap { font-family: var(--jd-mono); font-size: 11.5px; color: var(--text-faint); margin-top: 6px; }
+.ephemeris-dash .jd-plate__cap { font-family: var(--jd-mono); font-size: 11.5px; color: var(--text-faint); margin-top: 6px; }
 
 /* --- observation log: head rule, round chart on the left, ledger cards ---- */
-.jinome-dash .jd-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 3px double var(--text-normal); padding-bottom: 8px; margin-bottom: 20px; }
-.jinome-dash .jd-head__name { font-family: var(--jd-serif); font-weight: 400; font-size: 34px; letter-spacing: .08em; line-height: 1.1; margin: 0; }
-.jinome-dash .jd-head__sub { font-family: var(--jd-serif); font-size: 12.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); }
-.jinome-dash .jd--log .jd-card { border: 0; border-top: 3px double var(--text-normal); background: none; padding-left: 0; padding-right: 0; }
-.jinome-dash .jd--log .jd-strip { border: 1px solid var(--jd-hairline); background: var(--background-primary-alt); border-radius: 0; }
+.ephemeris-dash .jd-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 3px double var(--text-normal); padding-bottom: 8px; margin-bottom: 20px; }
+.ephemeris-dash .jd-head__name { font-family: var(--jd-serif); font-weight: 400; font-size: 34px; letter-spacing: .08em; line-height: 1.1; margin: 0; }
+.ephemeris-dash .jd-head__sub { font-family: var(--jd-serif); font-size: 12.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); }
+.ephemeris-dash .jd--log .jd-card { border: 0; border-top: 3px double var(--text-normal); background: none; padding-left: 0; padding-right: 0; }
+.ephemeris-dash .jd--log .jd-strip { border: 1px solid var(--jd-hairline); background: var(--background-primary-alt); border-radius: 0; }
 @container jd (min-width: 900px) {
-	.jinome-dash .jd--log .jd-grid {
+	.ephemeris-dash .jd--log .jd-grid {
 		grid-template-columns: minmax(340px, 440px) minmax(0, 1fr);
 		grid-template-areas: "left main" "left right" "left .";
 		grid-template-rows: auto auto 1fr;   /* the left column's extra height lands in the empty last row */
 		column-gap: 36px;
 	}
-	.jinome-dash .jd--log .jd-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-	.jinome-dash .jd--log .jd-col--right > [data-panel="recent"] { order: 3; }
-	.jinome-dash .jd--log .jd-col--right > [data-panel="reviews"] { order: 4; grid-column: 1 / -1; }
-	.jinome-dash .jd--log .jd-col--left { grid-area: left; }
-	.jinome-dash .jd--log .jd-col--main { grid-area: main; }
-	.jinome-dash .jd--log .jd-col--right { grid-area: right; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--jd-gap); align-items: start; }
-	.jinome-dash .jd--log .jd-col--right > [data-panel="recent"] { grid-column: 1 / -1; }
-	.jinome-dash .jd--log .jd-col--left .jd-nav { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 24px; }
+	.ephemeris-dash .jd--log .jd-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+	.ephemeris-dash .jd--log .jd-col--right > [data-panel="recent"] { order: 3; }
+	.ephemeris-dash .jd--log .jd-col--right > [data-panel="reviews"] { order: 4; grid-column: 1 / -1; }
+	.ephemeris-dash .jd--log .jd-col--left { grid-area: left; }
+	.ephemeris-dash .jd--log .jd-col--main { grid-area: main; }
+	.ephemeris-dash .jd--log .jd-col--right { grid-area: right; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--jd-gap); align-items: start; }
+	.ephemeris-dash .jd--log .jd-col--right > [data-panel="recent"] { grid-column: 1 / -1; }
+	.ephemeris-dash .jd--log .jd-col--left .jd-nav { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 24px; }
 }
-.jinome-dash .jd-chart { margin: 0 0 var(--jd-gap); }
-.jinome-dash .jd-chart svg { display: block; width: 100%; aspect-ratio: 1; border: 1px solid var(--jd-hairline); background: radial-gradient(circle at 50% 50%, var(--background-primary-alt), var(--background-primary) 72%); }
-.jinome-dash .jd-chart__ring { fill: none; stroke: var(--jd-hairline); stroke-width: 1; }
-.jinome-dash .jd-chart__ring.is-major { stroke: var(--text-faint); opacity: .5; }
-.jinome-dash .jd-chart__tick { stroke: var(--text-faint); stroke-width: 1; opacity: .6; }
-.jinome-dash .jd-chart__con { fill: none; stroke: var(--text-accent); stroke-width: .9; opacity: .6; }
-.jinome-dash .jd-chart__star { fill: var(--text-normal); animation: jd-twinkle 4s ease-in-out infinite; }
-.jinome-dash .jd-chart__star.is-field { animation: none; opacity: .8; }
-.jinome-dash .jd-chart__lbl { font-family: var(--jd-serif); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; fill: var(--text-muted); }
-.jinome-dash .jd-chart__lbl.is-sub { text-transform: none; letter-spacing: .02em; font-style: italic; fill: var(--text-faint); font-size: 11px; }
-.jinome-dash .jd-chart__field { transform-origin: 50% 50%; transform-box: view-box; animation: jd-rot 1800s linear infinite; }
-.jinome-dash .jd-chart__key { list-style: none; margin: 8px 0 0; padding: 0; font-size: 14px; line-height: 1.5; }
-.jinome-dash .jd-chart__key li { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--jd-hairline); align-items: baseline; }
-.jinome-dash .jd-chart__key b { font-family: var(--jd-serif); font-weight: 400; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-accent); }
-.jinome-dash .jd-chart__key small { color: var(--text-faint); font-size: 12.5px; margin-left: 6px; }
-.jinome-dash .jd-chart__legend { font-size: 13.5px; font-style: italic; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+.ephemeris-dash .jd-chart { margin: 0 0 var(--jd-gap); }
+.ephemeris-dash .jd-chart svg { display: block; width: 100%; aspect-ratio: 1; border: 1px solid var(--jd-hairline); background: radial-gradient(circle at 50% 50%, var(--background-primary-alt), var(--background-primary) 72%); }
+.ephemeris-dash .jd-chart__ring { fill: none; stroke: var(--jd-hairline); stroke-width: 1; }
+.ephemeris-dash .jd-chart__ring.is-major { stroke: var(--text-faint); opacity: .5; }
+.ephemeris-dash .jd-chart__tick { stroke: var(--text-faint); stroke-width: 1; opacity: .6; }
+.ephemeris-dash .jd-chart__con { fill: none; stroke: var(--text-accent); stroke-width: .9; opacity: .6; }
+.ephemeris-dash .jd-chart__star { fill: var(--text-normal); animation: jd-twinkle 4s ease-in-out infinite; }
+.ephemeris-dash .jd-chart__star.is-field { animation: none; opacity: .8; }
+.ephemeris-dash .jd-chart__lbl { font-family: var(--jd-serif); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; fill: var(--text-muted); }
+.ephemeris-dash .jd-chart__lbl.is-sub { text-transform: none; letter-spacing: .02em; font-style: italic; fill: var(--text-faint); font-size: 11px; }
+.ephemeris-dash .jd-chart__field { transform-origin: 50% 50%; transform-box: view-box; animation: jd-rot 1800s linear infinite; }
+.ephemeris-dash .jd-chart__key { list-style: none; margin: 8px 0 0; padding: 0; font-size: 14px; line-height: 1.5; }
+.ephemeris-dash .jd-chart__key li { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--jd-hairline); align-items: baseline; }
+.ephemeris-dash .jd-chart__key b { font-family: var(--jd-serif); font-weight: 400; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-accent); }
+.ephemeris-dash .jd-chart__key small { color: var(--text-faint); font-size: 12.5px; margin-left: 6px; }
+.ephemeris-dash .jd-chart__legend { font-size: 13.5px; font-style: italic; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
 @keyframes jd-rot { to { transform: rotate(360deg); } }
 @keyframes jd-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) {
-	.jinome-dash .jd-plate__img, .jinome-dash .jd-chart__field, .jinome-dash .jd-chart__star { animation: none; }
+	.ephemeris-dash .jd-plate__img, .ephemeris-dash .jd-chart__field, .ephemeris-dash .jd-chart__star { animation: none; }
 }
 
 /* the frontmatter block is noise on a dashboard — both layouts hide it */
-.jinome-dash .metadata-container { display: none; }
+.ephemeris-dash .metadata-container { display: none; }
 
 /* --- nav and projects sized to the space the layouts give them ------------ */
-.jinome-dash .jd--log .jd-nav, .jinome-dash .jd--broadsheet .jd-nav { gap: 0; }
-.jinome-dash .jd--log .jd-nav__rule, .jinome-dash .jd--broadsheet .jd-nav__rule { grid-column: 1 / -1; }
-.jinome-dash .jd--log .jd-nav__item, .jinome-dash .jd--broadsheet .jd-nav__item { padding: 9px 2px; border-radius: 0; border-bottom: 1px solid var(--jd-hairline); }
-.jinome-dash .jd--log .jd-nav__label, .jinome-dash .jd--broadsheet .jd-nav__label { font-size: 16px; }
-.jinome-dash .jd-proj__title, .jinome-dash .jd-proj__status { display: none; }
-.jinome-dash .jd--log .jd-proj__item, .jinome-dash .jd--broadsheet .jd-proj__item { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 9px 2px; border-radius: 0; border-bottom: 1px solid var(--jd-hairline); }
-.jinome-dash .jd--log .jd-proj__item--sub, .jinome-dash .jd--broadsheet .jd-proj__item--sub { padding-left: 22px; }
-.jinome-dash .jd--log .jd-proj__title, .jinome-dash .jd--broadsheet .jd-proj__title { display: inline; font-size: 16px; color: var(--text-normal); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.jinome-dash .jd--log .jd-proj__status, .jinome-dash .jd--broadsheet .jd-proj__status { display: inline; margin-left: auto; font-size: 13px; color: var(--text-faint); white-space: nowrap; }
+.ephemeris-dash .jd--log .jd-nav, .ephemeris-dash .jd--broadsheet .jd-nav { gap: 0; }
+.ephemeris-dash .jd--log .jd-nav__rule, .ephemeris-dash .jd--broadsheet .jd-nav__rule { grid-column: 1 / -1; }
+.ephemeris-dash .jd--log .jd-nav__item, .ephemeris-dash .jd--broadsheet .jd-nav__item { padding: 9px 2px; border-radius: 0; border-bottom: 1px solid var(--jd-hairline); }
+.ephemeris-dash .jd--log .jd-nav__label, .ephemeris-dash .jd--broadsheet .jd-nav__label { font-size: 16px; }
+.ephemeris-dash .jd-proj__title, .ephemeris-dash .jd-proj__status { display: none; }
+.ephemeris-dash .jd--log .jd-proj__item, .ephemeris-dash .jd--broadsheet .jd-proj__item { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 9px 2px; border-radius: 0; border-bottom: 1px solid var(--jd-hairline); }
+.ephemeris-dash .jd--log .jd-proj__item--sub, .ephemeris-dash .jd--broadsheet .jd-proj__item--sub { padding-left: 22px; }
+.ephemeris-dash .jd--log .jd-proj__title, .ephemeris-dash .jd--broadsheet .jd-proj__title { display: inline; font-size: 16px; color: var(--text-normal); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ephemeris-dash .jd--log .jd-proj__status, .ephemeris-dash .jd--broadsheet .jd-proj__status { display: inline; margin-left: auto; font-size: 13px; color: var(--text-faint); white-space: nowrap; }
 
 /* --- the broadsheet's stories: the latest notes with their opening lines ---- */
-.jinome-dash .jd-stories { display: grid; gap: 14px; }
-.jinome-dash .jd-story { padding: 0 0 12px; border-bottom: 1px solid var(--jd-hairline); }
-.jinome-dash .jd-story:last-child { border-bottom: 0; }
-.jinome-dash .jd-story__hl { display: block; font-family: var(--jd-serif); font-size: 21px; line-height: 1.2; color: var(--text-normal); text-decoration: none; cursor: pointer; text-wrap: balance; }
-.jinome-dash .jd-story__hl:hover { color: var(--text-accent); }
-.jinome-dash .jd-story__meta { font-size: 13px; color: var(--text-faint); font-style: italic; margin: 2px 0 6px; }
-.jinome-dash .jd-story__ex { margin: 0; font-size: 15.5px; line-height: 1.6; color: var(--text-muted); }
+.ephemeris-dash .jd-stories { display: grid; gap: 14px; }
+.ephemeris-dash .jd-story { padding: 0 0 12px; border-bottom: 1px solid var(--jd-hairline); }
+.ephemeris-dash .jd-story:last-child { border-bottom: 0; }
+.ephemeris-dash .jd-story__hl { display: block; font-family: var(--jd-serif); font-size: 21px; line-height: 1.2; color: var(--text-normal); text-decoration: none; cursor: pointer; text-wrap: balance; }
+.ephemeris-dash .jd-story__hl:hover { color: var(--text-accent); }
+.ephemeris-dash .jd-story__meta { font-size: 13px; color: var(--text-faint); font-style: italic; margin: 2px 0 6px; }
+.ephemeris-dash .jd-story__ex { margin: 0; font-size: 15.5px; line-height: 1.6; color: var(--text-muted); }
 
 /* the count badge on the work table sits above the table box and got clipped by overflow-x */
-.jinome-dash .jd--log .jd-work .jd-table, .jinome-dash .jd--broadsheet .jd-work .jd-table { padding-top: 4px; }
+.ephemeris-dash .jd--log .jd-work .jd-table, .ephemeris-dash .jd--broadsheet .jd-work .jd-table { padding-top: 4px; }
 
 /* --- round 9: the header row was never clipped — the base gives th 0 top / 6 bottom padding; even it out */
-.jinome-dash .jd--log .jd-work .jd-table, .jinome-dash .jd--broadsheet .jd-work .jd-table { padding-top: 0; }
-.jinome-dash .jd--log .jd-card .jd-table table.table-view-table > thead > tr > th,
-.jinome-dash .jd--broadsheet .jd-card .jd-table table.table-view-table > thead > tr > th { padding: 7px 10px; }
+.ephemeris-dash .jd--log .jd-work .jd-table, .ephemeris-dash .jd--broadsheet .jd-work .jd-table { padding-top: 0; }
+.ephemeris-dash .jd--log .jd-card .jd-table table.table-view-table > thead > tr > th,
+.ephemeris-dash .jd--broadsheet .jd-card .jd-table table.table-view-table > thead > tr > th { padding: 7px 10px; }
 
 /* --- nav in the layouts: items carry their own hairlines, so the old ornamented rule becomes a plain gap;
        the first item ("This week") takes the full row, the rest pair up */
-.jinome-dash .jd--log .jd-nav__rule, .jinome-dash .jd--broadsheet .jd-nav__rule { grid-column: 1 / -1; border: 0; height: 0; margin: 8px 0 0; background: none; }
-.jinome-dash .jd--log .jd-nav__rule::before, .jinome-dash .jd--log .jd-nav__rule::after,
-.jinome-dash .jd--broadsheet .jd-nav__rule::before, .jinome-dash .jd--broadsheet .jd-nav__rule::after { display: none; content: none; }
-.jinome-dash .jd--log .jd-nav > .jd-nav__item:first-child { grid-column: 1 / -1; }
+.ephemeris-dash .jd--log .jd-nav__rule, .ephemeris-dash .jd--broadsheet .jd-nav__rule { grid-column: 1 / -1; border: 0; height: 0; margin: 8px 0 0; background: none; }
+.ephemeris-dash .jd--log .jd-nav__rule::before, .ephemeris-dash .jd--log .jd-nav__rule::after,
+.ephemeris-dash .jd--broadsheet .jd-nav__rule::before, .ephemeris-dash .jd--broadsheet .jd-nav__rule::after { display: none; content: none; }
+.ephemeris-dash .jd--log .jd-nav > .jd-nav__item:first-child { grid-column: 1 / -1; }
 
 /* --- projects in the layouts: the title is the name; the code shows only when there is no note to name it */
-.jinome-dash .jd--log .jd-proj__item:not(.is-unresolved) .jd-proj__code,
-.jinome-dash .jd--broadsheet .jd-proj__item:not(.is-unresolved) .jd-proj__code { display: none; }
+.ephemeris-dash .jd--log .jd-proj__item:not(.is-unresolved) .jd-proj__code,
+.ephemeris-dash .jd--broadsheet .jd-proj__item:not(.is-unresolved) .jd-proj__code { display: none; }
 
 /* --- round 10: the nav's three groups (this week · indices · new) differ in kind, so a rule sits
        between them — the same fading bronze rule the theme draws under an H1. The row above a
        rule drops its own hairline so the two lines never stack. */
-.jinome-dash .jd--log .jd-nav__rule, .jinome-dash .jd--broadsheet .jd-nav__rule {
+.ephemeris-dash .jd--log .jd-nav__rule, .ephemeris-dash .jd--broadsheet .jd-nav__rule {
 	height: 1px; margin: 10px 0 6px;
 	background: linear-gradient(90deg, var(--interactive-accent) 0, var(--interactive-accent) 45%, transparent 100%);
 }
-.jinome-dash .jd--log .jd-nav__item:has(+ .jd-nav__rule),
-.jinome-dash .jd--log .jd-nav__item:has(+ .jd-nav__item + .jd-nav__rule),
-.jinome-dash .jd--broadsheet .jd-nav__item:has(+ .jd-nav__rule) { border-bottom: 0; }
+.ephemeris-dash .jd--log .jd-nav__item:has(+ .jd-nav__rule),
+.ephemeris-dash .jd--log .jd-nav__item:has(+ .jd-nav__item + .jd-nav__rule),
+.ephemeris-dash .jd--broadsheet .jd-nav__item:has(+ .jd-nav__rule) { border-bottom: 0; }
 
 /* --- a card title that is a link (Favourites, Commonplace → their index) ---- */
-.jinome-dash .jd-card__label--link { cursor: pointer; }
-.jinome-dash .jd-card__label--link:hover, .jinome-dash .jd-card__label--link:focus-visible { color: var(--text-accent); outline: none; }
+.ephemeris-dash .jd-card__label--link { cursor: pointer; }
+.ephemeris-dash .jd-card__label--link:hover, .ephemeris-dash .jd-card__label--link:focus-visible { color: var(--text-accent); outline: none; }
 
 /* --- round 12: one type family everywhere. The base used a monospace for every figure (weather,
        dates, week numbers, counts); in the two layouts those become EB Garamond with tabular lining
        figures, and the big temperature takes the display face like the register numbers. */
-.jinome-dash .jd--log, .jinome-dash .jd--broadsheet { --jd-mono: var(--font-text); }
-.jinome-dash .jd--log .jd-wx__temp, .jinome-dash .jd--broadsheet .jd-wx__temp { font-family: var(--jd-serif); font-weight: 400; letter-spacing: 0; }
-.jinome-dash .jd--log :is(.jd-wx__range, .jd-wx__hum, .jd-wx__dow, .jd-date, .jd-num, .jd-cal__wk, .jd-cal__title, .jd-cal__more, .jd-card__count, .jd-tab__n, .jd-sub, .jd-nav__hint, .jd-plate__cap),
-.jinome-dash .jd--broadsheet :is(.jd-wx__range, .jd-wx__hum, .jd-wx__dow, .jd-date, .jd-num, .jd-cal__wk, .jd-cal__title, .jd-cal__more, .jd-card__count, .jd-tab__n, .jd-sub, .jd-nav__hint, .jd-plate__cap) {
+.ephemeris-dash .jd--log, .ephemeris-dash .jd--broadsheet { --jd-mono: var(--font-text); }
+.ephemeris-dash .jd--log .jd-wx__temp, .ephemeris-dash .jd--broadsheet .jd-wx__temp { font-family: var(--jd-serif); font-weight: 400; letter-spacing: 0; }
+.ephemeris-dash .jd--log :is(.jd-wx__range, .jd-wx__hum, .jd-wx__dow, .jd-date, .jd-num, .jd-cal__wk, .jd-cal__title, .jd-cal__more, .jd-card__count, .jd-tab__n, .jd-sub, .jd-nav__hint, .jd-plate__cap),
+.ephemeris-dash .jd--broadsheet :is(.jd-wx__range, .jd-wx__hum, .jd-wx__dow, .jd-date, .jd-num, .jd-cal__wk, .jd-cal__title, .jd-cal__more, .jd-card__count, .jd-tab__n, .jd-sub, .jd-nav__hint, .jd-plate__cap) {
 	font-family: var(--font-text); font-variant-numeric: tabular-nums lining-nums; letter-spacing: 0;
 }
-.jinome-dash .jd--log .jd-wx__range, .jinome-dash .jd--broadsheet .jd-wx__range { font-size: 14px; }
-.jinome-dash .jd--log .jd-plate__cap, .jinome-dash .jd--broadsheet .jd-plate__cap { font-size: 13px; font-style: italic; color: var(--text-faint); }
+.ephemeris-dash .jd--log .jd-wx__range, .ephemeris-dash .jd--broadsheet .jd-wx__range { font-size: 14px; }
+.ephemeris-dash .jd--log .jd-plate__cap, .ephemeris-dash .jd--broadsheet .jd-plate__cap { font-size: 13px; font-style: italic; color: var(--text-faint); }
 
 /* --- round 13: what the research earned ------------------------------------------------- */
-.jinome-dash .jd-mast__folio { font-size: 13px; color: var(--text-faint); margin-top: 6px; font-variant-numeric: tabular-nums; }
-.jinome-dash .jd-mast__ear-wx:empty::before { content: "\00a0"; }
-.jinome-dash .jd-splash { border-top: 3px double var(--text-normal); padding: 12px 0 4px; margin: 0 0 var(--jd-gap); display: grid; gap: 14px; }
-.jinome-dash .jd-splash__item { padding-bottom: 12px; border-bottom: 1px solid var(--jd-hairline); }
-.jinome-dash .jd-splash__item:last-child { border-bottom: 0; }
-.jinome-dash .jd-splash__kicker { font-family: var(--jd-serif); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-accent); margin-bottom: 4px; }
-.jinome-dash .jd-splash__hl { display: block; font-family: var(--jd-serif); font-size: 30px; line-height: 1.15; color: var(--text-normal); text-decoration: none; cursor: pointer; text-wrap: balance; }
-.jinome-dash .jd-splash__item.is-offlead .jd-splash__hl { font-size: 21px; }
-.jinome-dash .jd-splash__hl:hover { color: var(--text-accent); }
-.jinome-dash .jd-splash__by { font-size: 13.5px; font-style: italic; color: var(--text-faint); margin: 4px 0 6px; }
-.jinome-dash .jd-splash__ex { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text-muted); }
-.jinome-dash .jd-splash__item.is-offlead .jd-splash__ex { font-size: 15px; }
-.jinome-dash .jd-nav__count { margin-left: auto; font-size: 13px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
-.jinome-dash .jd-briefs { list-style: none; margin: 0; padding: 0; }
-.jinome-dash .jd-briefs li { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 2px; border-bottom: 1px solid var(--jd-hairline); font-size: 15px; }
-.jinome-dash .jd-briefs li:last-child { border-bottom: 0; }
-.jinome-dash .jd-briefs__n { font-variant-numeric: tabular-nums; color: var(--text-muted); }
-.jinome-dash .jd-wx__obs { display: block; font-size: 13.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.jinome-dash .jd--log .jd-chart svg { background: linear-gradient(rgba(230,226,210, calc(var(--jd-moon, 0) * .05)), rgba(230,226,210, calc(var(--jd-moon, 0) * .05))), radial-gradient(circle at 50% 50%, var(--background-primary-alt), var(--background-primary) 72%); }
-.jinome-dash .jd-chart__star.is-field { opacity: calc(.85 - var(--jd-moon, 0) * .4); }
-.jinome-dash .jd-plate__cap { cursor: pointer; }
+.ephemeris-dash .jd-mast__folio { font-size: 13px; color: var(--text-faint); margin-top: 6px; font-variant-numeric: tabular-nums; }
+.ephemeris-dash .jd-mast__ear-wx:empty::before { content: "\00a0"; }
+.ephemeris-dash .jd-splash { border-top: 3px double var(--text-normal); padding: 12px 0 4px; margin: 0 0 var(--jd-gap); display: grid; gap: 14px; }
+.ephemeris-dash .jd-splash__item { padding-bottom: 12px; border-bottom: 1px solid var(--jd-hairline); }
+.ephemeris-dash .jd-splash__item:last-child { border-bottom: 0; }
+.ephemeris-dash .jd-splash__kicker { font-family: var(--jd-serif); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-accent); margin-bottom: 4px; }
+.ephemeris-dash .jd-splash__hl { display: block; font-family: var(--jd-serif); font-size: 30px; line-height: 1.15; color: var(--text-normal); text-decoration: none; cursor: pointer; text-wrap: balance; }
+.ephemeris-dash .jd-splash__item.is-offlead .jd-splash__hl { font-size: 21px; }
+.ephemeris-dash .jd-splash__hl:hover { color: var(--text-accent); }
+.ephemeris-dash .jd-splash__by { font-size: 13.5px; font-style: italic; color: var(--text-faint); margin: 4px 0 6px; }
+.ephemeris-dash .jd-splash__ex { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text-muted); }
+.ephemeris-dash .jd-splash__item.is-offlead .jd-splash__ex { font-size: 15px; }
+.ephemeris-dash .jd-nav__count { margin-left: auto; font-size: 13px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.ephemeris-dash .jd-briefs { list-style: none; margin: 0; padding: 0; }
+.ephemeris-dash .jd-briefs li { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 2px; border-bottom: 1px solid var(--jd-hairline); font-size: 15px; }
+.ephemeris-dash .jd-briefs li:last-child { border-bottom: 0; }
+.ephemeris-dash .jd-briefs__n { font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.ephemeris-dash .jd-wx__obs { display: block; font-size: 13.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.ephemeris-dash .jd--log .jd-chart svg { background: linear-gradient(rgba(230,226,210, calc(var(--jd-moon, 0) * .05)), rgba(230,226,210, calc(var(--jd-moon, 0) * .05))), radial-gradient(circle at 50% 50%, var(--background-primary-alt), var(--background-primary) 72%); }
+.ephemeris-dash .jd-chart__star.is-field { opacity: calc(.85 - var(--jd-moon, 0) * .4); }
+.ephemeris-dash .jd-plate__cap { cursor: pointer; }
 
 /* --- round 14: weather sites; the third column takes projects and briefs ---------------------- */
-.jinome-dash .jd-wx__sites { display: flex; align-items: baseline; gap: 12px; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--jd-hairline); }
-.jinome-dash .jd-wx__site { background: none; border: 0; padding: 0; box-shadow: none; cursor: pointer; font-family: var(--jd-serif); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); }
-.jinome-dash .jd-wx__site:hover { color: var(--text-normal); }
-.jinome-dash .jd-wx__site.is-on { color: var(--text-accent); box-shadow: inset 0 -1px 0 var(--interactive-accent); }
-.jinome-dash .jd-wx__search { margin-left: auto; width: 7.5em; background: none; border: 0; border-bottom: 1px solid var(--jd-hairline); border-radius: 0; padding: 0 2px 2px; font-family: var(--font-text); font-size: 13px; color: var(--text-muted); box-shadow: none; }
-.jinome-dash .jd-wx__search:focus { outline: none; border-bottom-color: var(--interactive-accent); color: var(--text-normal); }
-.jinome-dash .jd-wx__search::placeholder { color: var(--text-faint); }
+.ephemeris-dash .jd-wx__sites { display: flex; align-items: baseline; gap: 12px; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--jd-hairline); }
+.ephemeris-dash .jd-wx__site { background: none; border: 0; padding: 0; box-shadow: none; cursor: pointer; font-family: var(--jd-serif); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); }
+.ephemeris-dash .jd-wx__site:hover { color: var(--text-normal); }
+.ephemeris-dash .jd-wx__site.is-on { color: var(--text-accent); box-shadow: inset 0 -1px 0 var(--interactive-accent); }
+.ephemeris-dash .jd-wx__search { margin-left: auto; width: 7.5em; background: none; border: 0; border-bottom: 1px solid var(--jd-hairline); border-radius: 0; padding: 0 2px 2px; font-family: var(--font-text); font-size: 13px; color: var(--text-muted); box-shadow: none; }
+.ephemeris-dash .jd-wx__search:focus { outline: none; border-bottom-color: var(--interactive-accent); color: var(--text-normal); }
+.ephemeris-dash .jd-wx__search::placeholder { color: var(--text-faint); }
 @container jd (min-width: 900px) {
-	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="calendar"] { order: 1; }
-	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="weather"] { order: 2; }
-	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="print"] { order: 3; }
-	.jinome-dash .jd--broadsheet .jd-col--right > [data-panel="reviews"] { order: 4; }
+	.ephemeris-dash .jd--broadsheet .jd-col--right > [data-panel="calendar"] { order: 1; }
+	.ephemeris-dash .jd--broadsheet .jd-col--right > [data-panel="weather"] { order: 2; }
+	.ephemeris-dash .jd--broadsheet .jd-col--right > [data-panel="print"] { order: 3; }
+	.ephemeris-dash .jd--broadsheet .jd-col--right > [data-panel="reviews"] { order: 4; }
 }
 
 /* --- round 16: the empty third tab and its search --------------------------------------------- */
-.jinome-dash .jd-wx__clear { margin-left: auto; background: none; border: 0; padding: 0 2px; box-shadow: none; cursor: pointer; font-family: var(--font-text); font-size: 18px; line-height: 1; color: var(--text-faint); }
-.jinome-dash .jd-wx__clear:hover { color: var(--text-normal); }
-.jinome-dash .jd-wx__find { display: grid; gap: 6px; }
-.jinome-dash .jd-wx__find .jd-wx__search { margin-left: 0; width: 100%; font-size: 15px; padding: 4px 2px; }
-.jinome-dash .jd-wx__cands { list-style: none; margin: 0; padding: 0; }
-.jinome-dash .jd-wx__cand { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--jd-hairline); cursor: pointer; font-size: 15px; }
-.jinome-dash .jd-wx__cand:last-child { border-bottom: 0; }
-.jinome-dash .jd-wx__cand:hover, .jinome-dash .jd-wx__cand:focus-visible { color: var(--text-accent); outline: none; }
-.jinome-dash .jd-wx__cand-sub { color: var(--text-faint); font-size: 13px; white-space: nowrap; }
-.jinome-dash .jd-wx__cand.is-muted { color: var(--text-faint); cursor: default; }
+.ephemeris-dash .jd-wx__clear { margin-left: auto; background: none; border: 0; padding: 0 2px; box-shadow: none; cursor: pointer; font-family: var(--font-text); font-size: 18px; line-height: 1; color: var(--text-faint); }
+.ephemeris-dash .jd-wx__clear:hover { color: var(--text-normal); }
+.ephemeris-dash .jd-wx__find { display: grid; gap: 6px; }
+.ephemeris-dash .jd-wx__find .jd-wx__search { margin-left: 0; width: 100%; font-size: 15px; padding: 4px 2px; }
+.ephemeris-dash .jd-wx__cands { list-style: none; margin: 0; padding: 0; }
+.ephemeris-dash .jd-wx__cand { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--jd-hairline); cursor: pointer; font-size: 15px; }
+.ephemeris-dash .jd-wx__cand:last-child { border-bottom: 0; }
+.ephemeris-dash .jd-wx__cand:hover, .ephemeris-dash .jd-wx__cand:focus-visible { color: var(--text-accent); outline: none; }
+.ephemeris-dash .jd-wx__cand-sub { color: var(--text-faint); font-size: 13px; white-space: nowrap; }
+.ephemeris-dash .jd-wx__cand.is-muted { color: var(--text-faint); cursor: default; }
 
 /* --- a print in the third column: framed like the plate, no drift ------------------------------ */
-.jinome-dash .jd-plate--print { cursor: pointer; }
-.jinome-dash .jd-plate__print { display: block; width: 100%; height: auto; border: 1px solid var(--jd-hairline); background: #EFE8D6; }
+.ephemeris-dash .jd-plate--print { cursor: pointer; }
+.ephemeris-dash .jd-plate__print { display: block; width: 100%; height: auto; border: 1px solid var(--jd-hairline); background: #EFE8D6; }
 
 /* --- round 17: the nameplate row by the book ---------------------------------------------------- */
-.jinome-dash .jd-mast__ears { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 20px; font-style: normal; color: var(--text-muted); }
-.jinome-dash .jd-mast__name-wrap { text-align: center; }
-.jinome-dash .jd-ear { justify-self: start; min-width: 170px; max-width: 260px; padding: 6px 10px 7px; border: 1px solid var(--jd-hairline); text-align: left; font-size: 12.5px; line-height: 1.45; }
-.jinome-dash .jd-ear--weather { justify-self: end; }
-.jinome-dash .jd-ear__k { font-family: var(--jd-serif); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-faint); }
-.jinome-dash .jd-ear__b { color: var(--text-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
-.jinome-dash .jd-ear__b:empty::before { content: "\00a0"; }
-.jinome-dash .jd-mast__folio { display: flex; justify-content: center; gap: 0; margin-top: 10px; padding-top: 7px; border-top: 1px solid var(--jd-hairline); font-size: 13px; color: var(--text-muted); font-style: italic; }
-@container jd (max-width: 899.98px) { .jinome-dash .jd-mast__ears { grid-template-columns: 1fr; } .jinome-dash .jd-ear, .jinome-dash .jd-ear--weather { justify-self: center; } }
+.ephemeris-dash .jd-mast__ears { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 20px; font-style: normal; color: var(--text-muted); }
+.ephemeris-dash .jd-mast__name-wrap { text-align: center; }
+.ephemeris-dash .jd-ear { justify-self: start; min-width: 170px; max-width: 260px; padding: 6px 10px 7px; border: 1px solid var(--jd-hairline); text-align: left; font-size: 12.5px; line-height: 1.45; }
+.ephemeris-dash .jd-ear--weather { justify-self: end; }
+.ephemeris-dash .jd-ear__k { font-family: var(--jd-serif); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-faint); }
+.ephemeris-dash .jd-ear__b { color: var(--text-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.ephemeris-dash .jd-ear__b:empty::before { content: "\00a0"; }
+.ephemeris-dash .jd-mast__folio { display: flex; justify-content: center; gap: 0; margin-top: 10px; padding-top: 7px; border-top: 1px solid var(--jd-hairline); font-size: 13px; color: var(--text-muted); font-style: italic; }
+@container jd (max-width: 899.98px) { .ephemeris-dash .jd-mast__ears { grid-template-columns: 1fr; } .ephemeris-dash .jd-ear, .ephemeris-dash .jd-ear--weather { justify-self: center; } }
 
 /* --- round 18: the log's nav rules run edge to edge ------------------------------------------ */
-.jinome-dash .jd--log .jd-col--left .jd-nav { column-gap: 0; margin: 0 -10px; }
-.jinome-dash .jd--log .jd-nav__item { padding: 9px 10px; }
-.jinome-dash .jd--log .jd-nav__rule { margin-left: 10px; margin-right: 10px; }
-.jinome-dash .jd--log .jd-strip .jd-stat__n { font-size: 24px; }
+.ephemeris-dash .jd--log .jd-col--left .jd-nav { column-gap: 0; margin: 0 -10px; }
+.ephemeris-dash .jd--log .jd-nav__item { padding: 9px 10px; }
+.ephemeris-dash .jd--log .jd-nav__rule { margin-left: 10px; margin-right: 10px; }
+.ephemeris-dash .jd--log .jd-strip .jd-stat__n { font-size: 24px; }
 
 /* the log lists constellations only — the sub-codes already sit in the chart key; keeps the columns level */
-.jinome-dash .jd--log .jd-proj__item--sub { display: none; }
+.ephemeris-dash .jd--log .jd-proj__item--sub { display: none; }
 
 /* the group rule in the nav runs the full width; only the last fifth fades */
-.jinome-dash .jd--log .jd-nav__rule, .jinome-dash .jd--broadsheet .jd-nav__rule { background: linear-gradient(90deg, var(--interactive-accent) 0, var(--interactive-accent) 80%, transparent 100%); }
+.ephemeris-dash .jd--log .jd-nav__rule, .ephemeris-dash .jd--broadsheet .jd-nav__rule { background: linear-gradient(90deg, var(--interactive-accent) 0, var(--interactive-accent) 80%, transparent 100%); }
 
 /* the nav rule is an <hr>, and the theme draws every hr at 60% width for the star device — not here */
-.jinome-dash .jd-nav__rule { width: 100%; opacity: 1; position: static; }
+.ephemeris-dash .jd-nav__rule { width: 100%; opacity: 1; position: static; }
 
 /* broadsheet column 1 had grown ~450px (nav at 16px, project rows with titles): sub-project rows go compact */
-.jinome-dash .jd--broadsheet .jd-proj__item--sub { padding: 5px 2px 5px 22px; }
-.jinome-dash .jd--broadsheet .jd-proj__item--sub .jd-proj__title { font-size: 14.5px; }
-.jinome-dash .jd--broadsheet .jd-proj__item--sub .jd-proj__status { font-size: 12px; }
-.jinome-dash .jd--broadsheet .jd-nav__item { padding: 7px 2px; }
+.ephemeris-dash .jd--broadsheet .jd-proj__item--sub { padding: 5px 2px 5px 22px; }
+.ephemeris-dash .jd--broadsheet .jd-proj__item--sub .jd-proj__title { font-size: 14.5px; }
+.ephemeris-dash .jd--broadsheet .jd-proj__item--sub .jd-proj__status { font-size: 12px; }
+.ephemeris-dash .jd--broadsheet .jd-nav__item { padding: 7px 2px; }
 
 /* --- the nav's group rule carries the same star as the note's section rule: a solid bronze hairline,
        a page-coloured gap at the centre, the star mask in the accent colour on top */
-.jinome-dash .jd--log .jd-nav__rule, .jinome-dash .jd--broadsheet .jd-nav__rule {
+.ephemeris-dash .jd--log .jd-nav__rule, .ephemeris-dash .jd--broadsheet .jd-nav__rule {
 	position: relative; overflow: visible;
 	background: var(--interactive-accent);
 }
-.jinome-dash .jd--log .jd-nav__rule::before, .jinome-dash .jd--broadsheet .jd-nav__rule::before,
-.jinome-dash .jd--log .jd-nav__rule::after, .jinome-dash .jd--broadsheet .jd-nav__rule::after {
+.ephemeris-dash .jd--log .jd-nav__rule::before, .ephemeris-dash .jd--broadsheet .jd-nav__rule::before,
+.ephemeris-dash .jd--log .jd-nav__rule::after, .ephemeris-dash .jd--broadsheet .jd-nav__rule::after {
 	content: ""; display: block; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
 }
-.jinome-dash .jd--log .jd-nav__rule::before, .jinome-dash .jd--broadsheet .jd-nav__rule::before { width: 24px; height: 8px; background: var(--background-primary); }
-.jinome-dash .jd--log .jd-nav__rule::after, .jinome-dash .jd--broadsheet .jd-nav__rule::after {
+.ephemeris-dash .jd--log .jd-nav__rule::before, .ephemeris-dash .jd--broadsheet .jd-nav__rule::before { width: 24px; height: 8px; background: var(--background-primary); }
+.ephemeris-dash .jd--log .jd-nav__rule::after, .ephemeris-dash .jd--broadsheet .jd-nav__rule::after {
 	width: 9px; height: 9px; background: var(--text-accent);
 	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z'/></svg>") center / contain no-repeat;
 	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z'/></svg>") center / contain no-repeat;
 }
 
 /* --- round 21: constellations are projects and their sub-codes ------------------------------ */
-.jinome-dash .jd--log .jd-proj__item--sub { display: flex; padding: 6px 2px 6px 22px; }
-.jinome-dash .jd--log .jd-proj__item--sub .jd-proj__title { font-size: 14.5px; }
-.jinome-dash .jd-proj__mag { display: none; }
-.jinome-dash .jd--log .jd-proj__mag { display: inline; margin-left: auto; font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.jinome-dash .jd--log .jd-proj__mag + .jd-proj__status { margin-left: 10px; }
-.jinome-dash .jd-chart__con-g.is-closed { opacity: .45; }
-.jinome-dash .jd-chart__con-g.is-closed .jd-chart__con { stroke-dasharray: 3 3; }
-.jinome-dash .jd-chart__star.is-alpha { fill: var(--text-accent); }
-.jinome-dash .jd-chart__field { animation-duration: 240s; }
-.jinome-dash .jd-chart__star:not(.is-field) { transform-box: fill-box; transform-origin: center; animation: jd-twinkle2 3.6s ease-in-out infinite; }
+.ephemeris-dash .jd--log .jd-proj__item--sub { display: flex; padding: 6px 2px 6px 22px; }
+.ephemeris-dash .jd--log .jd-proj__item--sub .jd-proj__title { font-size: 14.5px; }
+.ephemeris-dash .jd-proj__mag { display: none; }
+.ephemeris-dash .jd--log .jd-proj__mag { display: inline; margin-left: auto; font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ephemeris-dash .jd--log .jd-proj__mag + .jd-proj__status { margin-left: 10px; }
+.ephemeris-dash .jd-chart__con-g.is-closed { opacity: .45; }
+.ephemeris-dash .jd-chart__con-g.is-closed .jd-chart__con { stroke-dasharray: 3 3; }
+.ephemeris-dash .jd-chart__star.is-alpha { fill: var(--text-accent); }
+.ephemeris-dash .jd-chart__field { animation-duration: 240s; }
+.ephemeris-dash .jd-chart__star:not(.is-field) { transform-box: fill-box; transform-origin: center; animation: jd-twinkle2 3.6s ease-in-out infinite; }
 @keyframes jd-twinkle2 { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.7); } }
-.jinome-dash .jd-chart__key { display: none; }
+.ephemeris-dash .jd-chart__key { display: none; }
 
 /* the log head line may wrap; keep it right-aligned and off the edge */
-.jinome-dash .jd-head__sub { text-align: right; max-width: 72%; line-height: 1.6; }
+.ephemeris-dash .jd-head__sub { text-align: right; max-width: 72%; line-height: 1.6; }
 
 /* --- round 22: the line under the chart ------------------------------------------------------ */
-.jinome-dash .jd-chart__quote { margin: 12px 4px 0; }
-.jinome-dash .jd-chart__quote blockquote { margin: 0; padding: 0; border: 0; background: none; font-family: var(--jd-serif); font-size: 17px; line-height: 1.45; color: var(--text-normal); text-wrap: balance; }
-.jinome-dash .jd-chart__quote figcaption { margin-top: 6px; font-size: 13px; color: var(--text-faint); font-style: italic; }
+.ephemeris-dash .jd-chart__quote { margin: 12px 4px 0; }
+.ephemeris-dash .jd-chart__quote blockquote { margin: 0; padding: 0; border: 0; background: none; font-family: var(--jd-serif); font-size: 17px; line-height: 1.45; color: var(--text-normal); text-wrap: balance; }
+.ephemeris-dash .jd-chart__quote figcaption { margin-top: 6px; font-size: 13px; color: var(--text-faint); font-style: italic; }
 /* the sky's events of the day — present only on a day that has one (dashboard.js SKY.events) */
-.jinome-dash .jd-chart__events { margin: 10px 4px 0; text-align: center; font-family: var(--jd-serif); font-size: 13.5px; font-style: italic; line-height: 1.4; color: var(--text-muted); font-variant-numeric: tabular-nums; text-wrap: balance; }
+.ephemeris-dash .jd-chart__events { margin: 10px 4px 0; text-align: center; font-family: var(--jd-serif); font-size: 13.5px; font-style: italic; line-height: 1.4; color: var(--text-muted); font-variant-numeric: tabular-nums; text-wrap: balance; }
 
 /* --- round 23: the observation log on a phone — one column, in the order a phone is opened for:
        what is due, what was written last, where to go; then the sky; then the tables; the long lists last */
 @container jd (max-width: 779.98px) {
-	.jinome-dash .jd--log .jd-strip { order: 1; }
-	.jinome-dash .jd--log [data-panel="work"] { order: 2; }
-	.jinome-dash .jd--log [data-panel="recent"] { order: 3; }
-	.jinome-dash .jd--log [data-panel="nav"] { order: 4; }
-	.jinome-dash .jd--log .jd-chart { order: 5; }
-	.jinome-dash .jd--log [data-panel="observations"] { order: 6; }
-	.jinome-dash .jd--log [data-panel="calendar"] { order: 7; }
-	.jinome-dash .jd--log [data-panel="weather"] { order: 8; }
-	.jinome-dash .jd--log [data-panel="projects"] { order: 9; }
-	.jinome-dash .jd--log [data-panel="reviews"] { order: 10; }
+	.ephemeris-dash .jd--log .jd-strip { order: 1; }
+	.ephemeris-dash .jd--log [data-panel="work"] { order: 2; }
+	.ephemeris-dash .jd--log [data-panel="recent"] { order: 3; }
+	.ephemeris-dash .jd--log [data-panel="nav"] { order: 4; }
+	.ephemeris-dash .jd--log .jd-chart { order: 5; }
+	.ephemeris-dash .jd--log [data-panel="observations"] { order: 6; }
+	.ephemeris-dash .jd--log [data-panel="calendar"] { order: 7; }
+	.ephemeris-dash .jd--log [data-panel="weather"] { order: 8; }
+	.ephemeris-dash .jd--log [data-panel="projects"] { order: 9; }
+	.ephemeris-dash .jd--log [data-panel="reviews"] { order: 10; }
 
 	/* head: name and date stacked, the date in one quiet line */
-	.jinome-dash .jd-head { flex-direction: column; align-items: flex-start; gap: 2px; margin-bottom: 14px; }
-	.jinome-dash .jd-head__name { font-size: 28px; }
-	.jinome-dash .jd-head__sub { text-align: left; max-width: none; font-size: 11px; letter-spacing: .12em; }
+	.ephemeris-dash .jd-head { flex-direction: column; align-items: flex-start; gap: 2px; margin-bottom: 14px; }
+	.ephemeris-dash .jd-head__name { font-size: 28px; }
+	.ephemeris-dash .jd-head__sub { text-align: left; max-width: none; font-size: 11px; letter-spacing: .12em; }
 
 	/* register: five cells across, compact */
-	.jinome-dash .jd--log .jd-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; }
-	.jinome-dash .jd--log .jd-stat { padding: 8px 4px 9px; gap: 2px; }
-	.jinome-dash .jd--log .jd-stat__n { font-size: 20px; }
-	.jinome-dash .jd--log .jd-stat__l { font-size: 9px; letter-spacing: .06em; white-space: normal; line-height: 1.2; overflow: visible; text-overflow: clip; }
+	.ephemeris-dash .jd--log .jd-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; }
+	.ephemeris-dash .jd--log .jd-stat { padding: 8px 4px 9px; gap: 2px; }
+	.ephemeris-dash .jd--log .jd-stat__n { font-size: 20px; }
+	.ephemeris-dash .jd--log .jd-stat__l { font-size: 9px; letter-spacing: .06em; white-space: normal; line-height: 1.2; overflow: visible; text-overflow: clip; }
 
 	/* chart and its line */
-	.jinome-dash .jd-chart__quote blockquote { font-size: 16px; }
+	.ephemeris-dash .jd-chart__quote blockquote { font-size: 16px; }
 
 	/* nav: one column on a phone, hairlines edge to edge */
-	.jinome-dash .jd--log .jd-col--left .jd-nav, .jinome-dash .jd--log .jd-nav { grid-template-columns: minmax(0, 1fr); margin: 0; }
-	.jinome-dash .jd--log .jd-nav__item { padding: 8px 2px; }
-	.jinome-dash .jd--log .jd-nav__rule { margin-left: 0; margin-right: 0; }
+	.ephemeris-dash .jd--log .jd-col--left .jd-nav, .ephemeris-dash .jd--log .jd-nav { grid-template-columns: minmax(0, 1fr); margin: 0; }
+	.ephemeris-dash .jd--log .jd-nav__item { padding: 8px 2px; }
+	.ephemeris-dash .jd--log .jd-nav__rule { margin-left: 0; margin-right: 0; }
 
 	/* constellations: magnitude drops to a whisper so titles keep their room */
-	.jinome-dash .jd--log .jd-proj__mag { font-size: 11px; }
-	.jinome-dash .jd--log .jd-proj__status { font-size: 12px; }
-	.jinome-dash .jd--log .jd-proj__item--sub { padding-left: 16px; }
+	.ephemeris-dash .jd--log .jd-proj__mag { font-size: 11px; }
+	.ephemeris-dash .jd--log .jd-proj__status { font-size: 12px; }
+	.ephemeris-dash .jd--log .jd-proj__item--sub { padding-left: 16px; }
 }
 
 /* --- round 24: on a phone the dashboard root is full-bleed and only .jd-grid / .jd-cover are inset by
        --jd-gutter; the log head and the masthead are root children too, so they need the same inset.
        The register goes five across on a phone (the base's two-column rule outranks the layout rule). */
-body.is-mobile.is-phone .jinome-dash .jd > .jd-head, body.is-mobile.is-phone .jinome-dash .jd > .jd-mast { margin-inline: var(--jd-gutter); }
-body.is-mobile.is-phone .jinome-dash .jd--log .jd-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-body.is-mobile.is-phone .jinome-dash .jd--log .jd-strip > .jd-stat:nth-child(odd):last-child { grid-column: auto; }
-body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat { padding: 8px 3px 9px; }
-body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat__n { font-size: 19px; }
-body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat__l { font-size: 8.5px; letter-spacing: .05em; white-space: normal; line-height: 1.2; overflow: visible; text-overflow: clip; text-align: center; }
-body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat { align-items: center; text-align: center; }
+body.is-mobile.is-phone .ephemeris-dash .jd > .jd-head, body.is-mobile.is-phone .ephemeris-dash .jd > .jd-mast { margin-inline: var(--jd-gutter); }
+body.is-mobile.is-phone .ephemeris-dash .jd--log .jd-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+body.is-mobile.is-phone .ephemeris-dash .jd--log .jd-strip > .jd-stat:nth-child(odd):last-child { grid-column: auto; }
+body.is-mobile.is-phone .ephemeris-dash .jd--log .jd-stat { padding: 8px 3px 9px; }
+body.is-mobile.is-phone .ephemeris-dash .jd--log .jd-stat__n { font-size: 19px; }
+body.is-mobile.is-phone .ephemeris-dash .jd--log .jd-stat__l { font-size: 8.5px; letter-spacing: .05em; white-space: normal; line-height: 1.2; overflow: visible; text-overflow: clip; text-align: center; }
+body.is-mobile.is-phone .ephemeris-dash .jd--log .jd-stat { align-items: center; text-align: center; }
 
 /* --- round 25: phone order — chart before indices, recent just before reviews */
 @container jd (max-width: 779.98px) {
-	.jinome-dash .jd--log .jd-chart { order: 3; }
-	.jinome-dash .jd--log [data-panel="nav"] { order: 4; }
-	.jinome-dash .jd--log [data-panel="observations"] { order: 5; }
-	.jinome-dash .jd--log [data-panel="calendar"] { order: 6; }
-	.jinome-dash .jd--log [data-panel="weather"] { order: 7; }
-	.jinome-dash .jd--log [data-panel="projects"] { order: 8; }
-	.jinome-dash .jd--log [data-panel="recent"] { order: 9; }
-	.jinome-dash .jd--log [data-panel="reviews"] { order: 10; }
+	.ephemeris-dash .jd--log .jd-chart { order: 3; }
+	.ephemeris-dash .jd--log [data-panel="nav"] { order: 4; }
+	.ephemeris-dash .jd--log [data-panel="observations"] { order: 5; }
+	.ephemeris-dash .jd--log [data-panel="calendar"] { order: 6; }
+	.ephemeris-dash .jd--log [data-panel="weather"] { order: 7; }
+	.ephemeris-dash .jd--log [data-panel="projects"] { order: 8; }
+	.ephemeris-dash .jd--log [data-panel="recent"] { order: 9; }
+	.ephemeris-dash .jd--log [data-panel="reviews"] { order: 10; }
 }
 
 /* --- round 26: the weather site tabs — plain text with a hairline under the chosen one; on a phone
        Obsidian gives buttons a tall rounded body, which made the marker a fat curved bar */
-.jinome-dash .jd-wx__site, body.is-mobile .jinome-dash .jd-wx__site {
+.ephemeris-dash .jd-wx__site, body.is-mobile .ephemeris-dash .jd-wx__site {
 	min-height: 0; height: auto; padding: 0 0 3px; margin: 0; line-height: 1.3; border-radius: 0; background: none; box-shadow: none; border: 0; border-bottom: 1px solid transparent;
 }
-.jinome-dash .jd-wx__site.is-on, body.is-mobile .jinome-dash .jd-wx__site.is-on { box-shadow: none; border-bottom-color: var(--interactive-accent); }
-body.is-mobile .jinome-dash .jd-wx__sites { gap: 14px; padding-bottom: 6px; }
-body.is-mobile .jinome-dash .jd-wx__clear { min-height: 0; height: auto; padding: 0 2px; }
+.ephemeris-dash .jd-wx__site.is-on, body.is-mobile .ephemeris-dash .jd-wx__site.is-on { box-shadow: none; border-bottom-color: var(--interactive-accent); }
+body.is-mobile .ephemeris-dash .jd-wx__sites { gap: 14px; padding-bottom: 6px; }
+body.is-mobile .ephemeris-dash .jd-wx__clear { min-height: 0; height: auto; padding: 0 2px; }

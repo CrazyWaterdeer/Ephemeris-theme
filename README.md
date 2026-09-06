@@ -46,7 +46,7 @@ The vault's dashboards are Dataview scripts, not part of the theme, but they are
 - `Observation log.md` — the note that hosts it (`dv.view("Vector/dashboard", { layout: "log" })`).
 - `Broadsheet dashboard.md` — an earlier newspaper layout, kept as a template.
 
-Copy `dashboard.js` to `Vector/` and `dashboard.css` to `.obsidian/snippets/` (enable the snippet); the note carries `cssclasses: [jinome-dash]`.
+Copy `dashboard.js` to `Vector/` and `dashboard.css` to `.obsidian/snippets/` (enable the snippet); the note carries `cssclasses: [ephemeris-dash]`.
 
 ## Adjusting it
 

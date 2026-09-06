@@ -1,6 +1,6 @@
 ---
 cssclasses:
-  - jinome-dash
+  - ephemeris-dash
   - jd-petri
 status:
   - 📜Final
