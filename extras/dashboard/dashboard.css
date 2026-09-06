@@ -3005,3 +3005,42 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 .jinome-dash .jd-chart__quote { margin: 12px 4px 0; }
 .jinome-dash .jd-chart__quote blockquote { margin: 0; padding: 0; border: 0; background: none; font-family: var(--jd-serif); font-size: 17px; line-height: 1.45; color: var(--text-normal); text-wrap: balance; }
 .jinome-dash .jd-chart__quote figcaption { margin-top: 6px; font-size: 13px; color: var(--text-faint); font-style: italic; }
+
+/* --- round 23: the observation log on a phone — one column, in the order a phone is opened for:
+       what is due, what was written last, where to go; then the sky; then the tables; the long lists last */
+@container jd (max-width: 779.98px) {
+	.jinome-dash .jd--log .jd-strip { order: 1; }
+	.jinome-dash .jd--log [data-panel="work"] { order: 2; }
+	.jinome-dash .jd--log [data-panel="recent"] { order: 3; }
+	.jinome-dash .jd--log [data-panel="nav"] { order: 4; }
+	.jinome-dash .jd--log .jd-chart { order: 5; }
+	.jinome-dash .jd--log [data-panel="observations"] { order: 6; }
+	.jinome-dash .jd--log [data-panel="calendar"] { order: 7; }
+	.jinome-dash .jd--log [data-panel="weather"] { order: 8; }
+	.jinome-dash .jd--log [data-panel="projects"] { order: 9; }
+	.jinome-dash .jd--log [data-panel="reviews"] { order: 10; }
+
+	/* head: name and date stacked, the date in one quiet line */
+	.jinome-dash .jd-head { flex-direction: column; align-items: flex-start; gap: 2px; margin-bottom: 14px; }
+	.jinome-dash .jd-head__name { font-size: 28px; }
+	.jinome-dash .jd-head__sub { text-align: left; max-width: none; font-size: 11px; letter-spacing: .12em; }
+
+	/* register: five cells across, compact */
+	.jinome-dash .jd--log .jd-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; }
+	.jinome-dash .jd--log .jd-stat { padding: 8px 4px 9px; gap: 2px; }
+	.jinome-dash .jd--log .jd-stat__n { font-size: 20px; }
+	.jinome-dash .jd--log .jd-stat__l { font-size: 9px; letter-spacing: .06em; white-space: normal; line-height: 1.2; overflow: visible; text-overflow: clip; }
+
+	/* chart and its line */
+	.jinome-dash .jd-chart__quote blockquote { font-size: 16px; }
+
+	/* nav: one column on a phone, hairlines edge to edge */
+	.jinome-dash .jd--log .jd-col--left .jd-nav, .jinome-dash .jd--log .jd-nav { grid-template-columns: minmax(0, 1fr); margin: 0; }
+	.jinome-dash .jd--log .jd-nav__item { padding: 8px 2px; }
+	.jinome-dash .jd--log .jd-nav__rule { margin-left: 0; margin-right: 0; }
+
+	/* constellations: magnitude drops to a whisper so titles keep their room */
+	.jinome-dash .jd--log .jd-proj__mag { font-size: 11px; }
+	.jinome-dash .jd--log .jd-proj__status { font-size: 12px; }
+	.jinome-dash .jd--log .jd-proj__item--sub { padding-left: 16px; }
+}
