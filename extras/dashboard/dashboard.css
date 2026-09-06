@@ -2957,3 +2957,6 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 
 /* the group rule in the nav runs the full width; only the last fifth fades */
 .jinome-dash .jd--log .jd-nav__rule, .jinome-dash .jd--broadsheet .jd-nav__rule { background: linear-gradient(90deg, var(--interactive-accent) 0, var(--interactive-accent) 80%, transparent 100%); }
+
+/* the nav rule is an <hr>, and the theme draws every hr at 60% width for the star device — not here */
+.jinome-dash .jd-nav__rule { width: 100%; opacity: 1; position: static; }
