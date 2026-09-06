@@ -708,7 +708,7 @@ if (LAYOUT === "log") {
     const h = root.createDiv({ cls: "jd-head" });
     h.createEl("h1", { cls: "jd-head__name", text: "JINOME" });
     const mp = moonPhase();
-    h.createDiv({ cls: "jd-head__sub", text: `Observation log · ${dateLine()}${edition()} · ${WX.name} · ${nowHHMM()} KST · ${mp.name}, ${mp.ill}%` });
+    h.createDiv({ cls: "jd-head__sub", text: `Observation log · ${dateLine()} · ${WX.name} · ${nowHHMM()} KST · ${mp.name}, ${mp.ill}%` });
     mountEpigraph(h);
 }
 
