@@ -682,8 +682,11 @@ if (LAYOUT === "broadsheet") {
     const m = root.createDiv({ cls: "jd-mast" });
     const ears = m.createDiv({ cls: "jd-mast__ears" });
     const first = rows.filter((r) => r.stamp).map((r) => String(r.stamp)).sort()[0];
-    const issue = first && /^\d{8}/.test(first) ? Math.floor((dayNum(TODAY) - dayNum(`${first.slice(0, 4)}-${first.slice(4, 6)}-${first.slice(6, 8)}`))) + 1 : null;
-    ears.createSpan({ text: dateLine() + (issue ? ` · No. ${issue.toLocaleString("en-US")}` : "") });
+    const firstIso = first && /^\d{8}/.test(first) ? `${first.slice(0, 4)}-${first.slice(4, 6)}-${first.slice(6, 8)}` : null;
+    const issue = firstIso ? dayNum(TODAY) - dayNum(firstIso) + 1 : null;          // No. — days since the first note, cumulative
+    const vol = firstIso ? Number(TODAY.slice(0, 4)) - Number(firstIso.slice(0, 4)) + (TODAY.slice(5) >= firstIso.slice(5) ? 1 : 0) : null;   // Vol. — the year of publication, by anniversary
+    const roman = (n) => { let s = ""; for (const [v, r] of [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]]) while (n >= v) { s += r; n -= v; } return s; };
+    ears.createSpan({ text: dateLine() + (vol && issue ? ` · Vol. ${roman(vol)} · No. ${issue.toLocaleString("en-US")}` : "") });
     ears.createSpan({ cls: "jd-mast__ear-wx", text: "" });
     m.createEl("h1", { cls: "jd-mast__name", text: "JINOME" });
     m.createDiv({ cls: "jd-mast__sub", text: "Drosophila · Neurobiology · Genetics" });
