@@ -3044,3 +3044,14 @@ body.is-mobile:not(.is-phone) .jinome-dash .jd > .jd-grid {
 	.jinome-dash .jd--log .jd-proj__status { font-size: 12px; }
 	.jinome-dash .jd--log .jd-proj__item--sub { padding-left: 16px; }
 }
+
+/* --- round 24: on a phone the dashboard root is full-bleed and only .jd-grid / .jd-cover are inset by
+       --jd-gutter; the log head and the masthead are root children too, so they need the same inset.
+       The register goes five across on a phone (the base's two-column rule outranks the layout rule). */
+body.is-mobile.is-phone .jinome-dash .jd > .jd-head, body.is-mobile.is-phone .jinome-dash .jd > .jd-mast { margin-inline: var(--jd-gutter); }
+body.is-mobile.is-phone .jinome-dash .jd--log .jd-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+body.is-mobile.is-phone .jinome-dash .jd--log .jd-strip > .jd-stat:nth-child(odd):last-child { grid-column: auto; }
+body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat { padding: 8px 3px 9px; }
+body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat__n { font-size: 19px; }
+body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat__l { font-size: 8.5px; letter-spacing: .05em; white-space: normal; line-height: 1.2; overflow: visible; text-overflow: clip; text-align: center; }
+body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat { align-items: center; text-align: center; }
