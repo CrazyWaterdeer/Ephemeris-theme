@@ -3055,3 +3055,15 @@ body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat { padding: 8px 3px 9px; }
 body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat__n { font-size: 19px; }
 body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat__l { font-size: 8.5px; letter-spacing: .05em; white-space: normal; line-height: 1.2; overflow: visible; text-overflow: clip; text-align: center; }
 body.is-mobile.is-phone .jinome-dash .jd--log .jd-stat { align-items: center; text-align: center; }
+
+/* --- round 25: phone order — chart before indices, recent just before reviews */
+@container jd (max-width: 779.98px) {
+	.jinome-dash .jd--log .jd-chart { order: 3; }
+	.jinome-dash .jd--log [data-panel="nav"] { order: 4; }
+	.jinome-dash .jd--log [data-panel="observations"] { order: 5; }
+	.jinome-dash .jd--log [data-panel="calendar"] { order: 6; }
+	.jinome-dash .jd--log [data-panel="weather"] { order: 7; }
+	.jinome-dash .jd--log [data-panel="projects"] { order: 8; }
+	.jinome-dash .jd--log [data-panel="recent"] { order: 9; }
+	.jinome-dash .jd--log [data-panel="reviews"] { order: 10; }
+}
