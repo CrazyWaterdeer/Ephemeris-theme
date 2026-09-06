@@ -690,14 +690,18 @@ if (!root.querySelector(".jd-cover") && TITLE && LAYOUT === "cards") {
 }
 
 if (LAYOUT === "broadsheet") {
+    // Nameplate row: left ear = almanac (sun and moon), the name in the middle, right ear = today's weather in
+    // one line. Folio below: date · Vol. · No. · notes · as-of. The ears fill in when the weather call lands.
     const m = root.createDiv({ cls: "jd-mast" });
-    const ears = m.createDiv({ cls: "jd-mast__ears" });
-    ears.createSpan({ text: dateLine() + edition() });
-    ears.createSpan({ cls: "jd-mast__ear-wx", text: "" });
-    m.createEl("h1", { cls: "jd-mast__name", text: "JINOME" });
-    m.createDiv({ cls: "jd-mast__sub", text: "Drosophila · Neurobiology · Genetics" });
+    const row = m.createDiv({ cls: "jd-mast__ears" });
+    const ear = (cls, kicker) => { const e = row.createDiv({ cls: "jd-ear " + cls }); e.createDiv({ cls: "jd-ear__k", text: kicker }); e.createDiv({ cls: "jd-ear__b" }); return e; };
     const mp = moonPhase();
-    m.createDiv({ cls: "jd-mast__folio", text: `${rows.length.toLocaleString("en-US")} notes · ${mp.name}, ${mp.ill}% · as of ${nowHHMM()}` });
+    ear("jd-ear--almanac", "Almanac").querySelector(".jd-ear__b").textContent = `${mp.name}, ${mp.ill}%`;
+    const nm = row.createDiv({ cls: "jd-mast__name-wrap" });
+    nm.createEl("h1", { cls: "jd-mast__name", text: "JINOME" });
+    nm.createDiv({ cls: "jd-mast__sub", text: "Drosophila · Neurobiology · Genetics" });
+    ear("jd-ear--weather", "Weather");
+    m.createDiv({ cls: "jd-mast__folio", text: `${dateLine()}${edition()} · ${rows.length.toLocaleString("en-US")} notes · as of ${nowHHMM()}` });
     mountEpigraph(m);
 }
 if (LAYOUT === "log") {
@@ -1836,8 +1840,13 @@ const wxExtra = (cur, day, meta) => {
         lines.push(`Wind ${Math.round(cur.wind_speed_10m)} km/h`);
     }
     for (const t of lines) meta.createEl("span", { cls: "jd-wx__obs", text: t });
-    const ear = document.querySelector(".jd-mast__ear-wx");
-    if (ear && sr && ss) ear.textContent = `Sunrise ${hhmm(sr)} · Sunset ${hhmm(ss)}`;
+    if (LAYOUT === "broadsheet" && wxSite === WX) {
+        const wb = root.querySelector(".jd-ear--weather .jd-ear__b");
+        const [w] = wmo(cur.weather_code);
+        if (wb) wb.textContent = `${w} · ${degC(cur.temperature_2m)} · ${degC(day.temperature_2m_max?.[0])} / ${degC(day.temperature_2m_min?.[0])}`;
+        const ab = root.querySelector(".jd-ear--almanac .jd-ear__b");
+        if (ab && sr && ss) { const mp = moonPhase(); ab.textContent = `Sunrise ${hhmm(sr)} · Sunset ${hhmm(ss)} · ${mp.name}, ${mp.ill}%`; }
+    }
 };
 const wxPaint = (d) => {
     try {
@@ -2188,6 +2197,18 @@ if (LAYOUT !== "cards") {
         });
     } catch (e) { }
     // Briefs: the review pipeline by stage — the parts behind the ticker's single "waiting" sum.
+    if (LAYOUT === "broadsheet") {
+        // A print between the weather and the briefs: Darwin's "I think" tree, Notebook B (1837), public domain.
+        try {
+            const tf = app.vault.getAbstractFileByPath(MEDIA + "Darwin tree.png");
+            if (tf) {
+                const box = colRight.createDiv({ cls: "jd-plate jd-plate--print", attr: { "data-panel": "print" } });
+                box.createEl("img", { cls: "jd-plate__print", attr: { src: app.vault.adapter.getResourcePath(tf.path), alt: "Darwin's tree sketch, Notebook B, 1837", loading: "lazy" } });
+                box.createDiv({ cls: "jd-plate__cap", text: "Darwin, Notebook B (1837)" });
+                box.addEventListener("click", () => { try { app.workspace.openLinkText(tf.path, "", false); } catch (e) { } });
+            }
+        } catch (e) { }
+    }
     const revCard = card(LAYOUT === "broadsheet" ? colRight : colLeft, "reviews", "Reviews");
     panel("reviews", () => {
         const STAGES = ["📚Not started", "✏Draft", "📖In progress", "📗Done", "📜Final", "💀Not today"];
