@@ -1924,7 +1924,7 @@ const wxLoad = async (site) => {
     }
 };
 const wxGeocode = async (q) => {
-    const j = await wxGet("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(q) + "&count=1&language=ko&format=json");
+    const j = await wxGet("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(q) + "&count=6&language=en&format=json");
     return (j?.results ?? []).slice(0, 6).map((r) => ({ name: r.name, lat: r.latitude, lon: r.longitude, admin1: r.admin1, country: r.country }));
 };
 {
