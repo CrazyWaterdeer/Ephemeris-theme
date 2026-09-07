@@ -2933,6 +2933,12 @@ body.is-mobile:not(.is-phone) .ephemeris-dash .jd > .jd-grid {
 .ephemeris-dash .jd-wx__cand:hover, .ephemeris-dash .jd-wx__cand:focus-visible { color: var(--text-accent); outline: none; }
 .ephemeris-dash .jd-wx__cand-sub { color: var(--text-faint); font-size: 13px; white-space: nowrap; }
 .ephemeris-dash .jd-wx__cand.is-muted { color: var(--text-faint); cursor: default; }
+/* each site tab carries its own ×, inside the tab; the empty "+" tab adds a place (up to five) */
+.ephemeris-dash .jd-wx__site { display: inline-flex; align-items: baseline; gap: .35em; }
+.ephemeris-dash .jd-wx__site-x { font-family: var(--font-text); font-size: 13px; line-height: 1; letter-spacing: 0; color: var(--text-faint); padding: 0 1px; }
+.ephemeris-dash .jd-wx__site-x:hover { color: var(--text-normal); }
+.ephemeris-dash .jd-wx__site.is-add { letter-spacing: 0; font-family: var(--font-text); font-size: 15px; padding: 0 3px; color: var(--text-faint); }
+.ephemeris-dash .jd-wx__site.is-add:hover, .ephemeris-dash .jd-wx__site.is-add.is-on { color: var(--text-accent); }
 
 /* --- a print in the third column: framed like the plate, no drift ------------------------------ */
 .ephemeris-dash .jd-plate--print { cursor: pointer; }
@@ -3013,6 +3019,14 @@ body.is-mobile:not(.is-phone) .ephemeris-dash .jd > .jd-grid {
 .ephemeris-dash .jd-chart__zsign { font-family: "Ephemeris Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", serif; font-size: 8.5px; fill: var(--text-faint); opacity: .8; }
 .ephemeris-dash .jd-chart__sun { fill: var(--text-accent); stroke: var(--background-primary); stroke-width: 1; }
 .ephemeris-dash .jd-chart__moonmark { fill: var(--text-normal); stroke: var(--background-primary); stroke-width: 1; }
+/* sky tonight: the planisphere layer — stars in ink by magnitude, planets bronze, the Moon as its glyph */
+.ephemeris-dash .jd-chart__tabs { margin: 0 0 6px; justify-content: center; }
+.ephemeris-dash .jd-chart__star.is-sky { fill: var(--text-normal); opacity: .9; animation: none; }
+.ephemeris-dash .jd-chart__planet { fill: var(--text-accent); stroke: var(--background-primary); stroke-width: .8; }
+.ephemeris-dash .jd-chart__lbl.is-sky { text-transform: none; letter-spacing: .02em; font-size: 8.5px; fill: var(--text-muted); font-style: normal; }
+.ephemeris-dash .jd-chart__lbl.is-planet { fill: var(--text-accent); }
+.ephemeris-dash .jd-chart__lbl.jd-chart__card { font-size: 10px; letter-spacing: .1em; fill: var(--text-faint); }
+.ephemeris-dash .jd-chart__moonglyph { font-family: "Ephemeris Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", serif; font-size: 15px; fill: var(--text-normal); }
 /* the four primary phases on the calendar: a small mark in the cell's corner, never a dot */
 .ephemeris-dash .jd-cal__day { position: relative; }
 .ephemeris-dash .jd-cal__moon { position: absolute; top: 2px; right: 4px; font-family: "Ephemeris Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", serif; font-size: 10px; line-height: 1; color: var(--text-muted); opacity: .85; pointer-events: none; }

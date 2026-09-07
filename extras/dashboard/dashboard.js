@@ -578,7 +578,36 @@ const SKY = (() => {
         const T = (jd - 2451545.0) / 36525;
         const gmst = norm(280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T);
         const H = norm(gmst + lon - ra) * R, phi = lat * R, d = dec * R;
-        return { alt: Math.asin(Math.sin(phi) * Math.sin(d) + Math.cos(phi) * Math.cos(d) * Math.cos(H)) / R };
+        const alt = Math.asin(Math.sin(phi) * Math.sin(d) + Math.cos(phi) * Math.cos(d) * Math.cos(H)) / R;
+        const az = norm(Math.atan2(-Math.sin(H), Math.tan(d) * Math.cos(phi) - Math.sin(phi) * Math.cos(H)) / R);   // from north through east
+        return { alt, az };
+    };
+    // The brightest stars, J2000 (RA in hours, Dec in degrees, visual magnitude) — enough for the sky to be
+    // recognisable: Orion, the Plough, Cassiopeia, the Summer Triangle, Leo, Scorpius. Named on the chart
+    // when brighter than magnitude 1.3; every star names itself on hover.
+    const STARS = [
+        ["Sirius", 6.7525, -16.716, -1.46], ["Arcturus", 14.2612, 19.182, -0.05], ["Vega", 18.6156, 38.784, 0.03], ["Capella", 5.2782, 45.998, 0.08],
+        ["Rigel", 5.2423, -8.202, 0.13], ["Procyon", 7.6550, 5.225, 0.34], ["Betelgeuse", 5.9195, 7.407, 0.42], ["Altair", 19.8464, 8.868, 0.77],
+        ["Aldebaran", 4.5987, 16.509, 0.85], ["Antares", 16.4901, -26.432, 1.06], ["Spica", 13.4199, -11.161, 0.97], ["Pollux", 7.7553, 28.026, 1.14],
+        ["Fomalhaut", 22.9608, -29.622, 1.16], ["Deneb", 20.6905, 45.280, 1.25], ["Regulus", 10.1395, 11.967, 1.35], ["Castor", 7.5767, 31.888, 1.58],
+        ["Polaris", 2.5303, 89.264, 1.98], ["Bellatrix", 5.4189, 6.350, 1.64], ["Alnilam", 5.6036, -1.202, 1.69], ["Alnitak", 5.6793, -1.943, 1.77],
+        ["Mintaka", 5.5334, -0.299, 2.23], ["Saiph", 5.7959, -9.670, 2.07], ["Elnath", 5.4382, 28.608, 1.65], ["Menkalinan", 5.9921, 44.947, 1.90],
+        ["Alhena", 6.6285, 16.399, 1.93], ["Adhara", 6.9771, -28.972, 1.50], ["Wezen", 7.1399, -26.393, 1.83], ["Alphard", 9.4598, -8.659, 1.98],
+        ["Denebola", 11.8177, 14.572, 2.14], ["Dubhe", 11.0621, 61.751, 1.79], ["Merak", 11.0307, 56.382, 2.37], ["Phecda", 11.8972, 53.695, 2.44],
+        ["Megrez", 12.2571, 57.033, 3.31], ["Alioth", 12.9005, 55.960, 1.77], ["Mizar", 13.3988, 54.925, 2.23], ["Alkaid", 13.7923, 49.313, 1.86],
+        ["Kochab", 14.8451, 74.156, 2.08], ["Rasalhague", 17.5822, 12.560, 2.08], ["Shaula", 17.5601, -37.104, 1.62], ["Kaus Australis", 18.4029, -34.385, 1.85],
+        ["Nunki", 18.9211, -26.297, 2.05], ["Sadr", 20.3705, 40.257, 2.23], ["Enif", 21.7364, 9.875, 2.38], ["Scheat", 23.0629, 28.083, 2.42],
+        ["Markab", 23.0793, 15.205, 2.49], ["Alpheratz", 0.1398, 29.091, 2.06], ["Mirach", 1.1622, 35.621, 2.05], ["Almach", 2.0650, 42.330, 2.10],
+        ["Hamal", 2.1196, 23.463, 2.00], ["Diphda", 0.7265, -17.987, 2.04], ["Caph", 0.1529, 59.150, 2.28], ["Schedar", 0.6751, 56.537, 2.24],
+        ["Ruchbah", 1.4303, 60.235, 2.66], ["Algol", 3.1361, 40.956, 2.12], ["Mirfak", 3.4054, 49.861, 1.79],
+    ];
+    /** The sky over a site at an instant: Sun, Moon, planets and the bright stars, as altitude/azimuth. */
+    const sky = (now, lat, lon) => {
+        const g = geo(now);
+        const out = { sun: altAz(g.sun, lat, lon, g.jd), moon: altAz(g.moon, lat, lon, g.jd), planets: {}, stars: [] };
+        for (const n of PLANETS) out.planets[n] = altAz(g.planets[n], lat, lon, g.jd);
+        for (const [name, rah, dec, mag] of STARS) out.stars.push({ name, mag, ...altAz({ ra: rah * 15, dec }, lat, lon, g.jd) });
+        return out;
     };
     /** Low-precision Moon of date: ecliptic longitude/latitude (deg) plus RA/Dec. */
     const moonEcl = (T) => {
@@ -705,8 +734,10 @@ const SKY = (() => {
     };
     /** Today's moonrise and moonset (upper limb, refraction and parallax folded into +0.125°), and the
      *  astronomical night that starts this evening: Sun 18° down at dusk, back up at dawn. */
-    const dayTimes = (day, lat, lon) => {
-        const d0 = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    const dayTimes = (day, lat, lon, offsetSec) => {
+        // "today" is the SITE's local day: midnight from its UTC offset, not this machine's
+        const off = Number.isFinite(offsetSec) ? offsetSec : -day.getTimezoneOffset() * 60;
+        const d0 = new Date(Math.floor((day.getTime() + off * 1000) / 86400000) * 86400000 - off * 1000);
         const d1 = new Date(d0.getTime() + 86400000), noon = new Date(d0.getTime() + 43200000), noon2 = new Date(noon.getTime() + 86400000);
         return {
             moonrise: crossing("moon", lat, lon, d0, d1, 0.125, true),
@@ -728,7 +759,7 @@ const SKY = (() => {
         if (crossed(pa, pb, 270)) return { glyph: "🌗", name: "Last quarter" };
         return null;
     };
-    return { geo, events, dayTimes, phaseGlyph, primaryPhase };
+    return { geo, events, dayTimes, phaseGlyph, primaryPhase, sky };
 })();
 const nowHHMM = () => new Date().toTimeString().slice(0, 5);
 const beaufort = (kmh) => { const t = [1, 5, 11, 19, 28, 38, 49, 61, 74, 88, 102, 117]; let b = 0; while (b < 12 && Number(kmh) >= t[b]) b++; return b; };
@@ -2077,8 +2108,10 @@ const wxExtra = (cur, day, meta) => {
         // astronomical night — Sun 18° down — which is the number an observer decides on.
         // Both from the site's own coordinates through the SKY arithmetic, no request.
         try {
-            const dt = SKY.dayTimes(new Date(), wxSite.lat, wxSite.lon);
-            const t = (d) => (d ? `${pad2(d.getHours())}:${pad2(d.getMinutes())}` : "—");
+            const dt = SKY.dayTimes(new Date(), wxSite.lat, wxSite.lon, wxOff);
+            let fmt = null;
+            try { fmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: wxTz }); } catch (e) { }
+            const t = (d) => (d ? (fmt ? fmt.format(d) : `${pad2(d.getHours())}:${pad2(d.getMinutes())}`) : "—");
             lines.push(`Moonrise ${t(dt.moonrise)} · Moonset ${t(dt.moonset)}`);
             if (dt.dusk && dt.dawn) lines.push(`True dark ${t(dt.dusk)} – ${t(dt.dawn)}`);
         } catch (e) { /* the sky is optional */ }
@@ -2104,6 +2137,7 @@ const wxPaint = (d) => {
 
         const cur = d?.current;
         const day = d?.daily;
+        if (d?.timezone) { wxTz = String(d.timezone); wxOff = Number.isFinite(Number(d.utc_offset_seconds)) ? Number(d.utc_offset_seconds) : wxOff; }
         if (!cur || !day?.time?.length) return wxFail();
 
         const [text, ic] = wmo(cur.weather_code);
@@ -2144,12 +2178,15 @@ const wxPaint = (d) => {
  * error: the weather is the least important thing on this page and must never
  * be able to stop the rest of it from rendering.
  */
-const WX_SITES = [WX, { name: "Jeonju", lat: 35.8242, lon: 127.1480 }];
+// timezone=auto: the site's own zone — sunrise/sunset arrive as local clock times, and the
+// payload's `timezone` / `utc_offset_seconds` let the computed lines (moon, true dark) be
+// printed in that zone too. A place is read in its own time, not in Gwangju's.
 const wxUrl = (s) => "https://api.open-meteo.com/v1/forecast"
     + `?latitude=${s.lat}&longitude=${s.lon}`
     + "&current=temperature_2m,weather_code,relative_humidity_2m,is_day,cloud_cover,wind_speed_10m"
     + "&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset"
-    + "&timezone=Asia%2FSeoul&forecast_days=3";
+    + "&timezone=auto&forecast_days=3";
+let wxTz = "Asia/Seoul", wxOff = 9 * 3600;          // the current site's zone, from the last payload
 const WX_TTL = 30 * 60 * 1000;
 const WX_RETRY = 5 * 60 * 1000;
 const wxGet = async (url) => {
@@ -2190,54 +2227,61 @@ const wxGeocode = async (q) => {
     return (j?.results ?? []).slice(0, 6).map((r) => ({ name: r.name, lat: r.latitude, lon: r.longitude, admin1: r.admin1, country: r.country }));
 };
 {
-    // Three tabs: Gwangju, Jeonju, and a third that starts empty. On the empty tab only a search box shows;
-    // typing a name lists candidates, choosing one makes the tab that place. The × at the bar's right empties it.
-    // Every event is swallowed so Live Preview's editor never sees keys pressed inside the widget.
+    // Site tabs. One to start (home), and an empty "+" tab that turns into a place when a search
+    // picks one — after which a new empty tab appears, up to five sites. Each tab carries its own
+    // ×, and a site stays until it is deleted. Persisted as a list, current tab by index. Every
+    // event is swallowed so Live Preview's editor never sees keys pressed inside the widget.
+    const MAX_SITES = 5;
     const bar = document.createElement("div"); bar.className = "jd-wx__sites";
     wxCard.body.insertBefore(bar, wxCard.body.firstChild);
     const swallowAll = (el) => ["click", "mousedown", "keydown", "keyup", "keypress", "focus", "input"].forEach((t) => el.addEventListener(t, (ev) => ev.stopPropagation()));
-    let custom = null;
-    try { const c = JSON.parse(store.get(LS_WX + ":custom", "null")); if (c && c.name && Number.isFinite(Number(c.lat))) custom = c; } catch (e) { }
-    const btns = [];
-    const tabBtn = (label, i) => {
-        const btn = bar.createEl("button", { cls: "jd-wx__site", text: label, attr: { type: "button" } });
-        swallowAll(btn);
-        btn.addEventListener("click", (ev) => { ev.preventDefault(); select(i); });
-        btns.push(btn);
-        return btn;
-    };
-    WX_SITES.forEach((s, i) => tabBtn(s.name, i));
-    const third = tabBtn(custom ? custom.name : "Elsewhere", 2);
-    const clear = bar.createEl("button", { cls: "jd-wx__clear", text: "×", attr: { type: "button", title: "Empty this tab", "aria-label": "Empty this tab" } });
-    swallowAll(clear);
+    const okSite = (s) => !!(s && s.name && Number.isFinite(Number(s.lat)) && Number.isFinite(Number(s.lon)));
+    let sites = null;
+    try { const raw = JSON.parse(store.get(LS_WX + ":sites", "null")); if (Array.isArray(raw)) sites = raw.filter(okSite).slice(0, MAX_SITES); } catch (e) { }
+    if (!sites) {   // first run, or the old three-tab layout: home, plus the old custom place if there was one
+        sites = [WX];
+        try { const c = JSON.parse(store.get(LS_WX + ":custom", "null")); if (okSite(c)) sites.push({ name: c.name, lat: c.lat, lon: c.lon }); } catch (e) { }
+    }
+    let cur = 0;
+    const save = () => { try { store.set(LS_WX + ":sites", JSON.stringify(sites)); store.set(LS_WX + ":tab", String(cur)); } catch (e) { } };
     const find = wxCard.body.createDiv({ cls: "jd-wx__find" });
     const inp = find.createEl("input", { cls: "jd-wx__search", type: "text", attr: { placeholder: "City ⏎", "aria-label": "place", spellcheck: "false" } });
     const list = find.createEl("ul", { cls: "jd-wx__cands" });
     swallowAll(inp);
-    let cur = 0;
+    const isAdd = () => cur >= sites.length;
     const render = () => {
-        btns.forEach((btn, i) => btn.toggleClass("is-on", i === cur));
-        const searching = cur === 2 && !custom;
+        bar.empty();
+        sites.forEach((s, i) => {
+            const btn = bar.createEl("button", { cls: "jd-wx__site" + (i === cur ? " is-on" : ""), attr: { type: "button", title: s.name } });
+            btn.createSpan({ cls: "jd-wx__site-name", text: s.name });
+            const x = btn.createSpan({ cls: "jd-wx__site-x", text: "×", attr: { role: "button", title: `Remove ${s.name}`, "aria-label": `Remove ${s.name}` } });
+            swallowAll(btn);
+            btn.addEventListener("click", (ev) => { ev.preventDefault(); select(i); });
+            x.addEventListener("click", (ev) => { ev.preventDefault(); ev.stopPropagation(); remove(i); });
+        });
+        if (sites.length < MAX_SITES) {
+            const add = bar.createEl("button", { cls: "jd-wx__site is-add" + (isAdd() ? " is-on" : ""), text: "+", attr: { type: "button", title: "Add a place", "aria-label": "Add a place" } });
+            swallowAll(add);
+            add.addEventListener("click", (ev) => { ev.preventDefault(); select(sites.length); });
+        }
+        const searching = isAdd();
         find.toggle(searching);
         wxEl.toggle(!searching);
-        clear.toggle(cur === 2 && !!custom);
-        third.textContent = custom ? custom.name : "Elsewhere";
         if (searching) setTimeout(() => { try { inp.focus(); } catch (e) { } }, 0);
     };
     const select = (i) => {
-        cur = i;
-        try { store.set(LS_WX + ":tab", String(i)); } catch (e) { }
-        render();
-        const s = i === 2 ? custom : WX_SITES[i];
-        if (s) wxLoad(s);
+        cur = Math.max(0, Math.min(i, sites.length));
+        save(); render();
+        if (!isAdd()) wxLoad(sites[cur]);
     };
-    clear.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        custom = null;
-        try { store.set(LS_WX + ":custom", "null"); } catch (e) { }
-        inp.value = ""; list.empty();
-        render();
-    });
+    const remove = (i) => {
+        sites.splice(i, 1);
+        if (cur > i) cur -= 1;
+        if (cur > sites.length) cur = sites.length;
+        if (cur === sites.length && sites.length) cur = sites.length - 1;   // deleting the current tab lands on its neighbour
+        save(); render();
+        if (!isAdd()) wxLoad(sites[cur]);
+    };
     const muted = (text) => { list.empty(); list.createEl("li", { cls: "jd-wx__cand is-muted", text }); };
     inp.addEventListener("keydown", async (ev) => {
         if (ev.key !== "Enter") return;
@@ -2255,11 +2299,10 @@ const wxGeocode = async (q) => {
                 swallowAll(li);
                 const pick = (e2) => {
                     e2.preventDefault();
-                    custom = { name: c.name, lat: c.lat, lon: c.lon };
-                    try { store.set(LS_WX + ":custom", JSON.stringify(custom)); } catch (e) { }
+                    if (sites.length >= MAX_SITES) return;
+                    sites.push({ name: c.name, lat: c.lat, lon: c.lon });
                     inp.value = ""; list.empty();
-                    render();
-                    wxLoad(custom);
+                    select(sites.length - 1);
                 };
                 li.addEventListener("click", pick);
                 li.addEventListener("keydown", (e2) => { if (e2.key === "Enter" || e2.key === " ") pick(e2); });
@@ -2268,9 +2311,9 @@ const wxGeocode = async (q) => {
     });
     let saved = 0;
     try { saved = Number(store.get(LS_WX + ":tab", 0)) || 0; } catch (e) { }
-    cur = saved === 2 && custom ? 2 : saved === 1 ? 1 : 0;
+    cur = Math.max(0, Math.min(saved, sites.length));
     render();
-    wxLoad(cur === 2 ? custom : WX_SITES[cur]);
+    if (!isAdd()) wxLoad(sites[cur]);
 }
 if (LAYOUT === "log") {
     try {
@@ -2316,7 +2359,7 @@ if (LAYOUT === "log") {
             }
             const gnow = SKY.geo(new Date());
             const signOf = (lon) => { const L = ((lon % 360) + 360) % 360; return `${SIGNS[Math.floor(L / 30)]} ${Math.floor(L % 30)}°`; };
-            for (const [lon, cls, label, r] of [[gnow.sun.lon, "jd-chart__sun", "Sun", 3.2], [gnow.moon.lon, "jd-chart__moonmark", "Moon", 2.6]]) {
+            for (const [lon, cls, label, r] of [[gnow.sun.lon, "jd-chart__sun", "Sun", 5.2], [gnow.moon.lon, "jd-chart__moonmark", "Moon", 4.4]]) {
                 const [cx, cy] = at(lon, 190);
                 const c = el("circle", { cx, cy, r, class: cls }, zg);
                 const t = document.createElementNS(NS, "title"); t.textContent = `${label} · ${signOf(lon)}`; c.appendChild(t);
@@ -2366,6 +2409,67 @@ if (LAYOUT === "log") {
             el("text", { x: cx.toFixed(1), y: ly.toFixed(1), "text-anchor": "middle", class: "jd-chart__lbl" }, grp).textContent = main.split("-")[1] ?? main;
         });
         // (no caption under the disc — the field stars explain themselves on hover; Jin, 2026-09-07)
+        // ---- Sky tonight: the same disc as a planisphere. Zenith at the centre, horizon at the rim,
+        // north up and east to the LEFT (a chart held overhead); the Moon as its phase glyph, the five
+        // planets in bronze, the bright stars in ink sized by magnitude, the Sun when it is up. Drawn
+        // for the moment of render and redrawn each minute while this mode is on. The project layers
+        // (constellations, field, ecliptic dial) hide while the sky shows; the choice persists.
+        const LS_CHART = "ephemeris-dash.chart";
+        const tabs = document.createElement("div"); tabs.className = "jd-tabs jd-chart__tabs";
+        box.insertBefore(tabs, svg);
+        const tonight = el("g", { class: "jd-chart__tonight" });
+        const modeBtns = {};
+        const drawSky = () => {
+            tonight.innerHTML = "";
+            const now = new Date();
+            const sk = SKY.sky(now, WX.lat, WX.lon);
+            const place = ({ alt, az }) => { const rr = 190 * (90 - alt) / 90, a = az * Math.PI / 180; return [(200 - Math.sin(a) * rr).toFixed(1), (200 - Math.cos(a) * rr).toFixed(1)]; };
+            // cardinal letters at the rim
+            [["N", 200, 34], ["E", 38, 204], ["S", 200, 374], ["W", 362, 204]].forEach(([t, x, y]) => { el("text", { x, y, "text-anchor": "middle", class: "jd-chart__lbl jd-chart__card" }, tonight).textContent = t; });
+            for (const s of sk.stars) {
+                if (s.alt < 0) continue;
+                const [x, y] = place(s);
+                const c = el("circle", { cx: x, cy: y, r: Math.max(0.8, 3.2 - s.mag * 0.9).toFixed(2), class: "jd-chart__star is-sky" }, tonight);
+                const t = document.createElementNS(NS, "title"); t.textContent = `${s.name} · mag ${s.mag.toFixed(1)} · ${Math.round(s.alt)}° up`; c.appendChild(t);
+                if (s.mag < 1.3) el("text", { x: (Number(x) + 5).toFixed(1), y: (Number(y) - 4).toFixed(1), class: "jd-chart__lbl is-sky" }, tonight).textContent = s.name;
+            }
+            for (const [n, p] of Object.entries(sk.planets)) {
+                if (p.alt < 0) continue;
+                const [x, y] = place(p);
+                const c = el("circle", { cx: x, cy: y, r: 3.4, class: "jd-chart__planet" }, tonight);
+                const t = document.createElementNS(NS, "title"); t.textContent = `${n} · ${Math.round(p.alt)}° up`; c.appendChild(t);
+                el("text", { x: (Number(x) + 6).toFixed(1), y: (Number(y) + 4).toFixed(1), class: "jd-chart__lbl is-sky is-planet" }, tonight).textContent = n;
+            }
+            if (sk.sun.alt > 0) { const [x, y] = place(sk.sun); const c = el("circle", { cx: x, cy: y, r: 6, class: "jd-chart__sun" }, tonight); const t = document.createElementNS(NS, "title"); t.textContent = `Sun · ${Math.round(sk.sun.alt)}° up`; c.appendChild(t); }
+            if (sk.moon.alt > 0) {
+                const [x, y] = place(sk.moon); const mp = moonPhase(now);
+                const m = el("text", { x, y: (Number(y) + 6).toFixed(1), "text-anchor": "middle", class: "jd-chart__moonglyph" }, tonight); m.textContent = SKY.phaseGlyph(mp.age);
+                const t = document.createElementNS(NS, "title"); t.textContent = `Moon · ${mp.name.toLowerCase()}, ${mp.ill}% · ${Math.round(sk.moon.alt)}° up`; m.appendChild(t);
+            }
+            el("text", { x: 200, y: 392, "text-anchor": "middle", class: "jd-chart__lbl is-sub" }, tonight).textContent = `${WX.name} · ${pad2(now.getHours())}:${pad2(now.getMinutes())} KST · north up, east left`;
+        };
+        let skyTimer = null;
+        const setMode = (mode) => {
+            const skyOn = mode === "sky";
+            svg.querySelectorAll(".jd-chart__zodiac, .jd-chart__field, .jd-chart__sky").forEach((n) => { n.style.display = skyOn ? "none" : ""; });
+            tonight.style.display = skyOn ? "" : "none";
+            for (const k in modeBtns) modeBtns[k].setAttribute("aria-selected", String(k === mode));
+            try { store.set(LS_CHART, mode); } catch (e) { }
+            if (skyTimer) { clearInterval(skyTimer); skyTimer = null; }
+            if (skyOn) {
+                drawSky();
+                skyTimer = setInterval(() => { if (!svg.isConnected) { clearInterval(skyTimer); return; } drawSky(); }, 60000);
+            }
+        };
+        for (const [k, label] of [["projects", "Constellations"], ["sky", "Sky tonight"]]) {
+            const b = tabs.createEl("button", { cls: "jd-tab", text: label, attr: { "data-tab": k, type: "button", "aria-selected": "false" } });
+            ["click", "mousedown", "keydown"].forEach((t) => b.addEventListener(t, (ev) => ev.stopPropagation()));
+            b.addEventListener("click", (ev) => { ev.preventDefault(); setMode(k); });
+            modeBtns[k] = b;
+        }
+        let mode0 = "projects";
+        try { mode0 = store.get(LS_CHART, "projects") === "sky" ? "sky" : "projects"; } catch (e) { }
+        setMode(mode0);
         const how = document.createElementNS(NS, "title");
         how.textContent = "A constellation per project: the alpha is the project itself, the other stars its sub-codes, sized by papers and experiments. Set constellations are projects finished. Field stars are reviews not yet begun. Hover a star for its name; click to open.";
         svg.insertBefore(how, svg.firstChild);
