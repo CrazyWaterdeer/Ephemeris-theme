@@ -2462,8 +2462,10 @@ if (LAYOUT === "log") {
             const moon = E("text", { "text-anchor": "middle", class: "jd-chart__moonglyph" }, layer);
             const moonGlyph = E("tspan", {}, moon);
             const moonT = document.createElementNS(NS, "title"); moon.appendChild(moonT);
+            const clock = E("text", { x: 392, y: 378, "text-anchor": "end", class: "jd-chart__lbl is-sub is-clock" }, layer);
             E("text", { x: 392, y: 392, "text-anchor": "end", class: "jd-chart__lbl is-sub" }, layer).textContent = WX.name;
             const update = (time) => {
+                clock.textContent = `${pad2(time.getHours())}:${pad2(time.getMinutes())}`;   // the moment drawn: simulated on the card, now in full screen
                 const sk = SKY.sky(time, WX.lat, WX.lon, full);
                 for (const it of items) {
                     const p = it.pos(sk), up = !!(p && p.alt > 0);
