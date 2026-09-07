@@ -83,8 +83,13 @@ Contrast was checked by script: ink ≥ 8:1 on the dark page, muted text ≥ 5:1
 
 The theme's own CSS is released under the MIT License.
 
+## Per-template treatments (`extras/notes/notes.css`)
+
+A second, vault-specific snippet. It knows the templates' headings and fields, so it stays out of the theme: figure headings in a paper review become numbered plates (Reading view), a gene note's fact table becomes a specimen label, an experiment note sits on faint ruled paper and can carry a `> [!amended]` margin correction, a paper record's accession keys are set as small print, and a disambiguation hub lists its names with a cross-reference arrow. Each hooks on a `cssclasses` value the template writes.
+
 ## Changelog
 
+- **0.4.0** — IM Fell English SC embedded: real small caps for tags, table heads and callout titles (property keys use EB Garamond's); callout ink by family (seal for reference, bronze for records and procedure); struck text as correction ink. Almanac: the chart's outer ring is an ecliptic dial with today's Sun and Moon; moonrise, moonset and astronomical night in Conditions; primary-phase moon marks on the calendar; weekly notes share the ledger controls.
 - **0.3.1** — star rule in Live Preview; properties colophon; hover card; plates for embeds and images; three-line tables; ledger date fields; Reading-view bullet fix for Obsidian 1.14.
 - **0.3.0** — star field at the top of the editor pane.
 - **0.2.2** — embedded status marks; em-dash bullets.
