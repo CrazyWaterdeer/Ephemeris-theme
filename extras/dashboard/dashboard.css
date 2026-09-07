@@ -249,6 +249,19 @@
 	line-height: 1.5;
 }
 
+/* Leaving the note. MarkdownView.onUnloadFile drops the cssclasses at once
+   (editMode.setCssClass(null)), then awaits the save and the next file's read
+   before the editor content is replaced — so for a frame or two the OLD page
+   is still on screen without .ephemeris-dash. Unstyled, the chart's SVG showed
+   through (first as a black disc, then as stars and compass letters once the
+   shapes carried their own fill). Blank the whole page for those frames:
+   visibility keeps the geometry, so nothing jumps. Read from the 1.14 bundle
+   (t.onUnloadFile / t.loadFile), not inferred. Only dashboard.js builds a
+   div.jd, so the weekly notes (.jd-weekly) are untouched. */
+.jd:not(.ephemeris-dash *) {
+	visibility: hidden;
+}
+
 
 /* ---------------------------------------------------------------------------
    3. GRID
