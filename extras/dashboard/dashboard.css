@@ -3027,6 +3027,17 @@ body.is-mobile:not(.is-phone) .ephemeris-dash .jd > .jd-grid {
 .ephemeris-dash .jd-chart__lbl.is-planet { fill: var(--text-accent); }
 .ephemeris-dash .jd-chart__lbl.jd-chart__card { font-size: 10px; letter-spacing: .1em; fill: var(--text-faint); }
 .ephemeris-dash .jd-chart__moonglyph { font-family: "Ephemeris Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", serif; font-size: 15px; fill: var(--text-normal); }
+/* the full-screen sky: an overlay at the modal layer, the disc as large as the window allows */
+.ephemeris-dash .jd-chart__full { margin-left: auto; background: none; border: 0; box-shadow: none; padding: 0 4px; cursor: pointer; font-family: var(--font-text); font-size: 15px; line-height: 1; color: var(--text-muted); }
+.ephemeris-dash .jd-chart__full:hover { color: var(--text-accent); }
+.jd-sky-full { position: fixed; inset: 0; z-index: var(--layer-modal, 50); background: var(--background-primary); display: grid; place-items: center; }
+.jd-sky-full__inner { width: min(94vw, 94vh); aspect-ratio: 1; }
+.jd-sky-full svg { width: 100%; height: 100%; display: block; border-radius: 50%; background: radial-gradient(circle at 50% 50%, var(--background-primary-alt), var(--background-primary) 72%); }
+.jd-sky-full .jd-chart__ring { fill: none; stroke: var(--text-faint); stroke-width: .5; opacity: .6; }
+.jd-sky-full .jd-chart__ring.is-major { stroke-width: .8; }
+.jd-sky-full .jd-chart__tick { stroke: var(--text-faint); stroke-width: .8; }
+.jd-sky-full__close { position: fixed; top: 14px; right: 22px; background: none; border: 0; box-shadow: none; padding: 4px 8px; cursor: pointer; font-family: var(--font-text); font-size: 30px; line-height: 1; color: var(--text-muted); }
+.jd-sky-full__close:hover { color: var(--text-normal); }
 /* the four primary phases on the calendar: a small mark in the cell's corner, never a dot */
 .ephemeris-dash .jd-cal__day { position: relative; }
 .ephemeris-dash .jd-cal__moon { position: absolute; top: 2px; right: 4px; font-family: "Ephemeris Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", serif; font-size: 10px; line-height: 1; color: var(--text-muted); opacity: .85; pointer-events: none; }

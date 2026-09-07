@@ -601,12 +601,30 @@ const SKY = (() => {
         ["Hamal", 2.1196, 23.463, 2.00], ["Diphda", 0.7265, -17.987, 2.04], ["Caph", 0.1529, 59.150, 2.28], ["Schedar", 0.6751, 56.537, 2.24],
         ["Ruchbah", 1.4303, 60.235, 2.66], ["Algol", 3.1361, 40.956, 2.12], ["Mirfak", 3.4054, 49.861, 1.79],
     ];
+    // The fuller catalogue for the full-screen sky: the second and third magnitudes that complete the figures.
+    const STARS_MORE = [
+        ["Navi", 0.9453, 60.717, 2.47], ["Segin", 1.9067, 63.670, 3.38], ["Gienah", 20.7702, 33.970, 2.48], ["Delta Cygni", 19.7496, 45.131, 2.87],
+        ["Albireo", 19.5120, 27.960, 3.18], ["Sulafat", 18.9824, 32.690, 3.24], ["Tarazed", 19.7710, 10.613, 2.72], ["Sargas", 17.6220, -42.998, 1.87],
+        ["Dschubba", 16.0056, -22.622, 2.29], ["Acrab", 16.0906, -19.805, 2.56], ["Wei", 16.8361, -34.293, 2.29], ["Lesath", 17.5127, -37.296, 2.70],
+        ["Ascella", 19.0435, -29.880, 2.60], ["Kaus Media", 18.3499, -29.828, 2.72], ["Kaus Borealis", 18.4662, -25.421, 2.82], ["Algieba", 10.3328, 19.842, 2.28],
+        ["Zosma", 11.2351, 20.524, 2.56], ["Vindemiatrix", 13.0363, 10.959, 2.83], ["Izar", 14.7498, 27.074, 2.37], ["Muphrid", 13.9114, 18.398, 2.68],
+        ["Alcyone", 3.7914, 24.105, 2.87], ["Epsilon Persei", 3.9579, 40.010, 2.89], ["Mahasim", 5.9952, 37.213, 2.62], ["Hassaleh", 4.9498, 33.166, 2.69],
+        ["Mirzam", 6.3783, -17.956, 1.98], ["Aludra", 7.4016, -29.303, 2.45], ["Gomeisa", 7.4525, 8.289, 2.89], ["Algenib", 0.2206, 15.184, 2.83],
+        ["Sheratan", 1.9107, 20.808, 2.64], ["Menkar", 3.0380, 4.090, 2.53], ["Kornephoros", 16.5037, 21.490, 2.78], ["Rasalgethi", 17.2441, 14.390, 3.10],
+        ["Sabik", 17.1730, -15.725, 2.43], ["Cebalrai", 17.7244, 4.567, 2.76], ["Alphecca", 15.5781, 26.715, 2.23], ["Unukalhai", 15.7380, 6.426, 2.63],
+        ["Zubeneschamali", 15.2834, -9.383, 2.61], ["Zubenelgenubi", 14.8479, -16.042, 2.75], ["Pherkad", 15.3455, 71.834, 3.05], ["Eltanin", 17.9434, 51.489, 2.24],
+        ["Rastaban", 17.5072, 52.301, 2.79], ["Alderamin", 21.3097, 62.586, 2.51], ["Gienah Corvi", 12.2634, -17.542, 2.59], ["Kraz", 12.5734, -23.397, 2.65],
+        ["Algorab", 12.4977, -16.516, 2.95], ["Deneb Algedi", 21.7840, -16.127, 2.87], ["Sadalsuud", 21.5259, -5.571, 2.90], ["Sadalmelik", 22.0964, -0.320, 2.95],
+        ["Cursa", 5.1309, -5.086, 2.79], ["Arneb", 5.5455, -17.822, 2.58], ["Naos", 8.0597, -40.003, 2.25], ["Phact", 5.6608, -34.074, 2.65],
+        ["Canopus", 6.3992, -52.696, -0.74], ["Tejat", 6.3830, 22.514, 2.88], ["Mebsuta", 6.7322, 25.131, 3.06], ["Alzirr", 6.7548, 12.896, 3.36],
+    ];
+    const catalogue = (full) => (full ? STARS.concat(STARS_MORE) : STARS);
     /** The sky over a site at an instant: Sun, Moon, planets and the bright stars, as altitude/azimuth. */
-    const sky = (now, lat, lon) => {
+    const sky = (now, lat, lon, full) => {
         const g = geo(now);
         const out = { sun: altAz(g.sun, lat, lon, g.jd), moon: altAz(g.moon, lat, lon, g.jd), planets: {}, stars: [] };
         for (const n of PLANETS) out.planets[n] = altAz(g.planets[n], lat, lon, g.jd);
-        for (const [name, rah, dec, mag] of STARS) out.stars.push({ name, mag, ...altAz({ ra: rah * 15, dec }, lat, lon, g.jd) });
+        for (const [name, rah, dec, mag] of catalogue(full)) out.stars.push({ name, mag, ...altAz({ ra: rah * 15, dec }, lat, lon, g.jd) });
         return out;
     };
     /** Low-precision Moon of date: ecliptic longitude/latitude (deg) plus RA/Dec. */
@@ -759,7 +777,7 @@ const SKY = (() => {
         if (crossed(pa, pb, 270)) return { glyph: "🌗", name: "Last quarter" };
         return null;
     };
-    return { geo, events, dayTimes, phaseGlyph, primaryPhase, sky };
+    return { geo, events, dayTimes, phaseGlyph, primaryPhase, sky, catalogue };
 })();
 const nowHHMM = () => new Date().toTimeString().slice(0, 5);
 const beaufort = (kmh) => { const t = [1, 5, 11, 19, 28, 38, 49, 61, 74, 88, 102, 117]; let b = 0; while (b < 12 && Number(kmh) >= t[b]) b++; return b; };
@@ -2410,63 +2428,111 @@ if (LAYOUT === "log") {
         });
         // (no caption under the disc — the field stars explain themselves on hover; Jin, 2026-09-07)
         // ---- Sky tonight: the same disc as a planisphere. Zenith at the centre, horizon at the rim,
-        // north up and east to the LEFT (a chart held overhead); the Moon as its phase glyph, the five
-        // planets in bronze, the bright stars in ink sized by magnitude, the Sun when it is up. Drawn
-        // for the moment of render and redrawn each minute while this mode is on. The project layers
-        // (constellations, field, ecliptic dial) hide while the sky shows; the choice persists.
+        // north up and east to the LEFT (a chart held overhead). The card plays the coming night through,
+        // dusk to dawn in a minute on a loop, so the stars are seen to turn; the full-screen view (⤢)
+        // shows the moment itself with the fuller catalogue, updated each minute. The place sits at the
+        // bottom right. Project layers hide while the sky shows; the mode persists, full screen does not.
         const LS_CHART = "ephemeris-dash.chart";
+        const REDUCED = (() => { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
         const tabs = document.createElement("div"); tabs.className = "jd-tabs jd-chart__tabs";
         box.insertBefore(tabs, svg);
-        const tonight = el("g", { class: "jd-chart__tonight" });
+        const mkEl = (root) => (n, at, parent) => { const e = document.createElementNS(NS, n); for (const k in at) e.setAttribute(k, at[k]); (parent ?? root).appendChild(e); return e; };
+        /** Build a sky layer into an <svg>; the elements are made once and only moved by update(time). */
+        const buildSky = (root, full) => {
+            const E = mkEl(root);
+            const layer = E("g", { class: "jd-chart__tonight" });
+            [["N", 200, 34], ["E", 38, 204], ["S", 200, 374], ["W", 362, 204]].forEach(([t, x, y]) => { E("text", { x, y, "text-anchor": "middle", class: "jd-chart__lbl jd-chart__card" }, layer).textContent = t; });
+            const place = ({ alt, az }) => { const rr = 190 * (90 - alt) / 90, a = az * Math.PI / 180; return [200 - Math.sin(a) * rr, 200 - Math.cos(a) * rr]; };
+            const items = [];
+            SKY.catalogue(full).forEach(([name, , , mag], i) => {
+                const c = E("circle", { r: Math.max(0.7, (full ? 3.4 : 3.2) - mag * 0.85).toFixed(2), class: "jd-chart__star is-sky" }, layer);
+                const t = document.createElementNS(NS, "title"); t.textContent = `${name} · mag ${mag.toFixed(1)}`; c.appendChild(t);
+                let lbl = null;
+                if (mag < (full ? 2.0 : 1.3)) { lbl = E("text", { class: "jd-chart__lbl is-sky" }, layer); lbl.textContent = name; }
+                items.push({ el: c, lbl, dx: 5, dy: -4, pos: (sk) => sk.stars[i] });
+            });
+            for (const n of ["Mercury", "Venus", "Mars", "Jupiter", "Saturn"]) {
+                const c = E("circle", { r: 3.4, class: "jd-chart__planet" }, layer);
+                const t = document.createElementNS(NS, "title"); t.textContent = n; c.appendChild(t);
+                const lbl = E("text", { class: "jd-chart__lbl is-sky is-planet" }, layer); lbl.textContent = n;
+                items.push({ el: c, lbl, dx: 6, dy: 4, pos: (sk) => sk.planets[n] });
+            }
+            const sun = E("circle", { r: 6, class: "jd-chart__sun" }, layer); items.push({ el: sun, lbl: null, dx: 0, dy: 0, pos: (sk) => sk.sun });
+            const moon = E("text", { "text-anchor": "middle", class: "jd-chart__moonglyph" }, layer);
+            const moonGlyph = E("tspan", {}, moon);
+            const moonT = document.createElementNS(NS, "title"); moon.appendChild(moonT);
+            E("text", { x: 392, y: 392, "text-anchor": "end", class: "jd-chart__lbl is-sub" }, layer).textContent = WX.name;
+            const update = (time) => {
+                const sk = SKY.sky(time, WX.lat, WX.lon, full);
+                for (const it of items) {
+                    const p = it.pos(sk), up = !!(p && p.alt > 0);
+                    it.el.style.display = up ? "" : "none";
+                    if (it.lbl) it.lbl.style.display = up ? "" : "none";
+                    if (!up) continue;
+                    const [x, y] = place(p);
+                    it.el.setAttribute("cx", x.toFixed(1)); it.el.setAttribute("cy", y.toFixed(1));
+                    if (it.lbl) { it.lbl.setAttribute("x", (x + it.dx).toFixed(1)); it.lbl.setAttribute("y", (y + it.dy).toFixed(1)); }
+                }
+                const mp = moonPhase(time), mu = sk.moon.alt > 0;
+                moon.style.display = mu ? "" : "none";
+                if (mu) { const [x, y] = place(sk.moon); moon.setAttribute("x", x.toFixed(1)); moon.setAttribute("y", (y + 6).toFixed(1)); moonGlyph.textContent = SKY.phaseGlyph(mp.age); moonT.textContent = `Moon · ${mp.name.toLowerCase()}, ${mp.ill}%`; }
+            };
+            return { layer, update };
+        };
+        const cardSky = buildSky(svg, false);
+        // tonight, dusk to dawn (astronomical); 19:00–06:00 if the site has no true night
+        const night = () => {
+            try { const dt = SKY.dayTimes(new Date(), WX.lat, WX.lon); if (dt.dusk && dt.dawn) return [dt.dusk.getTime(), dt.dawn.getTime()]; } catch (e) { }
+            const d = new Date(); d.setHours(19, 0, 0, 0); return [d.getTime(), d.getTime() + 11 * 3600000];
+        };
+        let loop = null;
+        const stopLoop = () => { if (loop) { clearInterval(loop); loop = null; } };
+        const startLoop = () => {
+            stopLoop();
+            if (REDUCED) { cardSky.update(new Date()); loop = setInterval(() => { if (!svg.isConnected) return stopLoop(); cardSky.update(new Date()); }, 60000); return; }
+            const [t0, t1] = night(), T = 60000, start = Date.now();
+            const tick = () => { const f = ((Date.now() - start) % T) / T; cardSky.update(new Date(t0 + f * (t1 - t0))); };
+            tick();
+            loop = setInterval(() => { if (!svg.isConnected) return stopLoop(); tick(); }, 200);
+        };
+        // full screen: the moment itself, the fuller catalogue, the same drawing
+        const openFull = () => {
+            const ov = document.body.createDiv({ cls: "jd-sky-full ephemeris-dash" });
+            const inner = ov.createDiv({ cls: "jd-sky-full__inner" });
+            const big = document.createElementNS(NS, "svg"); big.setAttribute("viewBox", "0 0 400 400"); inner.appendChild(big);
+            const B = mkEl(big);
+            [190, 150, 100, 50].forEach((r, i) => B("circle", { cx: 200, cy: 200, r, class: "jd-chart__ring" + (i === 1 ? " is-major" : "") }));
+            [[200, 10, 200, 22], [390, 200, 378, 200], [200, 390, 200, 378], [10, 200, 22, 200]].forEach(([x1, y1, x2, y2]) => B("line", { x1, y1, x2, y2, class: "jd-chart__tick" }));
+            const fs = buildSky(big, true);
+            fs.update(new Date());
+            const iv = setInterval(() => { if (!ov.isConnected) { clearInterval(iv); return; } fs.update(new Date()); }, 60000);
+            const close = ov.createEl("button", { cls: "jd-sky-full__close", text: "×", attr: { type: "button", "aria-label": "Close" } });
+            const done = () => { clearInterval(iv); document.removeEventListener("keydown", onKey, true); ov.remove(); };
+            const onKey = (ev) => { if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); done(); } };
+            close.addEventListener("click", (ev) => { ev.stopPropagation(); done(); });
+            ov.addEventListener("click", (ev) => { ev.stopPropagation(); if (ev.target === ov) done(); });
+            ["mousedown", "keydown", "keyup", "keypress"].forEach((t) => ov.addEventListener(t, (ev) => ev.stopPropagation()));
+            document.addEventListener("keydown", onKey, true);
+        };
         const modeBtns = {};
-        const drawSky = () => {
-            tonight.innerHTML = "";
-            const now = new Date();
-            const sk = SKY.sky(now, WX.lat, WX.lon);
-            const place = ({ alt, az }) => { const rr = 190 * (90 - alt) / 90, a = az * Math.PI / 180; return [(200 - Math.sin(a) * rr).toFixed(1), (200 - Math.cos(a) * rr).toFixed(1)]; };
-            // cardinal letters at the rim
-            [["N", 200, 34], ["E", 38, 204], ["S", 200, 374], ["W", 362, 204]].forEach(([t, x, y]) => { el("text", { x, y, "text-anchor": "middle", class: "jd-chart__lbl jd-chart__card" }, tonight).textContent = t; });
-            for (const s of sk.stars) {
-                if (s.alt < 0) continue;
-                const [x, y] = place(s);
-                const c = el("circle", { cx: x, cy: y, r: Math.max(0.8, 3.2 - s.mag * 0.9).toFixed(2), class: "jd-chart__star is-sky" }, tonight);
-                const t = document.createElementNS(NS, "title"); t.textContent = `${s.name} · mag ${s.mag.toFixed(1)} · ${Math.round(s.alt)}° up`; c.appendChild(t);
-                if (s.mag < 1.3) el("text", { x: (Number(x) + 5).toFixed(1), y: (Number(y) - 4).toFixed(1), class: "jd-chart__lbl is-sky" }, tonight).textContent = s.name;
-            }
-            for (const [n, p] of Object.entries(sk.planets)) {
-                if (p.alt < 0) continue;
-                const [x, y] = place(p);
-                const c = el("circle", { cx: x, cy: y, r: 3.4, class: "jd-chart__planet" }, tonight);
-                const t = document.createElementNS(NS, "title"); t.textContent = `${n} · ${Math.round(p.alt)}° up`; c.appendChild(t);
-                el("text", { x: (Number(x) + 6).toFixed(1), y: (Number(y) + 4).toFixed(1), class: "jd-chart__lbl is-sky is-planet" }, tonight).textContent = n;
-            }
-            if (sk.sun.alt > 0) { const [x, y] = place(sk.sun); const c = el("circle", { cx: x, cy: y, r: 6, class: "jd-chart__sun" }, tonight); const t = document.createElementNS(NS, "title"); t.textContent = `Sun · ${Math.round(sk.sun.alt)}° up`; c.appendChild(t); }
-            if (sk.moon.alt > 0) {
-                const [x, y] = place(sk.moon); const mp = moonPhase(now);
-                const m = el("text", { x, y: (Number(y) + 6).toFixed(1), "text-anchor": "middle", class: "jd-chart__moonglyph" }, tonight); m.textContent = SKY.phaseGlyph(mp.age);
-                const t = document.createElementNS(NS, "title"); t.textContent = `Moon · ${mp.name.toLowerCase()}, ${mp.ill}% · ${Math.round(sk.moon.alt)}° up`; m.appendChild(t);
-            }
-            el("text", { x: 200, y: 392, "text-anchor": "middle", class: "jd-chart__lbl is-sub" }, tonight).textContent = `${WX.name} · ${pad2(now.getHours())}:${pad2(now.getMinutes())} KST · north up, east left`;
-        };
-        let skyTimer = null;
-        const setMode = (mode) => {
-            const skyOn = mode === "sky";
-            svg.querySelectorAll(".jd-chart__zodiac, .jd-chart__field, .jd-chart__sky").forEach((n) => { n.style.display = skyOn ? "none" : ""; });
-            tonight.style.display = skyOn ? "" : "none";
-            for (const k in modeBtns) modeBtns[k].setAttribute("aria-selected", String(k === mode));
-            try { store.set(LS_CHART, mode); } catch (e) { }
-            if (skyTimer) { clearInterval(skyTimer); skyTimer = null; }
-            if (skyOn) {
-                drawSky();
-                skyTimer = setInterval(() => { if (!svg.isConnected) { clearInterval(skyTimer); return; } drawSky(); }, 60000);
-            }
-        };
         for (const [k, label] of [["projects", "Constellations"], ["sky", "Sky tonight"]]) {
             const b = tabs.createEl("button", { cls: "jd-tab", text: label, attr: { "data-tab": k, type: "button", "aria-selected": "false" } });
             ["click", "mousedown", "keydown"].forEach((t) => b.addEventListener(t, (ev) => ev.stopPropagation()));
             b.addEventListener("click", (ev) => { ev.preventDefault(); setMode(k); });
             modeBtns[k] = b;
         }
+        const fullBtn = tabs.createEl("button", { cls: "jd-chart__full", text: "⤢", attr: { type: "button", title: "Full screen", "aria-label": "Full screen" } });
+        ["mousedown", "keydown"].forEach((t) => fullBtn.addEventListener(t, (ev) => ev.stopPropagation()));
+        fullBtn.addEventListener("click", (ev) => { ev.preventDefault(); ev.stopPropagation(); openFull(); });
+        const setMode = (mode) => {
+            const skyOn = mode === "sky";
+            svg.querySelectorAll(".jd-chart__zodiac, .jd-chart__field, .jd-chart__sky").forEach((n) => { n.style.display = skyOn ? "none" : ""; });
+            cardSky.layer.style.display = skyOn ? "" : "none";
+            fullBtn.style.display = skyOn ? "" : "none";
+            for (const k in modeBtns) modeBtns[k].setAttribute("aria-selected", String(k === mode));
+            try { store.set(LS_CHART, mode); } catch (e) { }
+            if (skyOn) startLoop(); else stopLoop();
+        };
         let mode0 = "projects";
         try { mode0 = store.get(LS_CHART, "projects") === "sky" ? "sky" : "projects"; } catch (e) { }
         setMode(mode0);
