@@ -2386,6 +2386,18 @@ if (LAYOUT === "log") {
             for (let i = 0; i < n * 2; i++) { const a = (i * Math.PI) / n - Math.PI / 2, rr = i % 2 ? r * waist : r; d += (i ? "L" : "M") + (Math.cos(a) * rr).toFixed(2) + "," + (Math.sin(a) * rr).toFixed(2); }
             return d + "Z";
         };
+        /** A bright star the way Bayer engraved it: a small disc with eight rays, four long and four short. */
+        const rayD = (r) => {
+            const d = (r * 0.42).toFixed(2); let p = `M-${d},0A${d},${d} 0 1 0 ${d},0A${d},${d} 0 1 0 -${d},0Z`;
+            for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, L = i % 2 ? r * 0.66 : r; p += `M${(Math.cos(a) * Number(d)).toFixed(2)},${(Math.sin(a) * Number(d)).toFixed(2)}L${(Math.cos(a) * L).toFixed(2)},${(Math.sin(a) * L).toFixed(2)}`; }
+            return p;
+        };
+        /** The lit part of the Moon at phase k (0 new, ½ full, 1 new): the half-disc on the sunward limb,
+         *  closed by the terminator, a half-ellipse of semi-axis r·cos 2πk. West to the right, as when looking up. */
+        const moonD = (r, k) => {
+            const waxing = k < 0.5, x = (waxing ? 1 : -1) * r * Math.cos(2 * Math.PI * k);
+            return `M0,${-r} A${r},${r} 0 0 ${waxing ? 1 : 0} 0,${r} A${Math.abs(x).toFixed(2)},${r} 0 0 ${x > 0 ? 0 : 1} 0,${-r} Z`;
+        };
         const withTitle = (e, text) => { const t = document.createElementNS(NS, "title"); t.textContent = text; e.appendChild(t); return e; };
         /** The rim every mode shares: the horizon ring, four cardinal ticks, and outside them the
          *  graduated limb with the ecliptic dial — 0° Aries at the top, longitude counter-clockwise as
@@ -2394,6 +2406,7 @@ if (LAYOUT === "log") {
          *  longitude today on the ring itself. Static: this is the instrument, not the sky. */
         const buildFrame = (E, fine) => {
             E("circle", { cx: 200, cy: 200, r: 190, fill: "none", class: "jd-chart__ring is-horizon" });
+            E("circle", { cx: 200, cy: 200, r: 198.5, fill: "none", class: "jd-chart__ring is-limb" });   // the limb is a band: ring and outer edge
             [[200, 10, 200, 1], [10, 200, 1, 200], [200, 390, 200, 399], [390, 200, 399, 200]].forEach(([x1, y1, x2, y2]) => E("line", { x1, y1, x2, y2, class: "jd-chart__tick" }));
             try {
                 const zg = E("g", { class: "jd-chart__zodiac" });
@@ -2513,7 +2526,7 @@ if (LAYOUT === "log") {
             const tw = seeded(1837);   // each star its own twinkle period and phase, fixed across renders
             SKY.catalogue(full).forEach(([name, , , mag], i) => {
                 const style = `animation-duration:${(3.5 + tw() * 4).toFixed(1)}s;animation-delay:-${(tw() * 6).toFixed(1)}s`;
-                const c = mag < 0.3 ? E("path", { d: starD(full ? 5.4 : 5.0, 8), class: "jd-chart__star is-sky is-first", style }, layer)
+                const c = mag < 0.3 ? E("path", { d: rayD(full ? 6.2 : 5.8), class: "jd-chart__star is-sky is-first is-bright", style }, layer)
                     : mag < 1.6 ? E("path", { d: starD(full ? 4.6 : 4.2, 4), class: "jd-chart__star is-sky is-first", style }, layer)
                     : E("circle", { r: Math.max(0.7, (full ? 3.4 : 3.2) - mag * 0.85).toFixed(2), class: "jd-chart__star is-sky", style }, layer);
                 withTitle(c, `${name} · mag ${mag.toFixed(1)}`);
@@ -2527,9 +2540,20 @@ if (LAYOUT === "log") {
                 items.push({ el: c, lbl, dx: 7, dy: 4, pos: (sk) => sk.planets[n] });
             }
             const sun = E("circle", { r: 6, class: "jd-chart__sun" }, layer); items.push({ el: sun, lbl: null, dx: 0, dy: 0, pos: (sk) => sk.sun });
-            const moon = E("text", { "text-anchor": "middle", class: "jd-chart__moonglyph" }, layer);
-            const moonGlyph = E("tspan", {}, moon);
-            const moonT = document.createElementNS(NS, "title"); moon.appendChild(moonT);
+            // the Moon as its true phase: a dark disc, the lit part bounded by the terminator's ellipse
+            const moonG = E("g", { class: "jd-chart__moon" }, layer), moonR = full ? 6.5 : 6;
+            E("circle", { r: moonR, class: "jd-chart__moon-dark" }, moonG);
+            const moonLit = E("path", { d: "", class: "jd-chart__moon-lit" }, moonG);
+            const moonT = document.createElementNS(NS, "title"); moonG.appendChild(moonT);
+            // the plate's key, bottom left: the classes of star with their magnitudes
+            const key = E("g", { class: "jd-chart__magkey" }, layer);
+            E("text", { x: 8, y: 372, class: "jd-chart__lbl is-sub is-key" }, key).textContent = "Magnitudines";
+            [[rayD(5.2), 0, "is-first is-bright"], [starD(4.2, 4), 1, "is-first"], [null, 2, 1.5], [null, 3, 0.85]].forEach(([d, m, rc], i) => {
+                const x = 14 + i * 14;
+                if (d) E("path", { d, transform: `translate(${x} 384)`, class: "jd-chart__star " + rc }, key);
+                else E("circle", { cx: x, cy: 384, r: rc, class: "jd-chart__star" }, key);
+                E("text", { x, y: 397, "text-anchor": "middle", class: "jd-chart__lbl is-sub is-key" }, key).textContent = String(m);
+            });
             // 23ʰ 12ᵐ — the hour and minute marked the way an ephemeris prints them
             const clock = E("text", { x: 392, y: 378, "text-anchor": "end", class: "jd-chart__lbl is-sub is-clock" }, layer);
             const cH = E("tspan", {}, clock), cHs = E("tspan", { dy: "-3.5", class: "jd-chart__sup" }, clock), cM = E("tspan", { dy: "3.5" }, clock), cMs = E("tspan", { dy: "-3.5", class: "jd-chart__sup" }, clock);
@@ -2566,8 +2590,14 @@ if (LAYOUT === "log") {
                     if (up) { const [x, y] = place(p); t.setAttribute("x", x.toFixed(1)); t.setAttribute("y", (y + 2.8).toFixed(1)); t.style.opacity = Math.min(1, p.alt / 8).toFixed(2); }
                 });
                 const mp = moonPhase(time), mu = sk.moon.alt > 0;
-                moon.style.display = mu ? "" : "none";
-                if (mu) { const [x, y] = place(sk.moon); moon.setAttribute("x", x.toFixed(1)); moon.setAttribute("y", (y + 6).toFixed(1)); moonGlyph.textContent = SKY.phaseGlyph(mp.age); moonT.textContent = `Moon · ${mp.name.toLowerCase()}, ${mp.ill}%`; }
+                moonG.style.display = mu ? "" : "none";
+                if (mu) {
+                    const [x, y] = place(sk.moon);
+                    moonG.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+                    moonG.style.opacity = Math.min(1, sk.moon.alt / 6).toFixed(2);
+                    moonLit.setAttribute("d", moonD(moonR, mp.age / 29.530588853));
+                    moonT.textContent = `Moon · ${mp.name.toLowerCase()}, ${mp.ill}%`;
+                }
             };
             return { layer, update };
         };
@@ -2634,7 +2664,7 @@ if (LAYOUT === "log") {
         // rings give way to the sky's own plate
         const setMode = (mode) => {
             const skyOn = mode === "sky";
-            svg.querySelectorAll(".jd-chart__field, .jd-chart__sky, .jd-chart__ring:not(.is-horizon)").forEach((n) => { n.style.display = skyOn ? "none" : ""; });
+            svg.querySelectorAll(".jd-chart__field, .jd-chart__sky, .jd-chart__ring:not(.is-horizon, .is-limb)").forEach((n) => { n.style.display = skyOn ? "none" : ""; });
             cardSky.layer.style.display = skyOn ? "" : "none";
             fullBtn.style.display = skyOn ? "" : "none";
             for (const k in modeBtns) modeBtns[k].setAttribute("aria-selected", String(k === mode));
