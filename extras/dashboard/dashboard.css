@@ -803,7 +803,7 @@
 }
 
 /* numeric / d-day columns line up when they are mono + tabular */
-.ephemeris-dash .jd-card .jd-table table td .jd-dday,
+:is(.ephemeris-dash, .jd-weekly) .jd-card .jd-table table td .jd-dday,
 .ephemeris-dash .jd-card .jd-table table td .jd-num {
 	font-family: var(--jd-mono);
 	font-variant-numeric: tabular-nums;
@@ -1621,7 +1621,7 @@
 /* appearance: none turns off the platform widget so the box can be sized to
    the row (14px against a 6px/10px cell) and take the accent. position:
    relative is what the tick hangs off. */
-.ephemeris-dash .jd-check {
+:is(.ephemeris-dash, .jd-weekly) .jd-check {
 	appearance: none;
 	-webkit-appearance: none;
 	position: relative;
@@ -1638,7 +1638,7 @@
 	            border-color var(--jd-dur, 140ms) ease;
 }
 
-.ephemeris-dash .jd-check:hover {
+:is(.ephemeris-dash, .jd-weekly) .jd-check:hover {
 	border-color: var(--jd-accent-text, var(--interactive-accent));
 }
 
@@ -1647,10 +1647,10 @@
    drawn in --text-on-accent, which core already inverts for a dark accent. */
 /* `border`, not `border-color`: the Velocity theme sets `border: none` on
    input[type=checkbox]:checked, and that selector — (0,2,1) — outranks the
-   plain `.ephemeris-dash .jd-check` block above, which is (0,2,0). Restating the
+   plain `:is(.ephemeris-dash, .jd-weekly) .jd-check` block above, which is (0,2,0). Restating the
    whole shorthand here, at (0,3,0), keeps the 1.5px box the ::after offsets
    below are measured against, checked or not. */
-.ephemeris-dash .jd-check:checked {
+:is(.ephemeris-dash, .jd-weekly) .jd-check:checked {
 	background: var(--jd-accent-fill);
 	border: 1.5px solid var(--jd-accent-fill);
 }
@@ -1666,7 +1666,7 @@
    left alone, core's mask (65% of a 3x7px box) clips the tick below down to a
    smudge. Switching the mask and that background off is what makes the tick
    visible at all. */
-.ephemeris-dash .jd-check:checked::after {
+:is(.ephemeris-dash, .jd-weekly) .jd-check:checked::after {
 	content: "";
 	position: absolute;
 	left: 3.5px;
@@ -1681,15 +1681,15 @@
 	transform: rotate(43deg);
 }
 
-.ephemeris-dash .jd-check:focus-visible {
+:is(.ephemeris-dash, .jd-weekly) .jd-check:focus-visible {
 	outline: 2px solid var(--jd-accent-text, var(--interactive-accent));
 	outline-offset: 2px;
 }
 
 /* Locked between the click and the re-render that replaces the row. It is a
    wait, not a refusal, so it reads as one. */
-.ephemeris-dash .jd-check:disabled,
-.ephemeris-dash .jd-date:disabled {
+:is(.ephemeris-dash, .jd-weekly) .jd-check:disabled,
+:is(.ephemeris-dash, .jd-weekly) .jd-date:disabled {
 	opacity: 0.45;
 	cursor: progress;
 }
@@ -1700,7 +1700,7 @@
    rather than a column of form fields. The frame appears on hover and focus.
    The calendar itself is Electron's own, opened by one click on the field —
    that is the whole feature. */
-.ephemeris-dash .jd-date {
+:is(.ephemeris-dash, .jd-weekly) .jd-date {
 	appearance: none;
 	-webkit-appearance: none;
 	box-sizing: border-box;
@@ -1721,14 +1721,14 @@
 	            opacity var(--jd-dur, 140ms) ease;
 }
 
-.ephemeris-dash .jd-date:hover,
-.ephemeris-dash .jd-date:focus {
+:is(.ephemeris-dash, .jd-weekly) .jd-date:hover,
+:is(.ephemeris-dash, .jd-weekly) .jd-date:focus {
 	border-color: var(--jd-hairline-hover);
 	background: var(--jd-tint);
 	color: var(--text-normal);
 }
 
-.ephemeris-dash .jd-date:focus-visible {
+:is(.ephemeris-dash, .jd-weekly) .jd-date:focus-visible {
 	outline: 2px solid var(--jd-accent-text, var(--interactive-accent));
 	outline-offset: -1px;
 }
@@ -1739,13 +1739,13 @@
    data-empty is set by dashboard.js/weekly.js, because CSS has no selector for
    "this date input has no value" (:invalid needs `required`, which would make
    an empty row an error, which it is not). */
-.ephemeris-dash .jd-date[data-empty="true"] {
+:is(.ephemeris-dash, .jd-weekly) .jd-date[data-empty="true"] {
 	color: var(--text-faint);
 	opacity: 0.5;
 }
-.ephemeris-dash .jd-table tbody tr:hover .jd-date[data-empty="true"],
-.ephemeris-dash .jd-date[data-empty="true"]:hover,
-.ephemeris-dash .jd-date[data-empty="true"]:focus {
+:is(.ephemeris-dash, .jd-weekly) .jd-table tbody tr:hover .jd-date[data-empty="true"],
+:is(.ephemeris-dash, .jd-weekly) .jd-date[data-empty="true"]:hover,
+:is(.ephemeris-dash, .jd-weekly) .jd-date[data-empty="true"]:focus {
 	color: var(--text-muted);
 	opacity: 1;
 }
@@ -1753,28 +1753,28 @@
 /* Chromium's calendar glyph. Its own colour follows `color-scheme`, which
    Obsidian sets for the active theme, so it is left alone — only sized down
    and given the same quiet-until-hovered treatment as the field around it. */
-.ephemeris-dash .jd-date::-webkit-calendar-picker-indicator {
+:is(.ephemeris-dash, .jd-weekly) .jd-date::-webkit-calendar-picker-indicator {
 	margin-left: 2px;
 	padding: 0;
 	opacity: 0.4;
 	cursor: pointer;
 }
-.ephemeris-dash .jd-date:hover::-webkit-calendar-picker-indicator,
-.ephemeris-dash .jd-date:focus::-webkit-calendar-picker-indicator {
+:is(.ephemeris-dash, .jd-weekly) .jd-date:hover::-webkit-calendar-picker-indicator,
+:is(.ephemeris-dash, .jd-weekly) .jd-date:focus::-webkit-calendar-picker-indicator {
 	opacity: 0.9;
 }
 
 /* The late mark sits beside the picker in the same cell, not in a column of
    its own — .jd-dday already carries the mono/tabular treatment from
    section 8. */
-.ephemeris-dash .jd-card .jd-table table td.jd-action__date .jd-dday {
+:is(.ephemeris-dash, .jd-weekly) .jd-card .jd-table table td.jd-action__date .jd-dday {
 	margin-left: 6px;
 	color: var(--jd-overdue);
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.ephemeris-dash .jd-check,
-	.ephemeris-dash .jd-date { transition: none; }
+	:is(.ephemeris-dash, .jd-weekly) .jd-check,
+	:is(.ephemeris-dash, .jd-weekly) .jd-date { transition: none; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -2054,18 +2054,18 @@ body.is-mobile .ephemeris-dash .jd-card .jd-table table tbody td {
    ::before is the hit area, not a mark: -12px of inset inside a 44.3px row
    reaches the row boundary EXACTLY and no further, so an expanded target can
    never steal the tap from the row above or below it. */
-body.is-mobile .ephemeris-dash .jd-check {
+body.is-mobile :is(.ephemeris-dash, .jd-weekly) .jd-check {
 	width: 20px;
 	height: 20px;
 	margin: 0 auto;
 	border-radius: 5px;
 }
-body.is-mobile .ephemeris-dash .jd-check::before {
+body.is-mobile :is(.ephemeris-dash, .jd-weekly) .jd-check::before {
 	content: "";
 	position: absolute;
 	inset: -12px -10px;
 }
-body.is-mobile .ephemeris-dash .jd-check:checked::after {
+body.is-mobile :is(.ephemeris-dash, .jd-weekly) .jd-check:checked::after {
 	left: 5.5px;
 	top: 1.5px;
 	width: 4.3px;
@@ -2079,24 +2079,24 @@ body.is-mobile .ephemeris-dash .jd-check:checked::after {
    always on, empty state at full opacity, and the field on the touch scale.
    --touch-size-xs (30px), not -m: a 44px field would push every work row past
    68px, and the field already sits in 12px of cell padding on each side. */
-body.is-mobile .ephemeris-dash .jd-date {
+body.is-mobile :is(.ephemeris-dash, .jd-weekly) .jd-date {
 	min-height: var(--touch-size-xs, 30px);
 	padding: var(--size-4-1, 4px) var(--size-4-2, 8px);
 	border-color: var(--jd-hairline);
 	background: var(--jd-tint);
 	color: var(--text-muted);
 }
-body.is-mobile .ephemeris-dash .jd-date[data-empty="true"] {
+body.is-mobile :is(.ephemeris-dash, .jd-weekly) .jd-date[data-empty="true"] {
 	opacity: 1;
 	color: var(--text-faint);
 }
-body.is-mobile .ephemeris-dash .jd-date::-webkit-calendar-picker-indicator {
+body.is-mobile :is(.ephemeris-dash, .jd-weekly) .jd-date::-webkit-calendar-picker-indicator {
 	opacity: 0.75;
 }
 /* The base :hover/:focus rule is only (0,3,0) and now loses to the rule above,
    so restate focus here or the field looks identical focused and unfocused.
    (:focus-visible does not match on touch input in Chromium, so :focus it is.) */
-body.is-mobile .ephemeris-dash .jd-date:focus {
+body.is-mobile :is(.ephemeris-dash, .jd-weekly) .jd-date:focus {
 	border-color: var(--jd-hairline-hover);
 	background: var(--jd-tint-strong);
 	color: var(--text-normal);
@@ -2877,8 +2877,8 @@ body.is-mobile:not(.is-phone) .ephemeris-dash .jd > .jd-grid {
        figures, and the big temperature takes the display face like the register numbers. */
 .ephemeris-dash .jd--log, .ephemeris-dash .jd--broadsheet { --jd-mono: var(--font-text); }
 .ephemeris-dash .jd--log .jd-wx__temp, .ephemeris-dash .jd--broadsheet .jd-wx__temp { font-family: var(--jd-serif); font-weight: 400; letter-spacing: 0; }
-.ephemeris-dash .jd--log :is(.jd-wx__range, .jd-wx__hum, .jd-wx__dow, .jd-date, .jd-num, .jd-cal__wk, .jd-cal__title, .jd-cal__more, .jd-card__count, .jd-tab__n, .jd-sub, .jd-nav__hint, .jd-plate__cap),
-.ephemeris-dash .jd--broadsheet :is(.jd-wx__range, .jd-wx__hum, .jd-wx__dow, .jd-date, .jd-num, .jd-cal__wk, .jd-cal__title, .jd-cal__more, .jd-card__count, .jd-tab__n, .jd-sub, .jd-nav__hint, .jd-plate__cap) {
+:is(.ephemeris-dash, .jd-weekly) .jd--log :is(.jd-wx__range, .jd-wx__hum, .jd-wx__dow, .jd-date, .jd-num, .jd-cal__wk, .jd-cal__title, .jd-cal__more, .jd-card__count, .jd-tab__n, .jd-sub, .jd-nav__hint, .jd-plate__cap),
+:is(.ephemeris-dash, .jd-weekly) .jd--broadsheet :is(.jd-wx__range, .jd-wx__hum, .jd-wx__dow, .jd-date, .jd-num, .jd-cal__wk, .jd-cal__title, .jd-cal__more, .jd-card__count, .jd-tab__n, .jd-sub, .jd-nav__hint, .jd-plate__cap) {
 	font-family: var(--font-text); font-variant-numeric: tabular-nums lining-nums; letter-spacing: 0;
 }
 .ephemeris-dash .jd--log .jd-wx__range, .ephemeris-dash .jd--broadsheet .jd-wx__range { font-size: 14px; }
@@ -3008,6 +3008,14 @@ body.is-mobile:not(.is-phone) .ephemeris-dash .jd > .jd-grid {
 .ephemeris-dash .jd-chart__quote { margin: 12px 4px 0; }
 .ephemeris-dash .jd-chart__quote blockquote { margin: 0; padding: 0; border: 0; background: none; font-family: var(--jd-serif); font-size: 17px; line-height: 1.45; color: var(--text-normal); text-wrap: balance; }
 .ephemeris-dash .jd-chart__quote figcaption { margin-top: 6px; font-size: 13px; color: var(--text-faint); font-style: italic; }
+/* the ecliptic dial on the outer ring: thin, faint, static; the Sun in bronze, the Moon in ink */
+.ephemeris-dash .jd-chart__ztick { stroke: var(--text-faint); stroke-width: .6; opacity: .7; }
+.ephemeris-dash .jd-chart__zsign { font-family: "Ephemeris Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", serif; font-size: 8.5px; fill: var(--text-faint); opacity: .8; }
+.ephemeris-dash .jd-chart__sun { fill: var(--text-accent); stroke: var(--background-primary); stroke-width: 1; }
+.ephemeris-dash .jd-chart__moonmark { fill: var(--text-normal); stroke: var(--background-primary); stroke-width: 1; }
+/* the four primary phases on the calendar: a small mark in the cell's corner, never a dot */
+.ephemeris-dash .jd-cal__day { position: relative; }
+.ephemeris-dash .jd-cal__moon { position: absolute; top: 2px; right: 4px; font-family: "Ephemeris Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", serif; font-size: 10px; line-height: 1; color: var(--text-muted); opacity: .85; pointer-events: none; }
 /* the sky's events of the day — present only on a day that has one (dashboard.js SKY.events) */
 .ephemeris-dash .jd-chart__events { margin: 10px 4px 0; text-align: center; font-family: var(--jd-serif); font-size: 13.5px; font-style: italic; line-height: 1.4; color: var(--text-muted); font-variant-numeric: tabular-nums; text-wrap: balance; }
 

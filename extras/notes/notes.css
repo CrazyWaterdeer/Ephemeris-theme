@@ -1,0 +1,78 @@
+/* ===========================================================================
+   notes.css — per-template treatments for the Jinome vault, on top of the Ephemeris theme.
+   Scoped by `cssclasses` set in the templates (and backfilled once), by custom callout
+   types, or by heading text in Reading view. Vault-specific by design: the theme stays
+   generic, this file knows Jin's headings and fields.
+
+   Mechanics this file relies on (verified 2026-09-07, Obsidian 1.14):
+   - `cssclasses` land on .markdown-preview-view (Reading) AND .markdown-source-view (Live
+     Preview), so a class selector reaches both modes.
+   - Custom callouts need no declaration: `> [!amended]` renders with data-callout="amended"
+     in both modes; only --callout-color and the icon are ours to set.
+   - Headings carry data-heading="<text>" in Reading view only; Live Preview has no such
+     attribute, so heading-text selectors are Reading-view treatments by construction.
+   - Reading view wraps each block in a div.el-<tag>, so a heading's following block is
+     `.el-h3:has(> h3…) + .el-p`.
+   - No native way to reach frontmatter `status`/`type` from CSS; nothing here pretends to.
+   =========================================================================== */
+
+/* --- Review: figures as numbered plates (Reading view) --------------------------------
+   `### Fig N. <verbatim title>` is the vault's own convention (319 reviews). The heading
+   becomes the plate's running head — a rule above, small caps, muted — and the embed that
+   follows sits centred on the theme's hairline mount with a closing rule. */
+.markdown-reading-view h3[data-heading^="Fig "] {
+	font-family: "Ephemeris Symbols", "IM Fell English SC", "IM Fell English", "Noto Serif KR", Georgia, serif;
+	font-size: .92em; letter-spacing: .04em; color: var(--text-muted);
+	border-top: 1px solid var(--hr-color); padding-top: .55em; margin-top: 1.8em;
+}
+.markdown-reading-view .el-h3:has(> h3[data-heading^="Fig "]) + .el-p { text-align: center; padding-bottom: 10px; border-bottom: 1px solid var(--background-modifier-border); margin-bottom: 1.4em; }
+.markdown-reading-view .el-h3:has(> h3[data-heading^="Fig "]) + .el-p .image-embed img { margin: 0 auto; }
+
+/* --- Gene: the fact table as a specimen label --------------------------------------
+   The template's header row is blank, so the labels are first-column <td>s. Field names
+   in small caps at the left, identifiers (coordinates, CG numbers) in the typewriter face
+   at the right, a hairline border around the tag. Both the class (template + backfill) and
+   the structural selector, so a Gene note works with either. */
+.gene-card .markdown-rendered table:has(> thead th:empty), .gene-card table:has(> thead th:empty),
+.markdown-rendered table:has(> thead > tr > th:empty) {
+	border: 1px solid var(--background-modifier-border); border-collapse: collapse; width: auto; min-width: 60%;
+}
+.gene-card table:has(> thead th:empty) thead, .markdown-rendered table:has(> thead > tr > th:empty) thead { display: none; }
+.gene-card table:has(> thead th:empty) td:first-child, .markdown-rendered table:has(> thead > tr > th:empty) td:first-child {
+	font-family: "Ephemeris Symbols", "IM Fell English SC", "IM Fell English", "Noto Serif KR", Georgia, serif;
+	letter-spacing: .04em; color: var(--text-accent); white-space: nowrap; width: 1%; padding-right: 1.4em;
+	border-right: 1px solid var(--background-modifier-border);
+}
+.gene-card table:has(> thead th:empty) td:nth-child(2), .markdown-rendered table:has(> thead > tr > th:empty) td:nth-child(2) {
+	font-family: "Fira Code", ui-monospace, Consolas, monospace; font-size: .88em; letter-spacing: 0;
+}
+.gene-card table:has(> thead th:empty) tbody tr:last-child > td { border-bottom: 0; }
+
+/* --- Experiment: a bench lab book ----------------------------------------------------
+   Faint ruling stepped to the body's own line height, kept fainter than the paper grain so
+   long prose stays clean. The Subjects table and code blocks sit on their own ground. */
+.ephemeris-lab .markdown-preview-sizer, .ephemeris-lab .cm-content {
+	background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--line-height-normal, 1.85) * 1em - 1px), color-mix(in srgb, var(--text-faint) 14%, transparent) calc(var(--line-height-normal, 1.85) * 1em - 1px), color-mix(in srgb, var(--text-faint) 14%, transparent) calc(var(--line-height-normal, 1.85) * 1em));
+	background-attachment: local;
+}
+.ephemeris-lab .markdown-rendered table, .ephemeris-lab .cm-table-widget, .ephemeris-lab pre, .ephemeris-lab .callout { background-color: var(--background-primary); }
+/* the margin correction: a struck value with its replacement beside it — quieter and smaller
+   than a normal callout, bronze ink (theme), the same manicule */
+.callout[data-callout="amended"] { font-size: .92em; background: transparent; border-left-width: 2px; margin-left: 1.2em; }
+.callout[data-callout="amended"] .callout-title { font-size: .85em; }
+.callout[data-callout="amended"] del { color: var(--text-faint); text-decoration-color: var(--hr-color); }
+
+/* --- Paper metadata: the record card's small print ------------------------------------
+   Keys that only Paper notes carry are set smaller and quieter than the headline rows.
+   Every field stays visible and editable — this is hierarchy, not hiding. */
+.metadata-property[data-property-key="doi"], .metadata-property[data-property-key="archived"] {
+	--metadata-label-font-size: .82em; --metadata-input-font-size: .82em; --metadata-label-text-color: var(--text-faint);
+	opacity: .85;
+}
+
+/* --- Person, disambiguation hubs: a cross-reference slip --------------------------------
+   The 58 hubs (tags Person + Disambiguation) list `[[Full Name]]` links; the arrow says
+   "this name is ambiguous — follow one of these", in the seal ink the theme uses for cross
+   reference, so a hub never reads like an untouched "Who?" stub. */
+.disambiguation-slip .markdown-rendered ul > li::marker, .disambiguation-slip ul > li::marker { content: "→\2002"; color: var(--ephemeris-seal); }
+.disambiguation-slip .cm-s-obsidian .HyperMD-list-line .list-bullet::after { content: "→"; color: var(--ephemeris-seal); }

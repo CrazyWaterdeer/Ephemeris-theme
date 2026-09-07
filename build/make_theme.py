@@ -8,7 +8,7 @@ os.makedirs(repo, exist_ok=True)
 cache = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts'); os.makedirs(cache, exist_ok=True)
 
 UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
-CSS_URL = 'https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap'
+CSS_URL = 'https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap'
 
 def get(url, binary=False):
     req = urllib.request.Request(url, headers={'User-Agent': UA})
@@ -123,6 +123,7 @@ CLOTH = dict(name='navy book cloth — deeper than the page, so the sidebar rece
 KR = '"Noto Serif KR"'
 SYM = '"Ephemeris Symbols"'
 HEAD = f'{SYM}, "IM Fell English", {KR}, Georgia, serif'
+SC = f'{SYM}, "IM Fell English SC", "IM Fell English", {KR}, Georgia, serif'
 
 STATUS = os.path.join(cache, 'status-marks.woff2')
 status_face = ''
@@ -207,7 +208,7 @@ body {{
 .theme-dark  .callout {{ --callout-color: 157, 177, 220; }}
 .theme-light .callout {{ --callout-color: 38, 52, 95; }}
 .callout {{ border-left-width: 3px; background: var(--background-primary-alt); }}
-.callout-title {{ font-family: {HEAD}; font-weight: 400; letter-spacing: .08em; text-transform: uppercase; font-size: .85em; }}
+.callout-title {{ font-family: {SC}; font-weight: 400; letter-spacing: .06em; text-transform: none; font-size: .95em; }}
 .callout-icon svg {{ display: none; }}
 .callout-icon::before {{ content: "☞"; font-family: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols 2", serif; font-size: 1.35em; line-height: 1; color: rgb(var(--callout-color)); }}
 
@@ -270,11 +271,19 @@ body {{ --table-border-width: 0; --table-column-first-border-width: 0; --table-c
 .markdown-rendered input[type="date"]::-webkit-calendar-picker-indicator, .markdown-rendered input[type="datetime-local"]::-webkit-calendar-picker-indicator {{ opacity: .4; }}
 .markdown-rendered input[type="date"]::-webkit-datetime-edit-text, .markdown-rendered input[type="datetime-local"]::-webkit-datetime-edit-text {{ color: var(--text-faint); }}
 
+/* ---- callout ink by family: reference (cite, abstract, summary, link) keeps the seal; records and
+   procedure (metadata, subjects, procedure, amended, todo, example, info, tip) take bronze. Two inks only. */
+.theme-dark  .callout:is([data-callout="metadata"], [data-callout="subjects"], [data-callout="procedure"], [data-callout="amended"], [data-callout="todo"], [data-callout="example"], [data-callout="info"], [data-callout="tip"]) {{ --callout-color: 200, 154, 94; }}
+.theme-light .callout:is([data-callout="metadata"], [data-callout="subjects"], [data-callout="procedure"], [data-callout="amended"], [data-callout="todo"], [data-callout="example"], [data-callout="info"], [data-callout="tip"]) {{ --callout-color: 124, 91, 43; }}
+
+/* ---- correction ink: a struck line stays legible, the way a lab book never erases ---- */
+.markdown-rendered del, .cm-strikethrough {{ color: var(--text-faint); text-decoration-color: var(--hr-color); text-decoration-thickness: 1px; }}
+
 /* ---- letterforms: small caps for tags, table headers, folders ---------- */
-.tag, a.tag {{ font-family: {HEAD}; letter-spacing: .1em; text-transform: uppercase; border-radius: 2px; padding: 0 8px; }}
-.markdown-rendered th {{ font-family: {HEAD}; font-weight: 400; font-size: .75em; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }}
+.tag, a.tag {{ font-family: {SC}; letter-spacing: .06em; text-transform: none; border-radius: 2px; padding: 0 8px; }}
+.markdown-rendered th {{ font-family: {SC}; font-weight: 400; font-size: .85em; letter-spacing: .06em; text-transform: none; color: var(--text-muted); }}
 .nav-folder-title-content {{ font-family: {HEAD}; font-weight: 400; letter-spacing: .06em; font-size: .9em; }}
-.metadata-property-key-input {{ letter-spacing: .06em; text-transform: uppercase; font-size: .85em; }}
+.metadata-property-key-input {{ letter-spacing: .04em; text-transform: none; font-variant-caps: small-caps; font-size: .95em; }}
 
 /* ---- paper grain (inline SVG). Keep alpha ≤ .5 so small Hangul stays crisp */
 .workspace-leaf-content[data-type="markdown"] .view-content {{ background-image: {SVG['grain']}; background-blend-mode: multiply; }}
@@ -286,7 +295,7 @@ body {{ --table-border-width: 0; --table-column-first-border-width: 0; --table-c
 """
 
 open(os.path.join(repo, 'theme.css'), 'w', encoding='utf-8', newline='\n').write(theme)
-json.dump({'name': 'Ephemeris', 'version': '0.3.1', 'minAppVersion': '1.5.0', 'author': 'Jin', 'authorUrl': ''},
+json.dump({'name': 'Ephemeris', 'version': '0.4.0', 'minAppVersion': '1.5.0', 'author': 'Jin', 'authorUrl': ''},
           open(os.path.join(repo, 'manifest.json'), 'w', encoding='utf-8'), indent=2)
 # README.md is written by hand — the generator no longer touches it.
 open(os.path.join(repo, '.gitignore'), 'w', encoding='utf-8', newline='\n').write('.DS_Store\nThumbs.db\n')

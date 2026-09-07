@@ -687,7 +687,48 @@ const SKY = (() => {
         }
         return out;
     };
-    return { geo, events };
+    /** Altitude of the Sun or Moon at a Date for the site. */
+    const altOf = (date, which, lat, lon) => { const g = geo(date); return altAz(g[which], lat, lon, g.jd).alt; };
+    /** First crossing of altitude h0 between t0 and t1 (rising or setting): ten-minute sampling, then bisection. */
+    const crossing = (which, lat, lon, t0, t1, h0, rising) => {
+        let tp = t0.getTime(), prev = altOf(t0, which, lat, lon) - h0;
+        for (let t = tp + 600000; t <= t1.getTime(); t += 600000) {
+            const v = altOf(new Date(t), which, lat, lon) - h0;
+            if ((rising && prev < 0 && v >= 0) || (!rising && prev > 0 && v <= 0)) {
+                let a = tp, b = t;
+                for (let i = 0; i < 12; i++) { const m = (a + b) / 2; const vm = altOf(new Date(m), which, lat, lon) - h0; if (rising ? vm >= 0 : vm <= 0) b = m; else a = m; }
+                return new Date(b);
+            }
+            prev = v; tp = t;
+        }
+        return null;
+    };
+    /** Today's moonrise and moonset (upper limb, refraction and parallax folded into +0.125°), and the
+     *  astronomical night that starts this evening: Sun 18° down at dusk, back up at dawn. */
+    const dayTimes = (day, lat, lon) => {
+        const d0 = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+        const d1 = new Date(d0.getTime() + 86400000), noon = new Date(d0.getTime() + 43200000), noon2 = new Date(noon.getTime() + 86400000);
+        return {
+            moonrise: crossing("moon", lat, lon, d0, d1, 0.125, true),
+            moonset: crossing("moon", lat, lon, d0, d1, 0.125, false),
+            dusk: crossing("sun", lat, lon, noon, noon2, -18, false),
+            dawn: crossing("sun", lat, lon, noon, noon2, -18, true),
+        };
+    };
+    const GLYPHS = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
+    /** The Moon's glyph for an age in days, indexed like moonPhase()'s names. */
+    const phaseGlyph = (age) => GLYPHS[Math.floor(((age / 29.530588853) * 8 + 0.5) % 8)];
+    /** If a primary phase falls on this local day, its glyph and name; else null. */
+    const primaryPhase = (day) => {
+        const d0 = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+        const pa = phase(geo(d0)), pb = phase(geo(new Date(d0.getTime() + 86400000)));
+        if (crossed(pa, pb, 0)) return { glyph: "🌑", name: "New moon" };
+        if (crossed(pa, pb, 90)) return { glyph: "🌓", name: "First quarter" };
+        if (crossed(pa, pb, 180)) return { glyph: "🌕", name: "Full moon" };
+        if (crossed(pa, pb, 270)) return { glyph: "🌗", name: "Last quarter" };
+        return null;
+    };
+    return { geo, events, dayTimes, phaseGlyph, primaryPhase };
 })();
 const nowHHMM = () => new Date().toTimeString().slice(0, 5);
 const beaufort = (kmh) => { const t = [1, 5, 11, 19, 28, 38, 49, 61, 74, 88, 102, 117]; let b = 0; while (b < 12 && Number(kmh) >= t[b]) b++; return b; };
@@ -1806,6 +1847,13 @@ panel("calendar", () => {
                 if (iso === TODAY) td.setAttribute("data-today", "true");
 
                 td.createEl("span", { cls: "jd-cal__date", text: String(Number(iso.slice(-2))) });
+                // The four primary phases, on their exact days only — the one astronomical fact a
+                // wall almanac prints on the grid itself. Its own class, never a .jd-cal__dot, so
+                // it can never be read as a deadline.
+                try {
+                    const moon = SKY.primaryPhase(new Date(`${iso}T00:00:00`));
+                    if (moon) td.createEl("span", { cls: "jd-cal__moon", text: moon.glyph, attr: { title: moon.name } });
+                } catch (e) { }
 
                 const list = (events.get(iso) ?? [])
                     .slice()
@@ -2025,7 +2073,16 @@ const wxExtra = (cur, day, meta) => {
         if (tr) lines.push(`Transparency ${tr}/5 · cloud ${Math.round(cur.cloud_cover)}%`);
         if (Number.isFinite(Number(cur.wind_speed_10m))) lines.push(`Wind force ${beaufort(cur.wind_speed_10m)} · ${Math.round(cur.wind_speed_10m)} km/h`);
         if (sr && ss) lines.push(`Sunrise ${hhmm(sr)} · Sunset ${hhmm(ss)}`);
-        const mp = moonPhase(); lines.push(`Moon ${mp.name.toLowerCase()}, ${mp.ill}%`);
+        // The Moon's rise and set beside the Sun's, as every almanac prints them, and the
+        // astronomical night — Sun 18° down — which is the number an observer decides on.
+        // Both from the site's own coordinates through the SKY arithmetic, no request.
+        try {
+            const dt = SKY.dayTimes(new Date(), wxSite.lat, wxSite.lon);
+            const t = (d) => (d ? `${pad2(d.getHours())}:${pad2(d.getMinutes())}` : "—");
+            lines.push(`Moonrise ${t(dt.moonrise)} · Moonset ${t(dt.moonset)}`);
+            if (dt.dusk && dt.dawn) lines.push(`True dark ${t(dt.dusk)} – ${t(dt.dawn)}`);
+        } catch (e) { /* the sky is optional */ }
+        const mp = moonPhase(); lines.push(`${SKY.phaseGlyph(mp.age)} Moon ${mp.name.toLowerCase()}, ${mp.ill}%`);
     } else if (Number.isFinite(Number(cur.wind_speed_10m))) {
         lines.push(`Wind ${Math.round(cur.wind_speed_10m)} km/h`);
     }
@@ -2240,6 +2297,31 @@ if (LAYOUT === "log") {
         const el = (n, at, parent) => { const e = document.createElementNS(NS, n); for (const k in at) e.setAttribute(k, at[k]); (parent ?? svg).appendChild(e); return e; };
         [190, 150, 100, 50].forEach((r, i) => el("circle", { cx: 200, cy: 200, r, class: "jd-chart__ring" + (i === 1 ? " is-major" : "") }));
         [[200, 10, 200, 22], [390, 200, 378, 200], [200, 390, 200, 378], [10, 200, 22, 200]].forEach(([x1, y1, x2, y2]) => el("line", { x1, y1, x2, y2, class: "jd-chart__tick" }));
+        // The outer ring as an ecliptic dial — the zodiacal band an astrolabe is built around.
+        // 0° Aries at the top, longitude increasing counter-clockwise as the sky turns; twelve
+        // ticks with their signs, and the Sun's and the Moon's true longitude today. Static: the
+        // chart's one moving layer stays the field. Nothing here claims the constellations
+        // inside are sky — this is the instrument's rim.
+        try {
+            const zg = el("g", { class: "jd-chart__zodiac" });
+            const ZOD = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
+            const SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+            const ang = (lon) => (-90 - lon) * Math.PI / 180;
+            const at = (lon, r) => { const a = ang(lon); return [(200 + Math.cos(a) * r).toFixed(1), (200 + Math.sin(a) * r).toFixed(1)]; };
+            for (let k = 0; k < 12; k++) {
+                const [x1, y1] = at(k * 30, 186), [x2, y2] = at(k * 30, 194);
+                el("line", { x1, y1, x2, y2, class: "jd-chart__ztick" }, zg);
+                const [tx, ty] = at(k * 30 + 15, 180);
+                el("text", { x: tx, y: (Number(ty) + 3).toFixed(1), "text-anchor": "middle", class: "jd-chart__zsign" }, zg).textContent = ZOD[k];
+            }
+            const gnow = SKY.geo(new Date());
+            const signOf = (lon) => { const L = ((lon % 360) + 360) % 360; return `${SIGNS[Math.floor(L / 30)]} ${Math.floor(L % 30)}°`; };
+            for (const [lon, cls, label, r] of [[gnow.sun.lon, "jd-chart__sun", "Sun", 3.2], [gnow.moon.lon, "jd-chart__moonmark", "Moon", 2.6]]) {
+                const [cx, cy] = at(lon, 190);
+                const c = el("circle", { cx, cy, r, class: cls }, zg);
+                const t = document.createElementNS(NS, "title"); t.textContent = `${label} · ${signOf(lon)}`; c.appendChild(t);
+            }
+        } catch (e) { /* the dial is optional */ }
         const field = el("g", { class: "jd-chart__field" });
         const g = el("g", { class: "jd-chart__sky" });
         const rnd = seeded(7);
