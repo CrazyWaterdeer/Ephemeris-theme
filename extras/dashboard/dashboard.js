@@ -2444,8 +2444,9 @@ if (LAYOUT === "log") {
             [["N", 200, 34], ["E", 38, 204], ["S", 200, 374], ["W", 362, 204]].forEach(([t, x, y]) => { E("text", { x, y, "text-anchor": "middle", class: "jd-chart__lbl jd-chart__card" }, layer).textContent = t; });
             const place = ({ alt, az }) => { const rr = 190 * (90 - alt) / 90, a = az * Math.PI / 180; return [200 - Math.sin(a) * rr, 200 - Math.cos(a) * rr]; };
             const items = [];
+            const tw = seeded(1837);   // each star its own twinkle period and phase, fixed across renders
             SKY.catalogue(full).forEach(([name, , , mag], i) => {
-                const c = E("circle", { r: Math.max(0.7, (full ? 3.4 : 3.2) - mag * 0.85).toFixed(2), class: "jd-chart__star is-sky" }, layer);
+                const c = E("circle", { r: Math.max(0.7, (full ? 3.4 : 3.2) - mag * 0.85).toFixed(2), class: "jd-chart__star is-sky", style: `animation-duration:${(3.5 + tw() * 4).toFixed(1)}s;animation-delay:-${(tw() * 6).toFixed(1)}s` }, layer);
                 const t = document.createElementNS(NS, "title"); t.textContent = `${name} · mag ${mag.toFixed(1)}`; c.appendChild(t);
                 let lbl = null;
                 if (mag < (full ? 2.0 : 1.3)) { lbl = E("text", { class: "jd-chart__lbl is-sky" }, layer); lbl.textContent = name; }
@@ -2469,6 +2470,9 @@ if (LAYOUT === "log") {
                     it.el.style.display = up ? "" : "none";
                     if (it.lbl) it.lbl.style.display = up ? "" : "none";
                     if (!up) continue;
+                    // rising and setting bodies fade through the first six degrees instead of popping at the rim
+                    const o = Math.min(1, p.alt / 6).toFixed(2);
+                    it.el.style.opacity = o; if (it.lbl) it.lbl.style.opacity = o;
                     const [x, y] = place(p);
                     it.el.setAttribute("cx", x.toFixed(1)); it.el.setAttribute("cy", y.toFixed(1));
                     if (it.lbl) { it.lbl.setAttribute("x", (x + it.dx).toFixed(1)); it.lbl.setAttribute("y", (y + it.dy).toFixed(1)); }
@@ -2485,15 +2489,24 @@ if (LAYOUT === "log") {
             try { const dt = SKY.dayTimes(new Date(), WX.lat, WX.lon); if (dt.dusk && dt.dawn) return [dt.dusk.getTime(), dt.dawn.getTime()]; } catch (e) { }
             const d = new Date(); d.setHours(19, 0, 0, 0); return [d.getTime(), d.getTime() + 11 * 3600000];
         };
-        let loop = null;
-        const stopLoop = () => { if (loop) { clearInterval(loop); loop = null; } };
+        // The night runs on requestAnimationFrame — the browser's own frame clock — so the motion is
+        // continuous rather than stepped; positions are recomputed each frame (a few hundred trig
+        // calls, well under a millisecond) and the loop stops with the view.
+        let loop = null, raf = null;
+        const stopLoop = () => { if (loop) { clearInterval(loop); loop = null; } if (raf) { cancelAnimationFrame(raf); raf = null; } };
         const startLoop = () => {
             stopLoop();
             if (REDUCED) { cardSky.update(new Date()); loop = setInterval(() => { if (!svg.isConnected) return stopLoop(); cardSky.update(new Date()); }, 60000); return; }
-            const [t0, t1] = night(), T = 60000, start = Date.now();
-            const tick = () => { const f = ((Date.now() - start) % T) / T; cardSky.update(new Date(t0 + f * (t1 - t0))); };
-            tick();
-            loop = setInterval(() => { if (!svg.isConnected) return stopLoop(); tick(); }, 200);
+            const [t0, t1] = night(), T = 60000;
+            let start = null;
+            const frame = (ts) => {
+                if (!svg.isConnected) return stopLoop();
+                if (start === null) start = ts;
+                const f = ((ts - start) % T) / T;
+                cardSky.update(new Date(t0 + f * (t1 - t0)));
+                raf = requestAnimationFrame(frame);
+            };
+            raf = requestAnimationFrame(frame);
         };
         // full screen: the moment itself, the fuller catalogue, the same drawing
         const openFull = () => {

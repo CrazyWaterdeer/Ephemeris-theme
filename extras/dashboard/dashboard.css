@@ -3021,7 +3021,10 @@ body.is-mobile:not(.is-phone) .ephemeris-dash .jd > .jd-grid {
 .ephemeris-dash .jd-chart__moonmark { fill: var(--text-normal); stroke: var(--background-primary); stroke-width: 1; }
 /* sky tonight: the planisphere layer — stars in ink by magnitude, planets bronze, the Moon as its glyph */
 .ephemeris-dash .jd-chart__tabs { margin: 0 0 6px; justify-content: center; }
-.ephemeris-dash .jd-chart__star.is-sky { fill: var(--text-normal); opacity: .9; animation: none; }
+.ephemeris-dash .jd-chart__star.is-sky { fill: var(--text-normal); animation: jd-twinkle 5s ease-in-out infinite; }
+/* a faint twinkle on fill-opacity, so the horizon fade (inline opacity) stays independent of it */
+@keyframes jd-twinkle { 0%, 100% { fill-opacity: 1; } 50% { fill-opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .ephemeris-dash .jd-chart__star.is-sky { animation: none; } }
 .ephemeris-dash .jd-chart__planet { fill: var(--text-accent); stroke: var(--background-primary); stroke-width: .8; }
 .ephemeris-dash .jd-chart__lbl.is-sky { text-transform: none; letter-spacing: .02em; font-size: 8.5px; fill: var(--text-muted); font-style: normal; }
 .ephemeris-dash .jd-chart__lbl.is-planet { fill: var(--text-accent); }
