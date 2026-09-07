@@ -2365,7 +2365,7 @@ if (LAYOUT === "log") {
             const ly = Math.min(...P.map((p) => p[1])) - 9;
             el("text", { x: cx.toFixed(1), y: ly.toFixed(1), "text-anchor": "middle", class: "jd-chart__lbl" }, grp).textContent = main.split("-")[1] ?? main;
         });
-        el("text", { x: 200, y: 392, "text-anchor": "middle", class: "jd-chart__lbl is-sub" }).textContent = `field stars: ${fieldN} reviews not yet begun`;
+        // (no caption under the disc — the field stars explain themselves on hover; Jin, 2026-09-07)
         const how = document.createElementNS(NS, "title");
         how.textContent = "A constellation per project: the alpha is the project itself, the other stars its sub-codes, sized by papers and experiments. Set constellations are projects finished. Field stars are reviews not yet begun. Hover a star for its name; click to open.";
         svg.insertBefore(how, svg.firstChild);

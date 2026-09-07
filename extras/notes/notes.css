@@ -49,14 +49,9 @@
 .gene-card table:has(> thead th:empty) tbody tr:last-child > td { border-bottom: 0; }
 
 /* --- Experiment: a bench lab book ----------------------------------------------------
-   Faint ruling stepped to the body's own line height, kept fainter than the paper grain so
-   long prose stays clean. The Subjects table and code blocks sit on their own ground. */
-.ephemeris-lab .markdown-preview-sizer, .ephemeris-lab .cm-content {
-	background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--line-height-normal, 1.85) * 1em - 1px), color-mix(in srgb, var(--text-faint) 14%, transparent) calc(var(--line-height-normal, 1.85) * 1em - 1px), color-mix(in srgb, var(--text-faint) 14%, transparent) calc(var(--line-height-normal, 1.85) * 1em));
-	background-attachment: local;
-}
-.ephemeris-lab .markdown-rendered table, .ephemeris-lab .cm-table-widget, .ephemeris-lab pre, .ephemeris-lab .callout { background-color: var(--background-primary); }
-/* the margin correction: a struck value with its replacement beside it — quieter and smaller
+   The ruled ground was tried and dropped (Jin, 2026-09-07: "괘선은 별로다"); the class stays on
+   the notes for the margin correction below.
+   The margin correction: a struck value with its replacement beside it — quieter and smaller
    than a normal callout, bronze ink (theme), the same manicule */
 .callout[data-callout="amended"] { font-size: .92em; background: transparent; border-left-width: 2px; margin-left: 1.2em; }
 .callout[data-callout="amended"] .callout-title { font-size: .85em; }
