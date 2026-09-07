@@ -627,6 +627,12 @@ const SKY = (() => {
         for (const [name, rah, dec, mag] of catalogue(full)) out.stars.push({ name, mag, ...altAz({ ra: rah * 15, dec }, lat, lon, g.jd) });
         return out;
     };
+    /** The ecliptic as seen from a site at an instant: a point every `step` degrees of longitude. */
+    const ecliptic = (date, lat, lon, step = 3) => {
+        const jd = jdOf(date), out = [];
+        for (let L = 0; L < 360; L += step) { const l = L * R; out.push({ lon: L, ...altAz(eq(Math.cos(l), Math.sin(l), 0), lat, lon, jd) }); }
+        return out;
+    };
     /** Low-precision Moon of date: ecliptic longitude/latitude (deg) plus RA/Dec. */
     const moonEcl = (T) => {
         const s = (deg) => Math.sin(deg * R);
@@ -777,7 +783,7 @@ const SKY = (() => {
         if (crossed(pa, pb, 270)) return { glyph: "🌗", name: "Last quarter" };
         return null;
     };
-    return { geo, events, dayTimes, phaseGlyph, primaryPhase, sky, catalogue };
+    return { geo, events, dayTimes, phaseGlyph, primaryPhase, sky, catalogue, ecliptic };
 })();
 const nowHHMM = () => new Date().toTimeString().slice(0, 5);
 const beaufort = (kmh) => { const t = [1, 5, 11, 19, 28, 38, 49, 61, 74, 88, 102, 117]; let b = 0; while (b < 12 && Number(kmh) >= t[b]) b++; return b; };
@@ -2354,44 +2360,67 @@ if (LAYOUT === "log") {
         const seeded = (s) => () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
         const NS = "http://www.w3.org/2000/svg";
         const box = document.createElement("div"); box.className = "jd-chart";
-        const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 400 400"); svg.setAttribute("aria-label", "the vault as a star chart"); box.appendChild(svg);
+        // The disc is drawn in a 428-unit box about (200,200): the horizon ring at r=190 and, outside
+        // it, the graduated limb and the signs of the ecliptic dial — the rim of an astrolabe. Both
+        // modes share that rim; only what lies inside the ring changes.
+        const VIEW = "-14 -14 428 428";
+        const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", VIEW); svg.setAttribute("aria-label", "the vault as a star chart"); box.appendChild(svg);
         // SVG shapes fill BLACK by default. The stylesheet fixes that, but it is scoped by the note's
-        // cssclass, which lands a frame after the block first paints on navigation — that frame was
-        // the black disc Jin saw flash between notes. So every shape carries its own fill attribute:
-        // rings and chains none, everything else the current ink; CSS still wins where it sets one.
-        const el = (n, at, parent) => {
+        // cssclass, which is gone for a frame or two when the note is left — that frame was the black
+        // disc Jin saw flash between notes. So every shape carries its own fill attribute: rings and
+        // chains none, everything else the current ink; CSS still wins where it sets one. Text spans
+        // are left alone so they inherit their parent's colour.
+        const PAINTED = new Set(["circle", "ellipse", "rect", "path", "polygon", "polyline", "line", "text"]);
+        const mkEl = (root) => (n, at, parent) => {
             const e = document.createElementNS(NS, n);
-            if (!("fill" in at)) e.setAttribute("fill", n === "polyline" || n === "line" ? "none" : "currentColor");
+            if (PAINTED.has(n) && !("fill" in at)) e.setAttribute("fill", n === "polyline" || n === "line" ? "none" : "currentColor");
             for (const k in at) e.setAttribute(k, at[k]);
-            (parent ?? svg).appendChild(e); return e;
+            (parent ?? root).appendChild(e); return e;
         };
-        [190, 150, 100, 50].forEach((r, i) => el("circle", { cx: 200, cy: 200, r, fill: "none", class: "jd-chart__ring" + (i === 1 ? " is-major" : "") }));
-        [[200, 10, 200, 22], [390, 200, 378, 200], [200, 390, 200, 378], [10, 200, 22, 200]].forEach(([x1, y1, x2, y2]) => el("line", { x1, y1, x2, y2, class: "jd-chart__tick" }));
-        // The outer ring as an ecliptic dial — the zodiacal band an astrolabe is built around.
-        // 0° Aries at the top, longitude increasing counter-clockwise as the sky turns; twelve
-        // ticks with their signs, and the Sun's and the Moon's true longitude today. Static: the
-        // chart's one moving layer stays the field. Nothing here claims the constellations
-        // inside are sky — this is the instrument's rim.
-        try {
-            const zg = el("g", { class: "jd-chart__zodiac" });
-            const ZOD = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
-            const SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
-            const ang = (lon) => (-90 - lon) * Math.PI / 180;
-            const at = (lon, r) => { const a = ang(lon); return [(200 + Math.cos(a) * r).toFixed(1), (200 + Math.sin(a) * r).toFixed(1)]; };
-            for (let k = 0; k < 12; k++) {
-                const [x1, y1] = at(k * 30, 186), [x2, y2] = at(k * 30, 194);
-                el("line", { x1, y1, x2, y2, class: "jd-chart__ztick" }, zg);
-                const [tx, ty] = at(k * 30 + 15, 180);
-                el("text", { x: tx, y: (Number(ty) + 3).toFixed(1), "text-anchor": "middle", class: "jd-chart__zsign" }, zg).textContent = ZOD[k];
-            }
-            const gnow = SKY.geo(new Date());
-            const signOf = (lon) => { const L = ((lon % 360) + 360) % 360; return `${SIGNS[Math.floor(L / 30)]} ${Math.floor(L % 30)}°`; };
-            for (const [lon, cls, label, r] of [[gnow.sun.lon, "jd-chart__sun", "Sun", 5.2], [gnow.moon.lon, "jd-chart__moonmark", "Moon", 4.4]]) {
-                const [cx, cy] = at(lon, 190);
-                const c = el("circle", { cx, cy, r, class: cls }, zg);
-                const t = document.createElementNS(NS, "title"); t.textContent = `${label} · ${signOf(lon)}`; c.appendChild(t);
-            }
-        } catch (e) { /* the dial is optional */ }
+        const el = mkEl(svg);
+        const ZOD = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
+        const SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+        /** An n-pointed star, tips at r, the waist drawn in — four points is the ✦ of the section rules. */
+        const starD = (r, n) => {
+            const waist = n === 4 ? 0.38 : 0.55; let d = "";
+            for (let i = 0; i < n * 2; i++) { const a = (i * Math.PI) / n - Math.PI / 2, rr = i % 2 ? r * waist : r; d += (i ? "L" : "M") + (Math.cos(a) * rr).toFixed(2) + "," + (Math.sin(a) * rr).toFixed(2); }
+            return d + "Z";
+        };
+        const withTitle = (e, text) => { const t = document.createElementNS(NS, "title"); t.textContent = text; e.appendChild(t); return e; };
+        /** The rim every mode shares: the horizon ring, four cardinal ticks, and outside them the
+         *  graduated limb with the ecliptic dial — 0° Aries at the top, longitude counter-clockwise as
+         *  the sky turns, a tick every 5° (every degree on the big disc), longer at 15°, longest at the
+         *  sign boundaries, the twelve signs beyond the ticks, and the Sun's and the Moon's true
+         *  longitude today on the ring itself. Static: this is the instrument, not the sky. */
+        const buildFrame = (E, fine) => {
+            E("circle", { cx: 200, cy: 200, r: 190, fill: "none", class: "jd-chart__ring is-horizon" });
+            [[200, 10, 200, 1], [10, 200, 1, 200], [200, 390, 200, 399], [390, 200, 399, 200]].forEach(([x1, y1, x2, y2]) => E("line", { x1, y1, x2, y2, class: "jd-chart__tick" }));
+            try {
+                const zg = E("g", { class: "jd-chart__zodiac" });
+                const ang = (lon) => (-90 - lon) * Math.PI / 180;
+                const at = (lon, r) => { const a = ang(lon); return [(200 + Math.cos(a) * r).toFixed(1), (200 + Math.sin(a) * r).toFixed(1)]; };
+                for (let d = 0; d < 360; d += fine ? 1 : 5) {
+                    if (d % 30 === 0) continue;
+                    const len = d % 15 === 0 ? 5.5 : d % 5 === 0 ? 3.5 : 1.6;
+                    const [x1, y1] = at(d, 190), [x2, y2] = at(d, 190 + len);
+                    E("line", { x1, y1, x2, y2, class: "jd-chart__lim" + (d % 5 ? " is-fine" : d % 15 ? "" : " is-mid") }, zg);
+                }
+                for (let k = 0; k < 12; k++) {
+                    const [x1, y1] = at(k * 30, 188), [x2, y2] = at(k * 30, 198);
+                    E("line", { x1, y1, x2, y2, class: "jd-chart__ztick" }, zg);
+                    const [tx, ty] = at(k * 30 + 15, 206);
+                    withTitle(E("text", { x: tx, y: (Number(ty) + 3.2).toFixed(1), "text-anchor": "middle", class: "jd-chart__zsign" }, zg), SIGNS[k]).textContent = ZOD[k];
+                }
+                const gnow = SKY.geo(new Date());
+                const signOf = (lon) => { const L = ((lon % 360) + 360) % 360; return `${SIGNS[Math.floor(L / 30)]} ${Math.floor(L % 30)}°`; };
+                for (const [lon, cls, label, r] of [[gnow.sun.lon, "jd-chart__sun", "Sun", 5.2], [gnow.moon.lon, "jd-chart__moonmark", "Moon", 4.4]]) {
+                    const [cx, cy] = at(lon, 190);
+                    withTitle(E("circle", { cx, cy, r, class: cls }, zg), `${label} · ${signOf(lon)}`);
+                }
+            } catch (e) { /* the dial is optional */ }
+        };
+        buildFrame(el, false);
+        [150, 100, 50].forEach((r) => el("circle", { cx: 200, cy: 200, r, fill: "none", class: "jd-chart__ring" + (r === 150 ? " is-major" : "") }));
         const field = el("g", { class: "jd-chart__field" });
         const g = el("g", { class: "jd-chart__sky" });
         const rnd = seeded(7);
@@ -2435,51 +2464,79 @@ if (LAYOUT === "log") {
             const ly = Math.min(...P.map((p) => p[1])) - 9;
             el("text", { x: cx.toFixed(1), y: ly.toFixed(1), "text-anchor": "middle", class: "jd-chart__lbl" }, grp).textContent = main.split("-")[1] ?? main;
         });
-        // (no caption under the disc — the field stars explain themselves on hover; Jin, 2026-09-07)
-        // ---- Sky tonight: the same disc as a planisphere. Zenith at the centre, horizon at the rim,
-        // north up and east to the LEFT (a chart held overhead). The card plays the coming night through,
-        // dusk to dawn in a minute on a loop, so the stars are seen to turn; the full-screen view (⤢)
-        // shows the moment itself with the fuller catalogue, updated each minute. The place sits at the
-        // bottom right. Project layers hide while the sky shows; the mode persists, full screen does not.
+        // ---- Sky tonight: the same disc as a planisphere — an astrolabe's plate and rete. Zenith at the
+        // centre, horizon at the rim, north up and east to the LEFT (a chart held overhead). Inside the
+        // ring: almucantars at 30° and 60°, the zenith as a small star, the horizon named the old way in
+        // words curved along the ring, the ecliptic threaded through the stars as a dotted line with each
+        // sign's glyph at its middle, stars in the atlas's magnitude classes (eight points, four points,
+        // then points), the planets as their glyphs, the Moon as its phase. The card plays the coming
+        // night through, dusk to dawn in a minute on a loop, so the stars are seen to turn; the
+        // full-screen view (⤢) shows the moment itself with the fuller catalogue and a limb graduated to
+        // the degree. The clock, in almanac notation, sits above the place at the bottom right.
         const LS_CHART = "ephemeris-dash.chart";
         const REDUCED = (() => { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
         const tabs = document.createElement("div"); tabs.className = "jd-tabs jd-chart__tabs";
         box.insertBefore(tabs, svg);
-        const mkEl = (root) => (n, at, parent) => {
-            const e = document.createElementNS(NS, n);
-            if (!("fill" in at)) e.setAttribute("fill", n === "polyline" || n === "line" ? "none" : "currentColor");   // never the SVG default black
-            for (const k in at) e.setAttribute(k, at[k]);
-            (parent ?? root).appendChild(e); return e;
-        };
+        const PLANET_GLYPH = { Mercury: "☿", Venus: "♀", Mars: "♂", Jupiter: "♃", Saturn: "♄" };
         /** Build a sky layer into an <svg>; the elements are made once and only moved by update(time). */
         const buildSky = (root, full) => {
             const E = mkEl(root);
             const layer = E("g", { class: "jd-chart__tonight" });
-            [["N", 200, 34], ["E", 38, 204], ["S", 200, 374], ["W", 362, 204]].forEach(([t, x, y]) => { E("text", { x, y, "text-anchor": "middle", class: "jd-chart__lbl jd-chart__card" }, layer).textContent = t; });
+            for (const alt of [30, 60]) E("circle", { cx: 200, cy: 200, r: (190 * (90 - alt) / 90).toFixed(1), fill: "none", class: "jd-chart__alm" }, layer);
+            E("path", { d: starD(3.2, 4), transform: "translate(200 200)", class: "jd-chart__zen" }, layer);
+            // Septentrio at the top, Oriens on the left, Meridies below, Occidens on the right — each
+            // word on an arc of the ring, letter tops outward except at the bottom, where they turn
+            // inward so the word reads upright, as the map-makers did.
+            const defs = E("defs", {}, layer);
+            const uid = "jdc" + Math.floor(Math.random() * 1e9).toString(36);
+            const arc = (deg, cw, r) => {
+                const a0 = (deg + (cw ? -34 : 34)) * Math.PI / 180, a1 = (deg + (cw ? 34 : -34)) * Math.PI / 180;
+                const p = (a) => `${(200 + Math.sin(a) * r).toFixed(1)} ${(200 - Math.cos(a) * r).toFixed(1)}`;
+                return `M ${p(a0)} A ${r} ${r} 0 0 ${cw ? 1 : 0} ${p(a1)}`;
+            };
+            [["Septentrio", 0, true, "North"], ["Oriens", 270, true, "East"], ["Meridies", 180, false, "South"], ["Occidens", 90, true, "West"]].forEach(([word, deg, cw, tip], i) => {
+                const id = `${uid}-${i}`;
+                E("path", { id, d: arc(deg, cw, 180), fill: "none" }, defs);
+                const t = E("text", { "text-anchor": "middle", class: "jd-chart__lbl jd-chart__card" }, layer);
+                const tp = document.createElementNS(NS, "textPath"); tp.setAttribute("href", "#" + id); tp.setAttribute("startOffset", "50%"); tp.textContent = word; t.appendChild(tp);
+                withTitle(t, tip);
+            });
+            const ecl = E("path", { d: "", fill: "none", class: "jd-chart__ecl" }, layer);
+            const eclSigns = ZOD.map((z, k) => { const t = withTitle(E("text", { "text-anchor": "middle", class: "jd-chart__eclsign" }, layer), SIGNS[k]); t.textContent = z; return t; });
             const place = ({ alt, az }) => { const rr = 190 * (90 - alt) / 90, a = az * Math.PI / 180; return [200 - Math.sin(a) * rr, 200 - Math.cos(a) * rr]; };
+            const moveTo = (e, x, y) => {
+                if (e.tagName === "circle") { e.setAttribute("cx", x.toFixed(1)); e.setAttribute("cy", y.toFixed(1)); }
+                else if (e.tagName === "path") e.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+                else { e.setAttribute("x", x.toFixed(1)); e.setAttribute("y", (y + (Number(e.getAttribute("data-dy")) || 0)).toFixed(1)); }
+            };
             const items = [];
             const tw = seeded(1837);   // each star its own twinkle period and phase, fixed across renders
             SKY.catalogue(full).forEach(([name, , , mag], i) => {
-                const c = E("circle", { r: Math.max(0.7, (full ? 3.4 : 3.2) - mag * 0.85).toFixed(2), class: "jd-chart__star is-sky", style: `animation-duration:${(3.5 + tw() * 4).toFixed(1)}s;animation-delay:-${(tw() * 6).toFixed(1)}s` }, layer);
-                const t = document.createElementNS(NS, "title"); t.textContent = `${name} · mag ${mag.toFixed(1)}`; c.appendChild(t);
+                const style = `animation-duration:${(3.5 + tw() * 4).toFixed(1)}s;animation-delay:-${(tw() * 6).toFixed(1)}s`;
+                const c = mag < 0.3 ? E("path", { d: starD(full ? 5.4 : 5.0, 8), class: "jd-chart__star is-sky is-first", style }, layer)
+                    : mag < 1.6 ? E("path", { d: starD(full ? 4.6 : 4.2, 4), class: "jd-chart__star is-sky is-first", style }, layer)
+                    : E("circle", { r: Math.max(0.7, (full ? 3.4 : 3.2) - mag * 0.85).toFixed(2), class: "jd-chart__star is-sky", style }, layer);
+                withTitle(c, `${name} · mag ${mag.toFixed(1)}`);
                 let lbl = null;
                 if (mag < (full ? 2.0 : 1.3)) { lbl = E("text", { class: "jd-chart__lbl is-sky" }, layer); lbl.textContent = name; }
-                items.push({ el: c, lbl, dx: 5, dy: -4, pos: (sk) => sk.stars[i] });
+                items.push({ el: c, lbl, dx: mag < 1.6 ? 6 : 5, dy: -4, pos: (sk) => sk.stars[i] });
             });
             for (const n of ["Mercury", "Venus", "Mars", "Jupiter", "Saturn"]) {
-                const c = E("circle", { r: 3.4, class: "jd-chart__planet" }, layer);
-                const t = document.createElementNS(NS, "title"); t.textContent = n; c.appendChild(t);
+                const c = withTitle(E("text", { "text-anchor": "middle", "data-dy": "3.9", class: "jd-chart__planet" }, layer), n); c.textContent = PLANET_GLYPH[n];
                 const lbl = E("text", { class: "jd-chart__lbl is-sky is-planet" }, layer); lbl.textContent = n;
-                items.push({ el: c, lbl, dx: 6, dy: 4, pos: (sk) => sk.planets[n] });
+                items.push({ el: c, lbl, dx: 7, dy: 4, pos: (sk) => sk.planets[n] });
             }
             const sun = E("circle", { r: 6, class: "jd-chart__sun" }, layer); items.push({ el: sun, lbl: null, dx: 0, dy: 0, pos: (sk) => sk.sun });
             const moon = E("text", { "text-anchor": "middle", class: "jd-chart__moonglyph" }, layer);
             const moonGlyph = E("tspan", {}, moon);
             const moonT = document.createElementNS(NS, "title"); moon.appendChild(moonT);
+            // 23ʰ 12ᵐ — the hour and minute marked the way an ephemeris prints them
             const clock = E("text", { x: 392, y: 378, "text-anchor": "end", class: "jd-chart__lbl is-sub is-clock" }, layer);
+            const cH = E("tspan", {}, clock), cHs = E("tspan", { dy: "-3.5", class: "jd-chart__sup" }, clock), cM = E("tspan", { dy: "3.5" }, clock), cMs = E("tspan", { dy: "-3.5", class: "jd-chart__sup" }, clock);
+            cHs.textContent = "h"; cMs.textContent = "m";
             E("text", { x: 392, y: 392, "text-anchor": "end", class: "jd-chart__lbl is-sub" }, layer).textContent = WX.name;
             const update = (time) => {
-                clock.textContent = `${pad2(time.getHours())}:${pad2(time.getMinutes())}`;   // the moment drawn: simulated on the card, now in full screen
+                cH.textContent = pad2(time.getHours()); cM.textContent = "\u2009" + pad2(time.getMinutes());   // the moment drawn: simulated on the card, now in full screen
                 const sk = SKY.sky(time, WX.lat, WX.lon, full);
                 for (const it of items) {
                     const p = it.pos(sk), up = !!(p && p.alt > 0);
@@ -2490,9 +2547,24 @@ if (LAYOUT === "log") {
                     const o = Math.min(1, p.alt / 6).toFixed(2);
                     it.el.style.opacity = o; if (it.lbl) it.lbl.style.opacity = o;
                     const [x, y] = place(p);
-                    it.el.setAttribute("cx", x.toFixed(1)); it.el.setAttribute("cy", y.toFixed(1));
+                    moveTo(it.el, x, y);
                     if (it.lbl) { it.lbl.setAttribute("x", (x + it.dx).toFixed(1)); it.lbl.setAttribute("y", (y + it.dy).toFixed(1)); }
                 }
+                // the ecliptic: the half above the horizon, drawn from the first point below it so the
+                // line never breaks where the longitudes wrap
+                const pts = SKY.ecliptic(time, WX.lat, WX.lon, 3), n = pts.length;
+                let s0 = pts.findIndex((p) => p.alt <= 0); if (s0 < 0) s0 = 0;
+                let d = "", pen = false;
+                for (let k = 0; k < n; k++) {
+                    const p = pts[(s0 + k) % n];
+                    if (p.alt > 0) { const [x, y] = place(p); d += (pen ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1); pen = true; } else pen = false;
+                }
+                ecl.setAttribute("d", d);
+                eclSigns.forEach((t, k) => {
+                    const p = pts[10 * k + 5], up = p.alt > 2;
+                    t.style.display = up ? "" : "none";
+                    if (up) { const [x, y] = place(p); t.setAttribute("x", x.toFixed(1)); t.setAttribute("y", (y + 2.8).toFixed(1)); t.style.opacity = Math.min(1, p.alt / 8).toFixed(2); }
+                });
                 const mp = moonPhase(time), mu = sk.moon.alt > 0;
                 moon.style.display = mu ? "" : "none";
                 if (mu) { const [x, y] = place(sk.moon); moon.setAttribute("x", x.toFixed(1)); moon.setAttribute("y", (y + 6).toFixed(1)); moonGlyph.textContent = SKY.phaseGlyph(mp.age); moonT.textContent = `Moon · ${mp.name.toLowerCase()}, ${mp.ill}%`; }
@@ -2531,14 +2603,12 @@ if (LAYOUT === "log") {
             };
             raf = requestAnimationFrame(frame);
         };
-        // full screen: the moment itself, the fuller catalogue, the same drawing
+        // full screen: the moment itself, the fuller catalogue, the same rim graduated to the degree
         const openFull = () => {
             const ov = document.body.createDiv({ cls: "jd-sky-full ephemeris-dash" });
             const inner = ov.createDiv({ cls: "jd-sky-full__inner" });
-            const big = document.createElementNS(NS, "svg"); big.setAttribute("viewBox", "0 0 400 400"); inner.appendChild(big);
-            const B = mkEl(big);
-            [190, 150, 100, 50].forEach((r, i) => B("circle", { cx: 200, cy: 200, r, fill: "none", class: "jd-chart__ring" + (i === 1 ? " is-major" : "") }));
-            [[200, 10, 200, 22], [390, 200, 378, 200], [200, 390, 200, 378], [10, 200, 22, 200]].forEach(([x1, y1, x2, y2]) => B("line", { x1, y1, x2, y2, class: "jd-chart__tick" }));
+            const big = document.createElementNS(NS, "svg"); big.setAttribute("viewBox", VIEW); inner.appendChild(big);
+            buildFrame(mkEl(big), true);
             const fs = buildSky(big, true);
             fs.update(new Date());
             const iv = setInterval(() => { if (!ov.isConnected) { clearInterval(iv); return; } fs.update(new Date()); }, 60000);
@@ -2560,9 +2630,11 @@ if (LAYOUT === "log") {
         const fullBtn = tabs.createEl("button", { cls: "jd-chart__full", text: "⤢", attr: { type: "button", title: "Full screen", "aria-label": "Full screen" } });
         ["mousedown", "keydown"].forEach((t) => fullBtn.addEventListener(t, (ev) => ev.stopPropagation()));
         fullBtn.addEventListener("click", (ev) => { ev.preventDefault(); ev.stopPropagation(); openFull(); });
+        // the rim (ring, limb, dial) stays in both modes; inside it the project layers and the inner
+        // rings give way to the sky's own plate
         const setMode = (mode) => {
             const skyOn = mode === "sky";
-            svg.querySelectorAll(".jd-chart__zodiac, .jd-chart__field, .jd-chart__sky").forEach((n) => { n.style.display = skyOn ? "none" : ""; });
+            svg.querySelectorAll(".jd-chart__field, .jd-chart__sky, .jd-chart__ring:not(.is-horizon)").forEach((n) => { n.style.display = skyOn ? "none" : ""; });
             cardSky.layer.style.display = skyOn ? "" : "none";
             fullBtn.style.display = skyOn ? "" : "none";
             for (const k in modeBtns) modeBtns[k].setAttribute("aria-selected", String(k === mode));
