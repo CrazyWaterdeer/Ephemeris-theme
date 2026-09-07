@@ -2486,10 +2486,14 @@ if (LAYOUT === "log") {
             return { layer, update };
         };
         const cardSky = buildSky(svg, false);
-        // tonight, dusk to dawn (astronomical); 19:00–06:00 if the site has no true night
+        // Tonight, dusk to dawn (astronomical); 19:00–06:00 if the site has no true night. A night
+        // belongs to the day it began, so the window rolls over at NOON, not midnight: before noon the
+        // card still plays the night in progress (Jin, 2026-09-07).
         const night = () => {
-            try { const dt = SKY.dayTimes(new Date(), WX.lat, WX.lon); if (dt.dusk && dt.dawn) return [dt.dusk.getTime(), dt.dawn.getTime()]; } catch (e) { }
-            const d = new Date(); d.setHours(19, 0, 0, 0); return [d.getTime(), d.getTime() + 11 * 3600000];
+            const ref = new Date(); if (ref.getHours() < 12) ref.setDate(ref.getDate() - 1);
+            const key = ref.toDateString();
+            try { const dt = SKY.dayTimes(ref, WX.lat, WX.lon); if (dt.dusk && dt.dawn) return [dt.dusk.getTime(), dt.dawn.getTime(), key]; } catch (e) { }
+            const d = new Date(ref); d.setHours(19, 0, 0, 0); return [d.getTime(), d.getTime() + 11 * 3600000, key];
         };
         // The night runs on requestAnimationFrame — the browser's own frame clock — so the motion is
         // continuous rather than stepped; positions are recomputed each frame (a few hundred trig
@@ -2499,12 +2503,15 @@ if (LAYOUT === "log") {
         const startLoop = () => {
             stopLoop();
             if (REDUCED) { cardSky.update(new Date()); loop = setInterval(() => { if (!svg.isConnected) return stopLoop(); cardSky.update(new Date()); }, 60000); return; }
-            const [t0, t1] = night(), T = 60000;
-            let start = null;
+            let [t0, t1, key] = night(); const T = 60000;
+            cardSky.update(new Date(t0));   // draw dusk at once — frames only run while the window is visible
+            let start = null, lastF = 0;
             const frame = (ts) => {
                 if (!svg.isConnected) return stopLoop();
                 if (start === null) start = ts;
                 const f = ((ts - start) % T) / T;
+                if (f < lastF) { const n = night(); if (n[2] !== key) [t0, t1, key] = n; }   // a new night after noon
+                lastF = f;
                 cardSky.update(new Date(t0 + f * (t1 - t0)));
                 raf = requestAnimationFrame(frame);
             };
