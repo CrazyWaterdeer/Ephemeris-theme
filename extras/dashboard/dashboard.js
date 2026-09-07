@@ -2355,8 +2355,17 @@ if (LAYOUT === "log") {
         const NS = "http://www.w3.org/2000/svg";
         const box = document.createElement("div"); box.className = "jd-chart";
         const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 400 400"); svg.setAttribute("aria-label", "the vault as a star chart"); box.appendChild(svg);
-        const el = (n, at, parent) => { const e = document.createElementNS(NS, n); for (const k in at) e.setAttribute(k, at[k]); (parent ?? svg).appendChild(e); return e; };
-        [190, 150, 100, 50].forEach((r, i) => el("circle", { cx: 200, cy: 200, r, class: "jd-chart__ring" + (i === 1 ? " is-major" : "") }));
+        // SVG shapes fill BLACK by default. The stylesheet fixes that, but it is scoped by the note's
+        // cssclass, which lands a frame after the block first paints on navigation — that frame was
+        // the black disc Jin saw flash between notes. So every shape carries its own fill attribute:
+        // rings and chains none, everything else the current ink; CSS still wins where it sets one.
+        const el = (n, at, parent) => {
+            const e = document.createElementNS(NS, n);
+            if (!("fill" in at)) e.setAttribute("fill", n === "polyline" || n === "line" ? "none" : "currentColor");
+            for (const k in at) e.setAttribute(k, at[k]);
+            (parent ?? svg).appendChild(e); return e;
+        };
+        [190, 150, 100, 50].forEach((r, i) => el("circle", { cx: 200, cy: 200, r, fill: "none", class: "jd-chart__ring" + (i === 1 ? " is-major" : "") }));
         [[200, 10, 200, 22], [390, 200, 378, 200], [200, 390, 200, 378], [10, 200, 22, 200]].forEach(([x1, y1, x2, y2]) => el("line", { x1, y1, x2, y2, class: "jd-chart__tick" }));
         // The outer ring as an ecliptic dial — the zodiacal band an astrolabe is built around.
         // 0° Aries at the top, longitude increasing counter-clockwise as the sky turns; twelve
@@ -2436,7 +2445,12 @@ if (LAYOUT === "log") {
         const REDUCED = (() => { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
         const tabs = document.createElement("div"); tabs.className = "jd-tabs jd-chart__tabs";
         box.insertBefore(tabs, svg);
-        const mkEl = (root) => (n, at, parent) => { const e = document.createElementNS(NS, n); for (const k in at) e.setAttribute(k, at[k]); (parent ?? root).appendChild(e); return e; };
+        const mkEl = (root) => (n, at, parent) => {
+            const e = document.createElementNS(NS, n);
+            if (!("fill" in at)) e.setAttribute("fill", n === "polyline" || n === "line" ? "none" : "currentColor");   // never the SVG default black
+            for (const k in at) e.setAttribute(k, at[k]);
+            (parent ?? root).appendChild(e); return e;
+        };
         /** Build a sky layer into an <svg>; the elements are made once and only moved by update(time). */
         const buildSky = (root, full) => {
             const E = mkEl(root);
@@ -2523,7 +2537,7 @@ if (LAYOUT === "log") {
             const inner = ov.createDiv({ cls: "jd-sky-full__inner" });
             const big = document.createElementNS(NS, "svg"); big.setAttribute("viewBox", "0 0 400 400"); inner.appendChild(big);
             const B = mkEl(big);
-            [190, 150, 100, 50].forEach((r, i) => B("circle", { cx: 200, cy: 200, r, class: "jd-chart__ring" + (i === 1 ? " is-major" : "") }));
+            [190, 150, 100, 50].forEach((r, i) => B("circle", { cx: 200, cy: 200, r, fill: "none", class: "jd-chart__ring" + (i === 1 ? " is-major" : "") }));
             [[200, 10, 200, 22], [390, 200, 378, 200], [200, 390, 200, 378], [10, 200, 22, 200]].forEach(([x1, y1, x2, y2]) => B("line", { x1, y1, x2, y2, class: "jd-chart__tick" }));
             const fs = buildSky(big, true);
             fs.update(new Date());
