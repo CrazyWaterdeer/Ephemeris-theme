@@ -3057,7 +3057,10 @@ body.is-mobile:not(.is-phone) .ephemeris-dash .jd > .jd-grid {
 /* --- round 24: on a phone the dashboard root is full-bleed and only .jd-grid / .jd-cover are inset by
        --jd-gutter; the log head and the masthead are root children too, so they need the same inset.
        The register goes five across on a phone (the base's two-column rule outranks the layout rule). */
-body.is-mobile.is-phone .ephemeris-dash .jd > .jd-head, body.is-mobile.is-phone .ephemeris-dash .jd > .jd-mast { margin-inline: var(--jd-gutter); }
+/* Both mobile bands: the phone block (section 11) and the tablet block above both zero --jd-edge and
+   inset only .jd-grid / .jd-cover, so the head must take the same gutter on a tablet too — on an
+   iPad the ALMANAC masthead and the date line were touching both edges (2026-09-07). */
+body.is-mobile .ephemeris-dash .jd > .jd-head, body.is-mobile .ephemeris-dash .jd > .jd-mast { margin-inline: var(--jd-gutter); }
 body.is-mobile.is-phone .ephemeris-dash .jd--log .jd-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 body.is-mobile.is-phone .ephemeris-dash .jd--log .jd-strip > .jd-stat:nth-child(odd):last-child { grid-column: auto; }
 body.is-mobile.is-phone .ephemeris-dash .jd--log .jd-stat { padding: 8px 3px 9px; }
