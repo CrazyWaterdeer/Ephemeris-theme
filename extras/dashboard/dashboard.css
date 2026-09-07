@@ -2772,6 +2772,9 @@ body.is-mobile:not(.is-phone) .ephemeris-dash .jd > .jd-grid {
 .ephemeris-dash .jd-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 3px double var(--text-normal); padding-bottom: 8px; margin-bottom: 20px; }
 .ephemeris-dash .jd-head__name { font-family: var(--jd-serif); font-weight: 400; font-size: 34px; letter-spacing: .08em; line-height: 1.1; margin: 0; }
 .ephemeris-dash .jd-head__sub { font-family: var(--jd-serif); font-size: 12.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); }
+/* digits in the head line: IM Fell's old-style figures sit at x-height, so they are set
+   about two points larger than the small caps around them; line-height 0 keeps the line's height */
+.ephemeris-dash .jd-head__sub .jd-head__num { font-size: 1.2em; line-height: 0; letter-spacing: .1em; }
 .ephemeris-dash .jd--log .jd-card { border: 0; border-top: 3px double var(--text-normal); background: none; padding-left: 0; padding-right: 0; }
 .ephemeris-dash .jd--log .jd-strip { border: 1px solid var(--jd-hairline); background: var(--background-primary-alt); border-radius: 0; }
 @container jd (min-width: 900px) {

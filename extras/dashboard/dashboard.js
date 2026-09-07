@@ -877,7 +877,15 @@ if (LAYOUT === "log") {
     const title = String(input?.title ?? "Almanac").trim() || "Almanac";
     const owner = String(input?.owner ?? "").trim();
     h.createEl("h1", { cls: "jd-head__name", text: title.toUpperCase() });
-    h.createDiv({ cls: "jd-head__sub", text: [owner, dateLine()].filter(Boolean).join(" · ") });
+    // IM Fell's figures are old-style and sit at x-height, so in a small-caps line they
+    // read a size smaller than the letters; each run of digits gets its own span that
+    // dashboard.css sets about two points larger without changing the line's height.
+    const sub = h.createDiv({ cls: "jd-head__sub" });
+    for (const part of [owner, dateLine()].filter(Boolean).join(" · ").split(/(\d+)/)) {
+        if (!part) continue;
+        if (/^\d+$/.test(part)) sub.createSpan({ cls: "jd-head__num", text: part });
+        else sub.appendText(part);
+    }
     mountEpigraph(h);
 }
 
