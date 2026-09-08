@@ -2378,7 +2378,9 @@ if (LAYOUT === "log") {
             (parent ?? root).appendChild(e); return e;
         };
         const el = mkEl(svg);
-        const ZOD = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
+        // The signs carry U+FE0E (text presentation): they are default-EMOJI code points, and a phone
+        // without the theme's symbol font would otherwise print them as coloured stickers.
+        const ZOD = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"].map((z) => z + "\uFE0E");
         const SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
         /** An n-pointed star, tips at r, the waist drawn in — four points is the ✦ of the section rules. */
         const starD = (r, n) => {

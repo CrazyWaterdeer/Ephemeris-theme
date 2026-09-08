@@ -89,6 +89,7 @@ A second, vault-specific snippet. It knows the templates' headings and fields, s
 
 ## Changelog
 
+- **0.4.1** — The chart's symbols embedded (Noto Sans Symbols, Symbols 2 and monochrome Noto Emoji subsets, ~10 KB): planets, zodiac signs, ☉, the manicule, ✦ and the Moon's phases draw as ink on every device — phones without Segoe UI Symbol had shown the zodiac as colour emoji. Almanac: Sky tonight as an astrolabe (graduated limb and dial outside the ring in both modes, ecliptic through the stars, almucantars, Latin horizon words, stars by magnitude class, planet glyphs, the Moon as its true phase, a magnitude key, almanac time notation).
 - **0.4.0** — IM Fell English SC embedded: real small caps for tags, table heads and callout titles (property keys use EB Garamond's); callout ink by family (seal for reference, bronze for records and procedure); struck text as correction ink. Almanac: the chart's outer ring is an ecliptic dial with today's Sun and Moon; moonrise, moonset and astronomical night in Conditions; primary-phase moon marks on the calendar; weekly notes share the ledger controls.
 - **0.3.1** — star rule in Live Preview; properties colophon; hover card; plates for embeds and images; three-line tables; ledger date fields; Reading-view bullet fix for Obsidian 1.14.
 - **0.3.0** — star field at the top of the editor pane.

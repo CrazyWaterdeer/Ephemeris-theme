@@ -132,6 +132,20 @@ if os.path.exists(STATUS):
                    + base64.b64encode(open(STATUS, 'rb').read()).decode('ascii')
                    + ") format('woff2'); unicode-range: U+1F4DA, U+270F, U+1F4D6, U+1F4D7, U+1F4DC, U+1F480; }")
     print('status marks embedded', os.path.getsize(STATUS), 'bytes')
+# The chart's glyphs as ink on every device (build/sky_subset.py): the zodiac signs are default-emoji
+# code points, so a phone without Segoe UI Symbol printed them as coloured stickers. Each face covers
+# only its own code points and is defined after the local alias, so the embedded glyph wins.
+SKY_FACES = [('sky-symbols.woff2', 'U+263D-2644, U+2648-2653, U+2922'),          # Noto Sans Symbols: ☽ ☾ ☿ ♀ ♁ ♂ ♃ ♄ ♈–♓ ⤢
+             ('sky-symbols-2.woff2', 'U+2605-2606, U+2609, U+261E, U+2726-2727'),   # Noto Sans Symbols 2: ★ ☆ ☉ ☞ ✦ ✧
+             ('moon-marks.woff2', 'U+1F311-1F318')]                               # Noto Emoji (monochrome): 🌑–🌘
+sky_faces = ''
+for fn, ur in SKY_FACES:
+    p = os.path.join(cache, fn)
+    if not os.path.exists(p):
+        print('missing', fn, '- run build/sky_subset.py'); continue
+    sky_faces += ('@font-face { font-family: "Ephemeris Symbols"; src: url(data:font/woff2;base64,'
+                  + base64.b64encode(open(p, 'rb').read()).decode('ascii') + f") format('woff2'); unicode-range: {ur}; }}\n")
+    print('embedded', fn, os.path.getsize(p), 'bytes')
 theme = f"""/* =====================================================================
    Ephemeris — a Hogwarts student's notebook, as wizarding-world dark academia.
    Built for Jin's vault "Jinome" (Korean prose, Dataview dashboards).
@@ -151,7 +165,9 @@ theme = f"""/* =================================================================
 /* the six status marks come from a Noto Emoji subset (OFL) whose advances are widened, so
    "📜Final" reads as "📜 Final" while the data stays untouched — defined last, so it wins */
 {status_face}
-
+/* the chart's glyphs — planets, zodiac, Sun, the manicule, the ornament star, the Moon's phases —
+   from Noto Sans Symbols / Symbols 2 / Noto Emoji subsets (OFL), so a phone draws them as ink too */
+{sky_faces}
 /* ---- embedded Latin faces (Google Fonts, OFL) ------------------------ */
 {chr(10).join(faces)}
 
@@ -210,7 +226,7 @@ body {{
 .callout {{ border-left-width: 3px; background: var(--background-primary-alt); }}
 .callout-title {{ font-family: {SC}; font-weight: 400; letter-spacing: .06em; text-transform: none; font-size: .95em; }}
 .callout-icon svg {{ display: none; }}
-.callout-icon::before {{ content: "☞"; font-family: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols 2", serif; font-size: 1.35em; line-height: 1; color: rgb(var(--callout-color)); }}
+.callout-icon::before {{ content: "☞"; font-family: {SYM}, "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols 2", serif; font-size: 1.35em; line-height: 1; color: rgb(var(--callout-color)); }}
 
 /* ---- headings: fading bronze rule under H1 and the inline title -------- */
 .markdown-rendered h1, .inline-title, .cm-line.HyperMD-header-1 {{
@@ -295,7 +311,7 @@ body {{ --table-border-width: 0; --table-column-first-border-width: 0; --table-c
 """
 
 open(os.path.join(repo, 'theme.css'), 'w', encoding='utf-8', newline='\n').write(theme)
-json.dump({'name': 'Ephemeris', 'version': '0.4.0', 'minAppVersion': '1.5.0', 'author': 'Jin', 'authorUrl': ''},
+json.dump({'name': 'Ephemeris', 'version': '0.4.1', 'minAppVersion': '1.5.0', 'author': 'Jin', 'authorUrl': ''},
           open(os.path.join(repo, 'manifest.json'), 'w', encoding='utf-8'), indent=2)
 # README.md is written by hand — the generator no longer touches it.
 open(os.path.join(repo, '.gitignore'), 'w', encoding='utf-8', newline='\n').write('.DS_Store\nThumbs.db\n')
