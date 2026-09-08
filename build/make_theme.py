@@ -312,9 +312,9 @@ body {{ --table-border-width: 0; --table-column-first-border-width: 0; --table-c
 
 open(os.path.join(repo, 'theme.css'), 'w', encoding='utf-8', newline='\n').write(theme)
 json.dump({'name': 'Ephemeris', 'version': '0.4.1', 'minAppVersion': '1.5.0', 'author': 'Jin', 'authorUrl': ''},
-          open(os.path.join(repo, 'manifest.json'), 'w', encoding='utf-8'), indent=2)
+          open(os.path.join(repo, 'manifest.json'), 'w', encoding='utf-8', newline='\n'), indent=2)
 # README.md is written by hand — the generator no longer touches it.
-open(os.path.join(repo, '.gitignore'), 'w', encoding='utf-8', newline='\n').write('.DS_Store\nThumbs.db\n')
+open(os.path.join(repo, '.gitignore'), 'w', encoding='utf-8', newline='\n').write('.DS_Store\nThumbs.db\n__pycache__/\n')
 
 dest = os.path.join(vault, '.obsidian', 'themes', 'Ephemeris'); os.makedirs(dest, exist_ok=True)
 for f in ('theme.css', 'manifest.json'):
